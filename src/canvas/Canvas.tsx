@@ -39,25 +39,15 @@ export function Canvas() {
   const cameraRef = useRef(state.camera);
   cameraRef.current = state.camera;
 
-  // ---- Canvas click → create swatch or deselect ----
+  // ---- Canvas click → deselect only ----
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent) => {
       if (isPanning.current) return;
       const target = e.target as HTMLElement;
-      if (target.closest(".swatch-node, .ramp-node")) return;
-
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-
-      const canvasX =
-        (e.clientX - rect.left - state.camera.x) / state.camera.zoom;
-      const canvasY =
-        (e.clientY - rect.top - state.camera.y) / state.camera.zoom;
+      if (target.closest(".swatch-node, .ramp-node, .ref-image-node")) return;
 
       if (state.selectedIds.length > 0) {
         deselectAll();
-      } else {
-        createSwatch({ x: canvasX, y: canvasY });
       }
     },
     [state.camera, state.selectedIds, createSwatch, deselectAll],
@@ -316,33 +306,75 @@ export function Canvas() {
     [addReferenceImage, createSwatches],
   );
 
-  // ---- Paste handler ----
+  // ---- Paste handler (text colors + images) ----
   useEffect(() => {
-    const handler = (e: ClipboardEvent) => {
+    const handler = async (e: ClipboardEvent) => {
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
       )
         return;
 
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const cam = cameraRef.current;
+      const cx = (rect.width / 2 - cam.x) / cam.zoom;
+      const cy = (rect.height / 2 - cam.y) / cam.zoom;
+
+      // Check for image in clipboard (e.g., copied from a website)
+      const items = e.clipboardData?.items;
+      if (items) {
+        for (const item of Array.from(items)) {
+          if (item.type.startsWith("image/")) {
+            e.preventDefault();
+            const file = item.getAsFile();
+            if (!file) return;
+
+            const [imageData, dataUrl] = await Promise.all([
+              imageFileToImageData(file),
+              fileToDataUrl(file),
+            ]);
+
+            const img = new Image();
+            img.src = dataUrl;
+            await new Promise((r) => {
+              img.onload = r;
+            });
+            const displayWidth = Math.min(300, img.naturalWidth);
+            const aspectRatio = img.naturalHeight / img.naturalWidth;
+            const displayHeight = Math.round(displayWidth * aspectRatio);
+
+            addReferenceImage(
+              dataUrl,
+              { x: cx, y: cy },
+              { width: displayWidth, height: displayHeight },
+            );
+
+            const result = extractColors(imageData);
+            const swatches = result.colors.map((color, i) => ({
+              position: { x: cx + displayWidth + 16, y: cy + i * 56 },
+              color,
+            }));
+            createSwatches(swatches);
+            return;
+          }
+        }
+      }
+
+      // Fall back to text color
       const text = e.clipboardData?.getData("text");
       if (!text) return;
 
       const color = parseColor(text.trim());
       if (color) {
         e.preventDefault();
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        const cam = cameraRef.current;
-        const cx = (rect.width / 2 - cam.x) / cam.zoom;
-        const cy = (rect.height / 2 - cam.y) / cam.zoom;
         createSwatch({ x: cx, y: cy }, color);
       }
     };
 
     window.addEventListener("paste", handler);
     return () => window.removeEventListener("paste", handler);
-  }, [createSwatch]);
+  }, [createSwatch, createSwatches, addReferenceImage]);
 
   // ---- Context menu ----
   const { menu, handleContextMenu } = useContextMenu({
@@ -351,6 +383,7 @@ export function Canvas() {
     darkMode: state.darkMode,
     camera: state.camera,
     onCreateSwatch: createSwatch,
+    onSelect: select,
     onDeleteSelected: deleteSelected,
     onPromoteToRamp: promoteToRamp,
     onHarmonize: harmonizeSelected,

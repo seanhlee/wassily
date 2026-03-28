@@ -20,6 +20,7 @@ interface ContextMenuProps {
   darkMode: boolean;
   camera: { x: number; y: number; zoom: number };
   onCreateSwatch: (position: { x: number; y: number }) => void;
+  onSelect: (id: string, additive?: boolean) => void;
   onDeleteSelected: () => void;
   onPromoteToRamp: (id: string, stopCount: number) => void;
   onHarmonize: () => void;
@@ -32,6 +33,7 @@ export function useContextMenu({
   darkMode,
   camera,
   onCreateSwatch,
+  onSelect,
   onDeleteSelected,
   onPromoteToRamp,
   onHarmonize,
@@ -62,13 +64,24 @@ export function useContextMenu({
       const target = e.target as HTMLElement;
       const swatchEl = target.closest(".swatch-node");
       const rampEl = target.closest(".ramp-node");
-      const objectEl = swatchEl || rampEl;
+      const imageEl = target.closest(".ref-image-node");
+      const objectEl = swatchEl || rampEl || imageEl;
       const objectId = objectEl?.getAttribute("data-object-id");
       const obj = objectId ? objects[objectId] : null;
 
+      // Auto-select right-clicked object
+      if (objectId && !selectedIds.includes(objectId)) {
+        onSelect(objectId);
+      }
+
       const items: MenuAction[] = [];
 
-      if (obj?.type === "swatch") {
+      if (obj?.type === "reference-image") {
+        items.push({
+          label: "Delete",
+          action: onDeleteSelected,
+        });
+      } else if (obj?.type === "swatch") {
         const swatch = obj as Swatch;
         items.push({
           label: toHex(swatch.color),
@@ -154,6 +167,7 @@ export function useContextMenu({
       darkMode,
       camera,
       onCreateSwatch,
+      onSelect,
       onDeleteSelected,
       onPromoteToRamp,
       onHarmonize,

@@ -333,7 +333,7 @@ export function RefImageNode({
         cursor: "default",
         outline: selected ? `1px solid ${outlineColor}` : "none",
         outlineOffset: 3,
-        opacity: 0.4,
+        opacity: 1,
       }}
     >
       <img
