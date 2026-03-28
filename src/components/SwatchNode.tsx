@@ -101,7 +101,7 @@ export function SwatchNode({
     onMoveSelected,
   );
 
-  const outlineColor = darkMode ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)";
+  const outlineColor = darkMode ? "#000" : "#fff";
 
   return (
     <div
@@ -129,8 +129,8 @@ export function SwatchNode({
             top: 52,
             left: 0,
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 11,
-            color: darkMode ? "oklch(0.35 0 0)" : "oklch(0.45 0 0)",
+            fontSize: 9,
+            color: darkMode ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
             whiteSpace: "nowrap",
             userSelect: "none",
             pointerEvents: "none",
@@ -177,7 +177,7 @@ export function RampNode({
     onMoveSelected,
   );
 
-  const outlineColor = darkMode ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)";
+  const outlineColor = darkMode ? "#000" : "#fff";
 
   return (
     <div
@@ -201,8 +201,8 @@ export function RampNode({
           left: 0,
           marginBottom: 4,
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 11,
-          color: darkMode ? "oklch(0.35 0 0)" : "oklch(0.45 0 0)",
+          fontSize: 9,
+          color: darkMode ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
           textTransform: "uppercase",
           letterSpacing: "-0.55px",
           userSelect: "none",
@@ -260,8 +260,8 @@ export function RampNode({
               style={{
                 width: 48,
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 8,
-                color: darkMode ? "oklch(0.35 0 0)" : "oklch(0.40 0 0)",
+                fontSize: 9,
+                color: darkMode ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
                 textAlign: "center",
                 marginTop: 4,
                 userSelect: "none",

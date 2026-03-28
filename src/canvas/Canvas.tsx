@@ -298,7 +298,7 @@ export function Canvas() {
   });
 
   // ---- Render ----
-  const canvasBg = state.darkMode ? "oklch(0.98 0 0)" : "oklch(0.13 0 0)";
+  const canvasBg = state.darkMode ? "#fff" : "#000";
   const objects = Object.values(state.objects);
 
   return (

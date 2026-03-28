@@ -17,7 +17,7 @@ style.textContent = `
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: oklch(0.13 0 0);
+    background: #000;
   }
   body {
     font-family: 'IBM Plex Mono', monospace;

@@ -37,10 +37,10 @@ export function HarmonizeOverlay() {
         left: "50%",
         transform: "translate(-50%, -50%)",
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 11,
+        fontSize: 9,
         textTransform: "uppercase",
-        letterSpacing: "-0.55px",
-        color: "oklch(0.55 0 0)",
+        letterSpacing: "0.5px",
+        color: "rgba(255,255,255,0.4)",
         pointerEvents: "none",
         zIndex: 9998,
       }}

@@ -201,12 +201,13 @@ export function ContextMenuOverlay({
         left: pos.x || menu.x,
         top: pos.y || menu.y,
         zIndex: 9999,
-        backgroundColor: "oklch(0.16 0 0)",
-        border: "1px solid oklch(0.22 0 0)",
+        backgroundColor: "#000",
+        border: "1px solid rgba(255,255,255,0.15)",
         padding: "3px 0",
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 9,
-        letterSpacing: "-0.2px",
+        textTransform: "uppercase" as const,
+        letterSpacing: "0.5px",
       }}
     >
       {menu.items.map((item, i) => (
@@ -215,7 +216,7 @@ export function ContextMenuOverlay({
             <div
               style={{
                 height: 1,
-                backgroundColor: "oklch(0.22 0 0)",
+                backgroundColor: "rgba(255,255,255,0.1)",
                 margin: "2px 0",
               }}
             />
@@ -228,17 +229,17 @@ export function ContextMenuOverlay({
             style={{
               padding: "3px 10px",
               cursor: "default",
-              color: "oklch(0.6 0 0)",
+              color: "rgba(255,255,255,0.6)",
               whiteSpace: "nowrap",
             }}
             onMouseEnter={(e) => {
               (e.target as HTMLElement).style.backgroundColor =
-                "oklch(0.22 0 0)";
-              (e.target as HTMLElement).style.color = "oklch(0.8 0 0)";
+                "rgba(255,255,255,0.08)";
+              (e.target as HTMLElement).style.color = "#fff";
             }}
             onMouseLeave={(e) => {
               (e.target as HTMLElement).style.backgroundColor = "transparent";
-              (e.target as HTMLElement).style.color = "oklch(0.6 0 0)";
+              (e.target as HTMLElement).style.color = "rgba(255,255,255,0.6)";
             }}
           >
             {item.label}
