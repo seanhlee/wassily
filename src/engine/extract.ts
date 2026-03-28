@@ -57,8 +57,14 @@ export function extractColors(imageData: ImageData): ExtractionResult {
   // Filter near-neutrals if chromatic alternatives exist
   const filtered = filterNeutrals(merged);
 
-  // Purify each
-  const colors = filtered.map(purifyColor);
+  // Only purify colors that were already chromatic in the image.
+  // Grays stay gray — they're intentionally neutral, not detuned.
+  const colors = filtered.map((color) => {
+    if (color.c > 0.04) {
+      return purifyColor(color);
+    }
+    return color;
+  });
 
   return { colors, isSingleColor: false };
 }
