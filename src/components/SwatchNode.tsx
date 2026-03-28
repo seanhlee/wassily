@@ -2,6 +2,70 @@ import { useCallback, useRef, useState } from "react";
 import type { Swatch, Ramp } from "../types";
 import { toHex } from "../engine/gamut";
 
+// ---- Shared drag logic ----
+
+function useDrag(
+  id: string,
+  position: { x: number; y: number },
+  zoom: number,
+  selected: boolean,
+  onSelect: (id: string, additive: boolean) => void,
+  onMove: (id: string, x: number, y: number) => void,
+  onMoveSelected: (dx: number, dy: number) => void,
+) {
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const lastDelta = useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      isDragging.current = false;
+      dragStart.current = { x: e.clientX, y: e.clientY };
+      lastDelta.current = { x: 0, y: 0 };
+
+      const handleMove = (me: MouseEvent) => {
+        const dx = (me.clientX - dragStart.current.x) / zoom;
+        const dy = (me.clientY - dragStart.current.y) / zoom;
+        if (!isDragging.current && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
+          isDragging.current = true;
+        }
+        if (isDragging.current) {
+          // Calculate incremental delta since last move
+          const incDx = dx - lastDelta.current.x;
+          const incDy = dy - lastDelta.current.y;
+          lastDelta.current = { x: dx, y: dy };
+
+          if (selected) {
+            // Move all selected objects together
+            onMoveSelected(incDx, incDy);
+          } else {
+            // Move just this one
+            onMove(id, position.x + dx, position.y + dy);
+          }
+        }
+      };
+
+      const handleUp = () => {
+        window.removeEventListener("mousemove", handleMove);
+        window.removeEventListener("mouseup", handleUp);
+        if (!isDragging.current) {
+          onSelect(id, e.shiftKey);
+        }
+        setTimeout(() => {
+          isDragging.current = false;
+        }, 0);
+      };
+
+      window.addEventListener("mousemove", handleMove);
+      window.addEventListener("mouseup", handleUp);
+    },
+    [id, position, zoom, selected, onSelect, onMove, onMoveSelected],
+  );
+
+  return handleMouseDown;
+}
+
 // ---- Swatch ----
 
 interface SwatchNodeProps {
@@ -11,6 +75,7 @@ interface SwatchNodeProps {
   darkMode: boolean;
   onSelect: (id: string, additive: boolean) => void;
   onMove: (id: string, x: number, y: number) => void;
+  onMoveSelected: (dx: number, dy: number) => void;
 }
 
 export function SwatchNode({
@@ -20,54 +85,28 @@ export function SwatchNode({
   darkMode,
   onSelect,
   onMove,
+  onMoveSelected,
 }: SwatchNodeProps) {
   const hex = toHex(swatch.color);
   const showDetail = zoom > 1.5;
   const [hovered, setHovered] = useState(false);
-  const isDragging = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const posStart = useRef({ x: 0, y: 0 });
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      isDragging.current = false;
-      dragStart.current = { x: e.clientX, y: e.clientY };
-      posStart.current = { x: swatch.position.x, y: swatch.position.y };
-
-      const handleMove = (me: MouseEvent) => {
-        const dx = (me.clientX - dragStart.current.x) / zoom;
-        const dy = (me.clientY - dragStart.current.y) / zoom;
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-          isDragging.current = true;
-          onMove(swatch.id, posStart.current.x + dx, posStart.current.y + dy);
-        }
-      };
-
-      const handleUp = () => {
-        window.removeEventListener("mousemove", handleMove);
-        window.removeEventListener("mouseup", handleUp);
-        if (!isDragging.current) {
-          onSelect(swatch.id, e.shiftKey);
-        }
-        // Reset after a tick so click doesn't fire
-        setTimeout(() => {
-          isDragging.current = false;
-        }, 0);
-      };
-
-      window.addEventListener("mousemove", handleMove);
-      window.addEventListener("mouseup", handleUp);
-    },
-    [swatch.id, swatch.position, zoom, onSelect, onMove],
+  const handleMouseDown = useDrag(
+    swatch.id,
+    swatch.position,
+    zoom,
+    selected,
+    onSelect,
+    onMove,
+    onMoveSelected,
   );
 
-  // Selection outline adapts to canvas
   const outlineColor = darkMode ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)";
 
   return (
     <div
       className="swatch-node"
+      data-object-id={swatch.id}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -83,7 +122,6 @@ export function SwatchNode({
         outlineOffset: 3,
       }}
     >
-      {/* Hex on hover or at detail zoom */}
       {(hovered || showDetail) && (
         <div
           style={{
@@ -114,6 +152,7 @@ interface RampNodeProps {
   darkMode: boolean;
   onSelect: (id: string, additive: boolean) => void;
   onMove: (id: string, x: number, y: number) => void;
+  onMoveSelected: (dx: number, dy: number) => void;
 }
 
 export function RampNode({
@@ -123,44 +162,19 @@ export function RampNode({
   darkMode,
   onSelect,
   onMove,
+  onMoveSelected,
 }: RampNodeProps) {
   const showDetail = zoom > 1.5;
   const [hovered, setHovered] = useState(false);
-  const isDragging = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const posStart = useRef({ x: 0, y: 0 });
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      isDragging.current = false;
-      dragStart.current = { x: e.clientX, y: e.clientY };
-      posStart.current = { x: ramp.position.x, y: ramp.position.y };
-
-      const handleMove = (me: MouseEvent) => {
-        const dx = (me.clientX - dragStart.current.x) / zoom;
-        const dy = (me.clientY - dragStart.current.y) / zoom;
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-          isDragging.current = true;
-          onMove(ramp.id, posStart.current.x + dx, posStart.current.y + dy);
-        }
-      };
-
-      const handleUp = () => {
-        window.removeEventListener("mousemove", handleMove);
-        window.removeEventListener("mouseup", handleUp);
-        if (!isDragging.current) {
-          onSelect(ramp.id, e.shiftKey);
-        }
-        setTimeout(() => {
-          isDragging.current = false;
-        }, 0);
-      };
-
-      window.addEventListener("mousemove", handleMove);
-      window.addEventListener("mouseup", handleUp);
-    },
-    [ramp.id, ramp.position, zoom, onSelect, onMove],
+  const handleMouseDown = useDrag(
+    ramp.id,
+    ramp.position,
+    zoom,
+    selected,
+    onSelect,
+    onMove,
+    onMoveSelected,
   );
 
   const outlineColor = darkMode ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)";
@@ -168,6 +182,7 @@ export function RampNode({
   return (
     <div
       className="ramp-node"
+      data-object-id={ramp.id}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -178,25 +193,28 @@ export function RampNode({
         cursor: "default",
       }}
     >
-      {/* Name label — hover only */}
-      {hovered && (
-        <div
-          style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 11,
-            color: darkMode ? "oklch(0.35 0 0)" : "oklch(0.45 0 0)",
-            textTransform: "uppercase",
-            letterSpacing: "-0.55px",
-            marginBottom: 4,
-            userSelect: "none",
-            pointerEvents: "none",
-          }}
-        >
-          {ramp.name}
-        </div>
-      )}
+      {/* Name label — absolutely positioned above, no layout shift */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "100%",
+          left: 0,
+          marginBottom: 4,
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 11,
+          color: darkMode ? "oklch(0.35 0 0)" : "oklch(0.45 0 0)",
+          textTransform: "uppercase",
+          letterSpacing: "-0.55px",
+          userSelect: "none",
+          pointerEvents: "none",
+          opacity: hovered ? 1 : 0,
+          transition: "opacity 0.15s ease",
+        }}
+      >
+        {ramp.name}
+      </div>
 
-      {/* Continuous strip — no rounded corners, no gaps */}
+      {/* Continuous strip */}
       <div
         style={{
           display: "flex",
@@ -221,44 +239,47 @@ export function RampNode({
         })}
       </div>
 
-      {/* Stop values — hover + detail zoom only */}
-      {hovered && showDetail && (
-        <div
-          style={{
-            display: "flex",
-            pointerEvents: "none",
-          }}
-        >
-          {ramp.stops.map((stop) => {
-            const color = darkMode ? stop.darkColor : stop.color;
-            const hex = toHex(color);
-            return (
+      {/* Stop values — absolutely positioned below, no layout shift */}
+      <div
+        style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          display: "flex",
+          pointerEvents: "none",
+          opacity: hovered && showDetail ? 1 : 0,
+          transition: "opacity 0.15s ease",
+        }}
+      >
+        {ramp.stops.map((stop) => {
+          const color = darkMode ? stop.darkColor : stop.color;
+          const hex = toHex(color);
+          return (
+            <div
+              key={stop.label}
+              style={{
+                width: 48,
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 8,
+                color: darkMode ? "oklch(0.35 0 0)" : "oklch(0.40 0 0)",
+                textAlign: "center",
+                marginTop: 4,
+                userSelect: "none",
+              }}
+            >
               <div
-                key={stop.label}
                 style={{
-                  width: 48,
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: 8,
-                  color: darkMode ? "oklch(0.35 0 0)" : "oklch(0.40 0 0)",
-                  textAlign: "center",
-                  marginTop: 4,
-                  userSelect: "none",
+                  textTransform: "uppercase",
+                  letterSpacing: "-0.55px",
                 }}
               >
-                <div
-                  style={{
-                    textTransform: "uppercase",
-                    letterSpacing: "-0.55px",
-                  }}
-                >
-                  {stop.label}
-                </div>
-                <div>{hex}</div>
+                {stop.label}
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div>{hex}</div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

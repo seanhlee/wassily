@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource/ibm-plex-mono/400.css";
 import { Canvas } from "./canvas/Canvas";
+import { ToastContainer } from "./components/Toast";
 
 // Global reset
 const style = document.createElement("style");
@@ -27,5 +28,6 @@ document.head.appendChild(style);
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Canvas />
+    <ToastContainer />
   </StrictMode>,
 );
