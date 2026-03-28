@@ -6,7 +6,7 @@
  */
 
 import type { OklchColor, RampStop, RampConfig, StopPreset } from "../types";
-import { maxChroma, clampToGamut } from "./gamut";
+import { maxChroma, clampToGamut, chromaPeakLightness } from "./gamut";
 
 // ---- Stop Definitions ----
 
@@ -133,13 +133,46 @@ const DARK_ADJUSTMENTS: Record<string, { lShift: number; cScale: number }> = {
 // ---- Generation ----
 
 /**
+ * Hue-adaptive lightness rescaling.
+ *
+ * Yellow peaks at L≈0.85, blue at L≈0.45. Instead of shifting all
+ * stops uniformly (which crushes the light end), we rescale the
+ * entire lightness curve around a shifted anchor point.
+ *
+ * The anchor (500) moves toward the hue's chroma peak.
+ * Stops above the anchor compress, stops below expand (or vice versa).
+ * This keeps the full range from near-white to near-black while
+ * centering the vivid zone where the hue actually lives.
+ */
+function adaptiveLightness(baseL: number, seedHue: number): number {
+  const peak = chromaPeakLightness(seedHue);
+  const anchorBase = 0.55;
+  const shift = (peak.l - anchorBase) * 0.4;
+  const anchorNew = anchorBase + shift;
+
+  const ceil = 0.98;
+  const floor = 0.06;
+
+  let l: number;
+  if (baseL >= anchorBase) {
+    const scale = (ceil - anchorNew) / (ceil - anchorBase);
+    l = anchorNew + (baseL - anchorBase) * scale;
+  } else {
+    const scale = (anchorNew - floor) / (anchorBase - floor);
+    l = anchorNew - (anchorBase - baseL) * scale;
+  }
+
+  return Math.max(floor, Math.min(ceil, l));
+}
+
+/**
  * Generate an opinionated ramp stop.
  */
 function generateOpinionatedStop(
   label: string,
   seedHue: number,
 ): { light: OklchColor; dark: OklchColor } {
-  const l = LIGHTNESS_MAP[label];
+  const l = adaptiveLightness(LIGHTNESS_MAP[label], seedHue);
   const chromaFactor = CHROMA_FACTORS[label];
   const hueDrift = getHueDrift(label, seedHue);
 
