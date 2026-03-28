@@ -90,6 +90,8 @@ export interface RampConfig {
   hue: number;
   stopCount: StopPreset | number;
   mode: "opinionated" | "pure";
+  /** Seed chroma level (0-1 scale of gamut max). If < 0.05, generates a neutral ramp. */
+  seedChroma?: number;
 }
 
 // ---- Harmonization ----

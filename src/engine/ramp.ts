@@ -154,10 +154,41 @@ function generatePureStop(
 }
 
 /**
+ * Generate a neutral ramp stop.
+ * Keeps chroma very low — just enough to carry the tint.
+ */
+function generateNeutralStop(
+  label: string,
+  seedHue: number,
+  seedChroma: number,
+): { light: OklchColor; dark: OklchColor } {
+  const l = LIGHTNESS_MAP[label];
+  const hueDrift = HUE_DRIFT[label];
+  const h = (seedHue + hueDrift + 360) % 360;
+
+  // Keep chroma proportional to seed, with subtle contouring
+  const chromaFactor = CHROMA_FACTORS[label];
+  const c = seedChroma * chromaFactor;
+
+  const lightColor = clampToGamut({ l, c, h });
+
+  // Dark mode: slightly warmer neutrals
+  const darkAdj = DARK_ADJUSTMENTS[label];
+  const darkL = Math.max(0.05, Math.min(0.98, l + darkAdj.lShift));
+  const darkH = (h + (label >= "700" ? 3 : 0) + 360) % 360;
+  const darkC = seedChroma * chromaFactor * darkAdj.cScale;
+
+  const darkColor = clampToGamut({ l: darkL, c: darkC, h: darkH });
+
+  return { light: lightColor, dark: darkColor };
+}
+
+/**
  * Generate a full ramp from a config.
  */
 export function generateRamp(config: RampConfig): RampStop[] {
-  const { hue, stopCount, mode } = config;
+  const { hue, stopCount, mode, seedChroma } = config;
+  const isNeutral = seedChroma !== undefined && seedChroma < 0.05;
 
   // Get stop labels for this count
   const labels =
@@ -166,8 +197,9 @@ export function generateRamp(config: RampConfig): RampStop[] {
       : generateCustomLabels(stopCount);
 
   return labels.map((label, index) => {
-    const { light, dark } =
-      mode === "opinionated"
+    const { light, dark } = isNeutral
+      ? generateNeutralStop(label, hue, seedChroma!)
+      : mode === "opinionated"
         ? generateOpinionatedStop(label, hue)
         : generatePureStop(label, hue, index, labels.length);
 

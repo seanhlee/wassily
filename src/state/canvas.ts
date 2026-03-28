@@ -78,8 +78,11 @@ function reducer(state: CanvasState, action: Action): CanvasState {
   switch (action.type) {
     case "CREATE_SWATCH": {
       const id = genId();
+      // Don't purify intentionally neutral colors (C < 0.05)
       const color = action.color
-        ? purifyColor(action.color)
+        ? action.color.c < 0.05
+          ? action.color
+          : purifyColor(action.color)
         : randomPurifiedColor();
       const swatch: Swatch = {
         id,
@@ -255,6 +258,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       if (!obj || obj.type !== "swatch") return state;
 
       const swatch = obj as Swatch;
+      const isNeutral = swatch.color.c < 0.05;
       const existingNames = Object.values(state.objects)
         .filter((o): o is Ramp => o.type === "ramp")
         .map((r) => r.name);
@@ -263,7 +267,26 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         hue: swatch.color.h,
         stopCount: action.stopCount,
         mode: "opinionated",
+        seedChroma: isNeutral ? swatch.color.c : undefined,
       });
+
+      // Neutral ramps get named "gray", "warm-gray", "cool-gray"
+      let name: string;
+      if (isNeutral) {
+        const hue = swatch.color.h;
+        const warmish = (hue >= 20 && hue <= 80) || hue >= 340 || hue <= 20;
+        const coolish = hue >= 200 && hue <= 280;
+        const baseName = warmish ? "warm-gray" : coolish ? "cool-gray" : "gray";
+        if (!existingNames.includes(baseName)) {
+          name = baseName;
+        } else {
+          let i = 2;
+          while (existingNames.includes(`${baseName}-${i}`)) i++;
+          name = `${baseName}-${i}`;
+        }
+      } else {
+        name = uniqueRampName(swatch.color.h, existingNames);
+      }
 
       const ramp: Ramp = {
         id: swatch.id,
@@ -272,7 +295,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         stops,
         stopCount: action.stopCount,
         position: swatch.position,
-        name: uniqueRampName(swatch.color.h, existingNames),
+        name,
         mode: "opinionated",
       };
 

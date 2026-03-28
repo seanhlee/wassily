@@ -19,7 +19,10 @@ interface ContextMenuProps {
   selectedIds: string[];
   darkMode: boolean;
   camera: { x: number; y: number; zoom: number };
-  onCreateSwatch: (position: { x: number; y: number }) => void;
+  onCreateSwatch: (
+    position: { x: number; y: number },
+    color?: { l: number; c: number; h: number },
+  ) => void;
   onSelect: (id: string, additive?: boolean) => void;
   onDeleteSelected: () => void;
   onPromoteToRamp: (id: string, stopCount: number) => void;
@@ -146,6 +149,30 @@ export function useContextMenu({
           items.push({
             label: "New color",
             action: () => onCreateSwatch({ x: canvasX, y: canvasY }),
+          });
+          items.push({
+            label: "Warm neutral",
+            action: () =>
+              onCreateSwatch(
+                { x: canvasX, y: canvasY },
+                { l: 0.55, c: 0.015, h: 60 },
+              ),
+          });
+          items.push({
+            label: "Cool neutral",
+            action: () =>
+              onCreateSwatch(
+                { x: canvasX, y: canvasY },
+                { l: 0.55, c: 0.015, h: 250 },
+              ),
+          });
+          items.push({
+            label: "Pure neutral",
+            action: () =>
+              onCreateSwatch(
+                { x: canvasX, y: canvasY },
+                { l: 0.55, c: 0, h: 0 },
+              ),
           });
         }
         if (selectedIds.length >= 2) {
