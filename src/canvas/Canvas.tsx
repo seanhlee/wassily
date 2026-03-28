@@ -25,13 +25,17 @@ export function Canvas() {
     createSwatches,
     addReferenceImage,
     promoteToRamp,
+    changeStopCount,
     harmonizeSelected,
     setCamera,
     toggleDarkMode,
+    undo,
+    redo,
   } = useCanvasState();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [spaceHeld, setSpaceHeld] = useState(false);
+  const [peekPureMode, setPeekPureMode] = useState(false);
   const isPanning = useRef(false);
   const panStart = useRef<Point>({ x: 0, y: 0 });
   const cameraStart = useRef(state.camera);
@@ -218,6 +222,60 @@ export function Canvas() {
           }
           break;
 
+        case "m":
+          if (!e.metaKey && !e.ctrlKey && !e.repeat) {
+            setPeekPureMode(true);
+          }
+          break;
+
+        case "=":
+        case "+":
+          if (
+            !e.metaKey &&
+            !e.ctrlKey &&
+            !e.repeat &&
+            selectedObj?.type === "ramp"
+          ) {
+            changeStopCount(selected, 1);
+          }
+          break;
+
+        case "-":
+          if (
+            !e.metaKey &&
+            !e.ctrlKey &&
+            !e.repeat &&
+            selectedObj?.type === "ramp"
+          ) {
+            changeStopCount(selected, -1);
+          }
+          break;
+
+        case "a":
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            const allIds = Object.keys(state.objects).filter(
+              (id) => state.objects[id].type !== "connection",
+            );
+            // Select all by dispatching multiple selects is awkward,
+            // so we'll just select all non-connection objects
+            for (let i = 0; i < allIds.length; i++) {
+              select(allIds[i], i > 0);
+            }
+          }
+          break;
+
+        case "z":
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            if (e.shiftKey) {
+              redo();
+            } else {
+              undo();
+            }
+          }
+          break;
+
         case "Delete":
         case "Backspace":
           if (state.selectedIds.length > 0) deleteSelected();
@@ -234,6 +292,7 @@ export function Canvas() {
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === " ") setSpaceHeld(false);
+      if (e.key === "m") setPeekPureMode(false);
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -248,9 +307,13 @@ export function Canvas() {
     state.darkMode,
     toggleDarkMode,
     promoteToRamp,
+    changeStopCount,
     deleteSelected,
     setCamera,
     harmonizeSelected,
+    select,
+    undo,
+    redo,
   ]);
 
   // ---- Drop handler (images) ----
@@ -449,6 +512,7 @@ export function Canvas() {
                 selected={state.selectedIds.includes(obj.id)}
                 zoom={state.camera.zoom}
                 darkMode={state.darkMode}
+                peekPureMode={peekPureMode}
                 onSelect={select}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}

@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { Swatch, Ramp } from "../types";
 import { toHex } from "../engine/gamut";
+import { generateRamp } from "../engine/ramp";
 
 // ---- Shared drag logic ----
 
@@ -151,6 +152,7 @@ interface RampNodeProps {
   selected: boolean;
   zoom: number;
   darkMode: boolean;
+  peekPureMode?: boolean;
   onSelect: (id: string, additive: boolean) => void;
   onMove: (id: string, x: number, y: number) => void;
   onMoveSelected: (dx: number, dy: number) => void;
@@ -161,12 +163,22 @@ export function RampNode({
   selected,
   zoom,
   darkMode,
+  peekPureMode,
   onSelect,
   onMove,
   onMoveSelected,
 }: RampNodeProps) {
   const showDetail = zoom > 1.5;
   const [hovered, setHovered] = useState(false);
+
+  // Generate pure math stops when M is held
+  const displayStops = peekPureMode
+    ? generateRamp({
+        hue: ramp.seedHue,
+        stopCount: ramp.stopCount,
+        mode: "pure",
+      })
+    : ramp.stops;
 
   const handleMouseDown = useDrag(
     ramp.id,
@@ -224,7 +236,7 @@ export function RampNode({
           outlineOffset: 3,
         }}
       >
-        {ramp.stops.map((stop) => {
+        {displayStops.map((stop) => {
           const color = darkMode ? stop.darkColor : stop.color;
           const hex = toHex(color);
 
@@ -253,7 +265,7 @@ export function RampNode({
           transition: "opacity 0.15s ease",
         }}
       >
-        {ramp.stops.map((stop) => {
+        {displayStops.map((stop) => {
           const color = darkMode ? stop.darkColor : stop.color;
           const hex = toHex(color);
           return (

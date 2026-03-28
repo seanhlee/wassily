@@ -54,6 +54,7 @@ type Action =
       size: { width: number; height: number };
     }
   | { type: "PROMOTE_TO_RAMP"; id: string; stopCount: number }
+  | { type: "CHANGE_STOP_COUNT"; id: string; delta: number }
   | { type: "HARMONIZE_SELECTED"; startAfter?: HarmonicRelationship }
   | { type: "SET_CAMERA"; camera: Camera }
   | { type: "TOGGLE_DARK_MODE" }
@@ -305,6 +306,47 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       };
     }
 
+    case "CHANGE_STOP_COUNT": {
+      const obj = state.objects[action.id];
+      if (!obj || obj.type !== "ramp") return state;
+      const ramp = obj as Ramp;
+
+      // Step through presets: 3 → 5 → 7 → 9 → 11
+      const presets = [3, 5, 7, 9, 11];
+      const currentIdx = presets.indexOf(ramp.stopCount);
+      const newIdx = Math.max(
+        0,
+        Math.min(
+          presets.length - 1,
+          currentIdx === -1
+            ? action.delta > 0
+              ? 2
+              : 0 // default to 7 or 3
+            : currentIdx + action.delta,
+        ),
+      );
+      const newCount = presets[newIdx];
+      if (newCount === ramp.stopCount) return state;
+
+      const isNeutral = ramp.stops[0]?.color.c < 0.05;
+      const stops = generateRamp({
+        hue: ramp.seedHue,
+        stopCount: newCount,
+        mode: ramp.mode,
+        seedChroma: isNeutral
+          ? ramp.stops[Math.floor(ramp.stops.length / 2)]?.color.c
+          : undefined,
+      });
+
+      return {
+        ...state,
+        objects: {
+          ...state.objects,
+          [action.id]: { ...ramp, stops, stopCount: newCount },
+        },
+      };
+    }
+
     case "HARMONIZE_SELECTED": {
       const hues = state.selectedIds
         .map((id) => {
@@ -442,13 +484,92 @@ function loadFromStorage(): CanvasState | null {
   return null;
 }
 
+// ---- Undo/Redo History ----
+
+/** Actions that should NOT create undo history (too granular) */
+const SKIP_HISTORY: Set<string> = new Set([
+  "SELECT",
+  "DESELECT_ALL",
+  "SET_CAMERA",
+  "MOVE_OBJECT",
+  "MOVE_SELECTED",
+  "LOAD_STATE",
+]);
+
+interface HistoryState {
+  current: CanvasState;
+  past: CanvasState[];
+  future: CanvasState[];
+}
+
+function historyReducer(
+  history: HistoryState,
+  action: Action | { type: "UNDO" } | { type: "REDO" },
+): HistoryState {
+  if (action.type === "UNDO") {
+    if (history.past.length === 0) return history;
+    const prev = history.past[history.past.length - 1];
+    return {
+      current: {
+        ...prev,
+        selectedIds: history.current.selectedIds,
+        camera: history.current.camera,
+      },
+      past: history.past.slice(0, -1),
+      future: [history.current, ...history.future].slice(0, 50),
+    };
+  }
+
+  if (action.type === "REDO") {
+    if (history.future.length === 0) return history;
+    const next = history.future[0];
+    return {
+      current: {
+        ...next,
+        selectedIds: history.current.selectedIds,
+        camera: history.current.camera,
+      },
+      past: [...history.past, history.current].slice(-50),
+      future: history.future.slice(1),
+    };
+  }
+
+  const newState = reducer(history.current, action as Action);
+  if (newState === history.current) return history;
+
+  // Skip history for granular actions
+  if (SKIP_HISTORY.has(action.type)) {
+    return { ...history, current: newState };
+  }
+
+  return {
+    current: newState,
+    past: [...history.past, history.current].slice(-50),
+    future: [],
+  };
+}
+
 // ---- Hook ----
 
 export function useCanvasState() {
-  const [state, dispatch] = useReducer(
-    reducer,
-    initialState,
-    (_init: CanvasState) => loadFromStorage() || _init,
+  const [history, dispatchHistory] = useReducer(
+    historyReducer,
+    { current: initialState, past: [], future: [] },
+    (init) => {
+      const loaded = loadFromStorage();
+      return { current: loaded || init.current, past: [], future: [] };
+    },
+  );
+
+  const state = history.current;
+  const canUndo = history.past.length > 0;
+  const canRedo = history.future.length > 0;
+
+  // Dispatch wrapper
+  const dispatch = useCallback(
+    (action: Action | { type: "UNDO" } | { type: "REDO" }) =>
+      dispatchHistory(action),
+    [],
   );
 
   // Auto-save to localStorage on every state change (debounced)
@@ -460,10 +581,13 @@ export function useCanvasState() {
     }, 300);
   }, [state]);
 
+  const undo = useCallback(() => dispatch({ type: "UNDO" }), [dispatch]);
+  const redo = useCallback(() => dispatch({ type: "REDO" }), [dispatch]);
+
   const createSwatch = useCallback(
     (position: Point, color?: OklchColor) =>
       dispatch({ type: "CREATE_SWATCH", position, color }),
-    [],
+    [dispatch],
   );
 
   const select = useCallback(
@@ -513,7 +637,13 @@ export function useCanvasState() {
   const promoteToRamp = useCallback(
     (id: string, stopCount: number = 11) =>
       dispatch({ type: "PROMOTE_TO_RAMP", id, stopCount }),
-    [],
+    [dispatch],
+  );
+
+  const changeStopCount = useCallback(
+    (id: string, delta: number) =>
+      dispatch({ type: "CHANGE_STOP_COUNT", id, delta }),
+    [dispatch],
   );
 
   const harmonizeSelected = useCallback(
@@ -534,6 +664,10 @@ export function useCanvasState() {
 
   return {
     state,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     createSwatch,
     select,
     deselectAll,
@@ -544,6 +678,7 @@ export function useCanvasState() {
     createSwatches,
     addReferenceImage,
     promoteToRamp,
+    changeStopCount,
     harmonizeSelected,
     setCamera,
     toggleDarkMode,
