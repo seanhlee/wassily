@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect, useState } from "react";
 import { useCanvasState } from "../state/canvas";
 import { SwatchNode, RampNode } from "../components/SwatchNode";
+import { useContextMenu, ContextMenuOverlay } from "../components/ContextMenu";
 import { toHex, toOklchString, parseColor } from "../engine/gamut";
 import type { Swatch, Ramp, Point } from "../types";
 
@@ -61,22 +62,6 @@ export function Canvas() {
     const handler = (e: WheelEvent) => {
       e.preventDefault();
 
-      // Check if hovering a swatch or ramp — rotate hue
-      const target = e.target as HTMLElement;
-      const swatchEl = target.closest(".swatch-node");
-      const rampEl = target.closest(".ramp-node");
-
-      if (swatchEl || rampEl) {
-        const objEl = swatchEl || rampEl;
-        // Find the object id from the rendered elements
-        const id = findObjectIdFromElement(objEl as HTMLElement);
-        if (id) {
-          const delta = e.deltaY > 0 ? -3 : 3;
-          rotateHue(id, delta);
-          return;
-        }
-      }
-
       const rect = el.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
@@ -102,11 +87,6 @@ export function Canvas() {
     el.addEventListener("wheel", handler, { passive: false });
     return () => el.removeEventListener("wheel", handler);
   }, [setCamera, rotateHue]);
-
-  // Helper: find object ID from a DOM element (uses data attribute)
-  function findObjectIdFromElement(el: HTMLElement): string | null {
-    return el.getAttribute("data-object-id");
-  }
 
   // ---- Space+drag → pan ----
   const handleMouseDown = useCallback(
@@ -280,6 +260,19 @@ export function Canvas() {
     return () => window.removeEventListener("paste", handler);
   }, [createSwatch]);
 
+  // ---- Context menu ----
+  const { menu, handleContextMenu } = useContextMenu({
+    objects: state.objects,
+    selectedIds: state.selectedIds,
+    darkMode: state.darkMode,
+    camera: state.camera,
+    onCreateSwatch: createSwatch,
+    onDeleteSelected: deleteSelected,
+    onPromoteToRamp: promoteToRamp,
+    onHarmonize: harmonizeSelected,
+    containerRef,
+  });
+
   // ---- Render ----
   const canvasBg = state.darkMode ? "oklch(0.98 0 0)" : "oklch(0.13 0 0)";
   const objects = Object.values(state.objects);
@@ -288,6 +281,7 @@ export function Canvas() {
     <div
       ref={containerRef}
       onClick={handleCanvasClick}
+      onContextMenu={handleContextMenu}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -345,6 +339,8 @@ export function Canvas() {
           return null;
         })}
       </div>
+
+      <ContextMenuOverlay menu={menu} />
     </div>
   );
 }
