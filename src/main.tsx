@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import "@fontsource/ibm-plex-mono/400.css";
 import { Canvas } from "./canvas/Canvas";
 import { ToastContainer } from "./components/Toast";
+import { HarmonizeOverlay } from "./components/HarmonizeLabel";
 
 // Global reset
 const style = document.createElement("style");
@@ -29,5 +30,6 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Canvas />
     <ToastContainer />
+    <HarmonizeOverlay />
   </StrictMode>,
 );

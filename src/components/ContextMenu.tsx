@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { CanvasObject, Swatch, Ramp } from "../types";
 import { toHex, toOklchString } from "../engine/gamut";
 
@@ -39,9 +39,6 @@ export function useContextMenu({
 }: ContextMenuProps) {
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
 
-  const close = useCallback(() => setMenu(null), []);
-
-  // Close on any click
   useEffect(() => {
     if (!menu) return;
     const handler = () => setMenu(null);
@@ -49,7 +46,6 @@ export function useContextMenu({
     return () => window.removeEventListener("click", handler);
   }, [menu]);
 
-  // Close on escape
   useEffect(() => {
     if (!menu) return;
     const handler = (e: KeyboardEvent) => {
@@ -74,32 +70,30 @@ export function useContextMenu({
 
       if (obj?.type === "swatch") {
         const swatch = obj as Swatch;
-        const color = swatch.color;
-
         items.push({
-          label: `Copy hex`,
-          action: () => {
-            navigator.clipboard.writeText(toHex(color)).catch(() => {});
-          },
+          label: toHex(swatch.color),
+          action: () =>
+            navigator.clipboard.writeText(toHex(swatch.color)).catch(() => {}),
         });
         items.push({
-          label: `Copy oklch`,
-          action: () => {
-            navigator.clipboard.writeText(toOklchString(color)).catch(() => {});
-          },
+          label: toOklchString(swatch.color),
+          action: () =>
+            navigator.clipboard
+              .writeText(toOklchString(swatch.color))
+              .catch(() => {}),
         });
         items.push({
-          label: "Generate ramp",
+          label: "Ramp · 11",
           separator: true,
           action: () => onPromoteToRamp(objectId!, 11),
         });
         items.push({
-          label: "Ramp (5 stops)",
-          action: () => onPromoteToRamp(objectId!, 5),
+          label: "Ramp · 7",
+          action: () => onPromoteToRamp(objectId!, 7),
         });
         items.push({
-          label: "Ramp (7 stops)",
-          action: () => onPromoteToRamp(objectId!, 7),
+          label: "Ramp · 5",
+          action: () => onPromoteToRamp(objectId!, 5),
         });
         items.push({
           label: "Delete",
@@ -108,32 +102,17 @@ export function useContextMenu({
         });
       } else if (obj?.type === "ramp") {
         const ramp = obj as Ramp;
-
         items.push({
-          label: "Copy CSS",
+          label: "Hex list",
           action: () => {
-            const css = exportRampCSS(ramp, darkMode);
-            navigator.clipboard.writeText(css).catch(() => {});
-          },
-        });
-        items.push({
-          label: "Copy hex list",
-          action: () => {
-            const hexList = ramp.stops
+            const list = ramp.stops
               .map((s) => toHex(darkMode ? s.darkColor : s.color))
               .join("\n");
-            navigator.clipboard.writeText(hexList).catch(() => {});
+            navigator.clipboard.writeText(list).catch(() => {});
           },
         });
         items.push({
-          label: "Copy Tailwind",
-          action: () => {
-            const tw = exportRampTailwind(ramp, darkMode);
-            navigator.clipboard.writeText(tw).catch(() => {});
-          },
-        });
-        items.push({
-          label: "Copy oklch list",
+          label: "oklch list",
           action: () => {
             const list = ramp.stops
               .map((s) => toOklchString(darkMode ? s.darkColor : s.color))
@@ -147,21 +126,18 @@ export function useContextMenu({
           action: onDeleteSelected,
         });
       } else {
-        // Empty space
         const rect = containerRef.current?.getBoundingClientRect();
         if (rect) {
           const canvasX = (e.clientX - rect.left - camera.x) / camera.zoom;
           const canvasY = (e.clientY - rect.top - camera.y) / camera.zoom;
-
           items.push({
             label: "New color",
             action: () => onCreateSwatch({ x: canvasX, y: canvasY }),
           });
         }
-
         if (selectedIds.length >= 2) {
           items.push({
-            label: "Harmonize selected",
+            label: "Harmonize",
             separator: true,
             action: onHarmonize,
           });
@@ -185,7 +161,7 @@ export function useContextMenu({
     ],
   );
 
-  return { menu, handleContextMenu, close };
+  return { menu, handleContextMenu };
 }
 
 // ---- Menu Component ----
@@ -195,21 +171,42 @@ export function ContextMenuOverlay({
 }: {
   menu: ContextMenuState | null;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Edge-aware positioning
+  useEffect(() => {
+    if (!menu || !ref.current) return;
+    const el = ref.current;
+    const rect = el.getBoundingClientRect();
+    let x = menu.x;
+    let y = menu.y;
+
+    if (x + rect.width > window.innerWidth) {
+      x = window.innerWidth - rect.width - 4;
+    }
+    if (y + rect.height > window.innerHeight) {
+      y = window.innerHeight - rect.height - 4;
+    }
+    setPos({ x, y });
+  }, [menu]);
+
   if (!menu) return null;
 
   return (
     <div
+      ref={ref}
       style={{
         position: "fixed",
-        left: menu.x,
-        top: menu.y,
+        left: pos.x || menu.x,
+        top: pos.y || menu.y,
         zIndex: 9999,
-        backgroundColor: "oklch(0.18 0 0)",
-        border: "1px solid oklch(0.25 0 0)",
-        padding: "4px 0",
-        minWidth: 160,
+        backgroundColor: "oklch(0.16 0 0)",
+        border: "1px solid oklch(0.22 0 0)",
+        padding: "3px 0",
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 11,
+        fontSize: 9,
+        letterSpacing: "-0.2px",
       }}
     >
       {menu.items.map((item, i) => (
@@ -218,8 +215,8 @@ export function ContextMenuOverlay({
             <div
               style={{
                 height: 1,
-                backgroundColor: "oklch(0.25 0 0)",
-                margin: "4px 0",
+                backgroundColor: "oklch(0.22 0 0)",
+                margin: "2px 0",
               }}
             />
           )}
@@ -229,16 +226,19 @@ export function ContextMenuOverlay({
               item.action();
             }}
             style={{
-              padding: "6px 12px",
+              padding: "3px 10px",
               cursor: "default",
-              color: "oklch(0.75 0 0)",
+              color: "oklch(0.6 0 0)",
+              whiteSpace: "nowrap",
             }}
             onMouseEnter={(e) => {
               (e.target as HTMLElement).style.backgroundColor =
-                "oklch(0.25 0 0)";
+                "oklch(0.22 0 0)";
+              (e.target as HTMLElement).style.color = "oklch(0.8 0 0)";
             }}
             onMouseLeave={(e) => {
               (e.target as HTMLElement).style.backgroundColor = "transparent";
+              (e.target as HTMLElement).style.color = "oklch(0.6 0 0)";
             }}
           >
             {item.label}
@@ -247,22 +247,4 @@ export function ContextMenuOverlay({
       ))}
     </div>
   );
-}
-
-// ---- Export Helpers ----
-
-function exportRampCSS(ramp: Ramp, darkMode: boolean): string {
-  const lines = ramp.stops.map((stop) => {
-    const color = darkMode ? stop.darkColor : stop.color;
-    return `  --${ramp.name}-${stop.label}: ${toOklchString(color)}; /* ${toHex(color)} */`;
-  });
-  return `/* ${ramp.name} */\n${lines.join("\n")}`;
-}
-
-function exportRampTailwind(ramp: Ramp, darkMode: boolean): string {
-  const lines = ramp.stops.map((stop) => {
-    const color = darkMode ? stop.darkColor : stop.color;
-    return `  --color-${ramp.name}-${stop.label}: ${toOklchString(color)};`;
-  });
-  return `@theme inline {\n${lines.join("\n")}\n}`;
 }

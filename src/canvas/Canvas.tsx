@@ -2,6 +2,8 @@ import { useCallback, useRef, useEffect, useState } from "react";
 import { useCanvasState } from "../state/canvas";
 import { SwatchNode, RampNode } from "../components/SwatchNode";
 import { useContextMenu, ContextMenuOverlay } from "../components/ContextMenu";
+import { showHarmonizeFeedback } from "../components/HarmonizeLabel";
+import { harmonizeMultiple } from "../engine/harmonize";
 import { toHex, toOklchString, parseColor } from "../engine/gamut";
 import type { Swatch, Ramp, Point } from "../types";
 
@@ -192,6 +194,28 @@ export function Canvas() {
         case "h":
           if (!e.metaKey && !e.ctrlKey && !e.repeat) {
             if (state.selectedIds.length >= 2) {
+              // Compute the result to show feedback
+              const hues = state.selectedIds
+                .map((id) => {
+                  const o = state.objects[id];
+                  if (!o || (o.type !== "swatch" && o.type !== "ramp"))
+                    return null;
+                  return {
+                    id,
+                    hue:
+                      o.type === "swatch"
+                        ? (o as Swatch).color.h
+                        : (o as Ramp).seedHue,
+                  };
+                })
+                .filter((h): h is NonNullable<typeof h> => h !== null);
+              if (hues.length >= 2) {
+                const result = harmonizeMultiple(hues);
+                showHarmonizeFeedback({
+                  relationship: result.relationship,
+                  angle: result.angle,
+                });
+              }
               harmonizeSelected();
             }
           }
