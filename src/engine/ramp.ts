@@ -80,29 +80,38 @@ const BASE_HUE_DRIFT: Record<string, number> = {
 };
 
 /**
- * Hue-adaptive warm drift multiplier.
- * Yellow-green hues (60-120) need much more warm shift in darks
- * to avoid going olive/mud. Blue-purple hues need less.
+ * Hue-adaptive warm shadow drift.
+ *
+ * "Warm" universally means toward red/orange. But in OKLCH:
+ * - For blue (H≈260): +degrees moves toward purple → warmer. ✓
+ * - For yellow (H≈90): +degrees moves toward GREEN → colder! ✗
+ *
+ * Fix: for hues in the yellow-green-cyan zone (60-180), warm drift
+ * must be NEGATIVE (toward orange/red). For everything else, positive.
+ *
+ * Yellow also needs stronger drift because its gamut collapses at
+ * low lightness — without aggressive hue shift, darks go olive.
  */
-function hueDriftMultiplier(seedHue: number): number {
-  const h = ((seedHue % 360) + 360) % 360;
-  // Yellow-green zone: H 60-120 needs 2.5-3x more drift
-  if (h >= 60 && h <= 120) {
-    const t = 1 - Math.abs(h - 90) / 30; // peaks at H=90
-    return 1 + t * 2; // 1x at edges, 3x at center
-  }
-  // Lime-cyan zone: H 120-180 needs moderate extra drift
-  if (h > 120 && h <= 180) {
-    const t = 1 - (h - 120) / 60;
-    return 1 + t * 1; // 2x → 1x
-  }
-  return 1; // default for blue, purple, red, orange
-}
-
 function getHueDrift(label: string, seedHue: number): number {
   const base = BASE_HUE_DRIFT[label] ?? 0;
-  if (base <= 0) return base; // cool drift doesn't need adaptation
-  return base * hueDriftMultiplier(seedHue);
+  if (base <= 0) return base; // cool highlight lift — not hue-dependent
+
+  const h = ((seedHue % 360) + 360) % 360;
+
+  // Direction: negative for yellow-green-cyan zone, positive otherwise
+  const direction = h >= 50 && h <= 190 ? -1 : 1;
+
+  // Magnitude multiplier: yellow needs more, blue needs less
+  let multiplier = 1;
+  if (h >= 60 && h <= 120) {
+    const t = 1 - Math.abs(h - 90) / 30;
+    multiplier = 1 + t * 2; // up to 3x at pure yellow
+  } else if (h > 120 && h <= 180) {
+    const t = 1 - (h - 120) / 60;
+    multiplier = 1 + t * 1; // 2x → 1x
+  }
+
+  return base * direction * multiplier;
 }
 
 // ---- Dark Mode Adjustments ----
