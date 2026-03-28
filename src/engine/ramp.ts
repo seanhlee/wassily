@@ -1,14 +1,16 @@
 /**
- * Ramp Generation.
+ * Ramp Generation v2.
  *
- * Promotes a swatch into a full color ramp with all six opinions applied.
- * Supports variable stop counts (3, 5, 7, 9, 11).
+ * Based on research from ColorBox, Tailwind v4, and Radix Colors.
+ * Uses parametric easing curves instead of fixed lookup tables.
+ * Chroma is gamut-relative — expressed as a percentage of the
+ * maximum available at each (L, H) point.
  */
 
 import type { OklchColor, RampStop, RampConfig, StopPreset } from "../types";
-import { maxChroma, clampToGamut, chromaPeakLightness } from "./gamut";
+import { maxChroma, clampToGamut } from "./gamut";
 
-// ---- Stop Definitions ----
+// ---- Stop Presets ----
 
 const STOP_PRESETS: Record<StopPreset, string[]> = {
   3: ["200", "500", "800"],
@@ -30,329 +32,239 @@ const STOP_PRESETS: Record<StopPreset, string[]> = {
   ],
 };
 
-// ---- Opinionated Lightness Targets (11-stop reference) ----
+// ---- Easing Functions ----
 
-const LIGHTNESS_MAP: Record<string, number> = {
-  "50": 0.97,
-  "100": 0.93,
-  "200": 0.87,
-  "300": 0.78,
-  "400": 0.68,
-  "500": 0.55,
-  "600": 0.45,
-  "700": 0.37,
-  "800": 0.28,
-  "900": 0.2,
-  "950": 0.14,
-};
+/** Quadratic ease-in: slow start, fast end */
+function easeInQuad(t: number): number {
+  return t * t;
+}
 
-// ---- Chroma Contouring (bell curve factors) ----
+/** Cubic ease-in: slower start, faster end */
+function easeInCubic(t: number): number {
+  return t * t * t;
+}
 
-const CHROMA_FACTORS: Record<string, number> = {
-  "50": 0.15,
-  "100": 0.3,
-  "200": 0.55,
-  "300": 0.8,
-  "400": 0.95,
-  "500": 1.0,
-  "600": 0.95,
-  "700": 0.85,
-  "800": 0.7,
-  "900": 0.5,
-  "950": 0.3,
-};
+// ---- Lightness Curve ----
+
+const L_MAX = 0.98;
+const L_MIN = 0.25;
+
+/**
+ * Compute lightness for a given stop position (0=lightest, 1=darkest).
+ * Uses easeOutQuad — more resolution in the light/mid range,
+ * compressed in the darks. Matches Tailwind v4's distribution.
+ */
+function lightnessAt(t: number): number {
+  // easeInQuad: stays bright for light stops, drops steeply for darks
+  // Matches Tailwind v4's lightness distribution
+  return L_MAX - (L_MAX - L_MIN) * easeInQuad(t);
+}
+
+// ---- Chroma Curve ----
+
+/**
+ * Chroma intensity curve — gamut-relative.
+ *
+ * Returns a value 0-1 representing what fraction of the gamut
+ * maximum to use at this position in the ramp. Peaks around
+ * t=0.3-0.5 (stops 300-500) with an asymmetric falloff.
+ *
+ * seedIntensity scales the peak — a vivid seed pushes the whole
+ * ramp more saturated, a muted seed keeps it restrained.
+ */
+function chromaIntensityAt(t: number, seedIntensity: number): number {
+  // Use the gamut boundary as the natural shape — just apply a flat
+  // percentage with gentle rolloff at the extremes (near white/black).
+  // This lets each hue peak where IT wants, not where we dictate.
+  const edgeRolloff =
+    t < 0.1
+      ? 0.15 + 0.85 * (t / 0.1)
+      : t > 0.85
+        ? 0.15 + 0.85 * ((1 - t) / 0.15)
+        : 1.0;
+
+  return edgeRolloff * 0.92 * seedIntensity;
+}
 
 // ---- Hue Drift ----
 
-/** Base drift values — multiplied by a hue-dependent factor */
-const BASE_HUE_DRIFT: Record<string, number> = {
-  "50": -4, // cool highlight lift
-  "100": -3,
-  "200": -2,
-  "300": 0,
-  "400": 0,
-  "500": 0,
-  "600": +1,
-  "700": +3, // warm shadow drift
-  "800": +5,
-  "900": +7,
-  "950": +8,
-};
-
 /**
- * Hue-adaptive warm shadow drift.
+ * Hue rotation toward amber for dark stops.
  *
- * Dark stops drift toward warm amber (H≈55 in OKLCH). Instead of
- * multiplying a small base, we calculate directly: how far does
- * this hue need to rotate to reach amber?
+ * Yellow-green hues need massive rotation (up to 50°) to avoid
+ * olive. Blue/red/purple need only subtle warming (5-8°).
  *
- * Yellow (H≈98) needs ~43° toward amber. Blue (H≈260) needs ~5°
- * toward purple. The drift fraction increases with stop depth.
+ * The rotation uses easeInCubic — accelerating toward the dark end.
  */
-const WARM_DRIFT_FRACTION: Record<string, number> = {
-  "50": 0,
-  "100": 0,
-  "200": 0,
-  "300": 0,
-  "400": 0,
-  "500": 0,
-  "600": 0.15,
-  "700": 0.35,
-  "800": 0.55,
-  "900": 0.75,
-  "950": 0.9,
-};
-
-function getHueDrift(label: string, seedHue: number): number {
-  // Cool highlight lift — unchanged
-  const baseCoolDrift = BASE_HUE_DRIFT[label] ?? 0;
-  if (baseCoolDrift < 0) return baseCoolDrift;
-
-  const fraction = WARM_DRIFT_FRACTION[label] ?? 0;
-  if (fraction === 0) return 0;
-
+function hueDriftAt(t: number, seedHue: number): number {
   const h = ((seedHue % 360) + 360) % 360;
 
-  // Target: warm amber at H≈55
-  let delta = 55 - h;
+  // Cool highlight lift for light stops (t < 0.3)
+  if (t < 0.3) {
+    const coolAmount = (0.3 - t) / 0.3; // 1 at t=0, 0 at t=0.3
+    return -coolAmount * 4; // up to -4° cooler
+  }
+
+  // Warm drift for dark stops (t > 0.4)
+  if (t <= 0.4) return 0;
+
+  const warmT = (t - 0.4) / 0.6; // normalized 0-1 for the warm zone
+
+  // Target hue for darkest stops: warm amber (H≈50)
+  const warmTarget = 50;
+  let delta = warmTarget - h;
   if (delta > 180) delta -= 360;
   if (delta < -180) delta += 360;
 
-  // Proximity: hues near the yellow-green problem zone (60-120)
-  // get strong drift. Everything else gets subtle drift.
+  // Intensity: yellow-green zone gets full drift, others get subtle
   let intensity: number;
-  if (h >= 60 && h <= 120) {
-    // Yellow-green zone: full intensity
-    intensity = 1.0;
-  } else if (h > 120 && h <= 180) {
-    // Cyan-green: taper off
-    intensity = 1 - (h - 120) / 60;
-  } else if (h >= 30 && h < 60) {
-    // Orange: slight taper
-    intensity = (h - 30) / 30;
+  if (h >= 60 && h <= 130) {
+    // Yellow-green: full intensity
+    const center = 95;
+    const spread = 35;
+    intensity = Math.exp(-0.5 * ((h - center) / spread) ** 2);
+    intensity = 0.3 + intensity * 0.7; // minimum 30%, max 100%
+  } else if (h > 130 && h <= 180) {
+    // Teal: tapering
+    intensity = 0.3 * (1 - (h - 130) / 50);
   } else {
-    // Blue, purple, red: minimal drift (just the original subtle base)
-    return BASE_HUE_DRIFT[label] ?? 0;
+    // Blue, purple, red: subtle base drift
+    return easeInQuad(warmT) * 8; // up to +8°
   }
 
-  const maxDrift = Math.abs(delta);
+  const maxShift = Math.abs(delta);
   const direction = delta >= 0 ? 1 : -1;
 
-  return direction * maxDrift * fraction * intensity;
+  return direction * Math.min(maxShift, 55) * easeInCubic(warmT) * intensity;
 }
 
 // ---- Dark Mode Adjustments ----
 
-const DARK_ADJUSTMENTS: Record<string, { lShift: number; cScale: number }> = {
-  "50": { lShift: -0.04, cScale: 0.9 },
-  "100": { lShift: -0.04, cScale: 0.9 },
-  "200": { lShift: -0.03, cScale: 0.92 },
-  "300": { lShift: -0.02, cScale: 0.95 },
-  "400": { lShift: +0.03, cScale: 0.88 },
-  "500": { lShift: +0.06, cScale: 0.85 },
-  "600": { lShift: +0.08, cScale: 0.87 },
-  "700": { lShift: +0.04, cScale: 0.95 },
-  "800": { lShift: +0.02, cScale: 1.0 },
-  "900": { lShift: +0.01, cScale: 1.05 },
-  "950": { lShift: +0.01, cScale: 1.08 },
-};
+function darkModeAdjust(
+  l: number,
+  c: number,
+  h: number,
+  t: number,
+): OklchColor {
+  let darkL = l;
+  let darkC = c;
+  const darkH = h;
 
-// ---- Generation ----
-
-/**
- * Hue-adaptive lightness rescaling.
- *
- * Yellow peaks at L≈0.85, blue at L≈0.45. Instead of shifting all
- * stops uniformly (which crushes the light end), we rescale the
- * entire lightness curve around a shifted anchor point.
- *
- * The anchor (500) moves toward the hue's chroma peak.
- * Stops above the anchor compress, stops below expand (or vice versa).
- * This keeps the full range from near-white to near-black while
- * centering the vivid zone where the hue actually lives.
- */
-function adaptiveLightness(baseL: number, seedHue: number): number {
-  const peak = chromaPeakLightness(seedHue);
-  const anchorBase = 0.55;
-  const shift = (peak.l - anchorBase) * 0.5;
-  const anchorNew = anchorBase + shift;
-
-  const ceil = 0.98;
-  const floor = 0.06;
-
-  let l: number;
-  if (baseL >= anchorBase) {
-    const scale = (ceil - anchorNew) / (ceil - anchorBase);
-    l = anchorNew + (baseL - anchorBase) * scale;
+  if (t < 0.3) {
+    // Light stops: reduce lightness slightly (avoid harsh white on dark bg)
+    darkL = l - 0.03;
+    darkC = c * 0.9;
+  } else if (t < 0.6) {
+    // Mid stops: bump lightness, reduce chroma (avoid vibration)
+    darkL = l + 0.06;
+    darkC = c * 0.85;
   } else {
-    const scale = (anchorNew - floor) / (anchorBase - floor);
-    l = anchorNew - (anchorBase - baseL) * scale;
+    // Dark stops: slight chroma boost for richness
+    darkL = l + 0.01;
+    darkC = c * 1.05;
   }
 
-  return Math.max(floor, Math.min(ceil, l));
+  darkL = Math.max(0.05, Math.min(0.98, darkL));
+  return clampToGamut({ l: darkL, c: darkC, h: darkH });
 }
 
-/**
- * Generate an opinionated ramp stop.
- *
- * chromaScale: if provided, scales the chroma curve so the anchor
- * stop matches the seed color's chroma. This lets the ramp flow
- * smoothly through the original color instead of snapping.
- */
-function generateOpinionatedStop(
-  label: string,
-  seedHue: number,
-  chromaScale?: number,
-): { light: OklchColor; dark: OklchColor } {
-  const l = adaptiveLightness(LIGHTNESS_MAP[label], seedHue);
-  const chromaFactor = CHROMA_FACTORS[label];
-  const hueDrift = getHueDrift(label, seedHue);
+// ---- Neutral Ramp ----
 
-  const h = (seedHue + hueDrift + 360) % 360;
-  const maxC = maxChroma(l, h);
-  const c =
-    chromaScale !== undefined
-      ? Math.min(chromaFactor * chromaScale, maxC)
-      : maxC * chromaFactor;
-
-  const lightColor = clampToGamut({ l, c, h });
-
-  // Dark mode variant
-  const darkAdj = DARK_ADJUSTMENTS[label];
-  const darkL = Math.max(0.05, Math.min(0.98, l + darkAdj.lShift));
-  const darkH = (h + (label >= "700" ? 2 : 0) + 360) % 360; // extra warm drift in dark mode shadows
-  const darkMaxC = maxChroma(darkL, darkH);
-  const darkC =
-    chromaScale !== undefined
-      ? Math.min(chromaFactor * chromaScale * darkAdj.cScale, darkMaxC)
-      : darkMaxC * chromaFactor * darkAdj.cScale;
-
-  const darkColor = clampToGamut({ l: darkL, c: darkC, h: darkH });
-
-  return { light: lightColor, dark: darkColor };
-}
-
-/**
- * Generate a pure (math-only) ramp stop.
- */
-function generatePureStop(
-  label: string,
-  seedHue: number,
-  index: number,
-  total: number,
-): { light: OklchColor; dark: OklchColor } {
-  // Linear lightness interpolation
-  const l = 0.97 - (index / (total - 1)) * (0.97 - 0.14);
-
-  // 85% of gamut max, constant hue
-  const maxC = maxChroma(l, seedHue);
-  const c = maxC * 0.85;
-
-  const color = clampToGamut({ l, c, h: seedHue });
-
-  // Dark mode for pure mode: same simple adjustments
-  const darkAdj = DARK_ADJUSTMENTS[label] ?? { lShift: 0, cScale: 1 };
-  const darkL = Math.max(0.05, Math.min(0.98, l + darkAdj.lShift));
-  const darkMaxC = maxChroma(darkL, seedHue);
-  const darkC = darkMaxC * 0.85 * darkAdj.cScale;
-  const darkColor = clampToGamut({ l: darkL, c: darkC, h: seedHue });
-
-  return { light: color, dark: darkColor };
-}
-
-/**
- * Generate a neutral ramp stop.
- * Keeps chroma very low — just enough to carry the tint.
- */
 function generateNeutralStop(
-  label: string,
+  t: number,
   seedHue: number,
   seedChroma: number,
 ): { light: OklchColor; dark: OklchColor } {
-  const l = LIGHTNESS_MAP[label];
-  const hueDrift = getHueDrift(label, seedHue);
-  const h = (seedHue + hueDrift + 360) % 360;
+  const l = lightnessAt(t);
+  const drift = hueDriftAt(t, seedHue);
+  const h = (((seedHue + drift) % 360) + 360) % 360;
+  const c = seedChroma * (0.5 + 0.5 * (1 - Math.abs(t - 0.5) * 2));
 
-  // Keep chroma proportional to seed, with subtle contouring
-  const chromaFactor = CHROMA_FACTORS[label];
-  const c = seedChroma * chromaFactor;
-
-  const lightColor = clampToGamut({ l, c, h });
-
-  // Dark mode: slightly warmer neutrals
-  const darkAdj = DARK_ADJUSTMENTS[label];
-  const darkL = Math.max(0.05, Math.min(0.98, l + darkAdj.lShift));
-  const darkH = (h + (label >= "700" ? 3 : 0) + 360) % 360;
-  const darkC = seedChroma * chromaFactor * darkAdj.cScale;
-
-  const darkColor = clampToGamut({ l: darkL, c: darkC, h: darkH });
-
-  return { light: lightColor, dark: darkColor };
+  const light = clampToGamut({ l, c, h });
+  const dark = darkModeAdjust(l, c, h, t);
+  return { light, dark };
 }
 
-/**
- * Generate a full ramp from a config.
- */
+// ---- Main Generation ----
+
 export function generateRamp(config: RampConfig): RampStop[] {
   const { hue, stopCount, mode, seedChroma, seedLightness } = config;
   const isNeutral = seedChroma !== undefined && seedChroma < 0.05;
 
-  // Get stop labels for this count
   const labels =
     stopCount in STOP_PRESETS
       ? STOP_PRESETS[stopCount as StopPreset]
       : generateCustomLabels(stopCount);
 
-  // Chroma calibration: if we have a seed color, scale the chroma curve
-  // so the stop closest to the seed's lightness naturally produces the
-  // seed's chroma. The ramp flows smoothly THROUGH the original color.
-  let chromaScale: number | undefined;
+  // Compute seed intensity: how vivid is the seed relative to
+  // the gamut max at its lightness? This scales the whole ramp.
+  let seedIntensity = 1.0;
   if (seedChroma !== undefined && seedLightness !== undefined && !isNeutral) {
-    // Find which stop is closest to the seed lightness
-    let anchorLabel = "500";
-    let anchorDist = Infinity;
-    for (const label of labels) {
-      const l = adaptiveLightness(LIGHTNESS_MAP[label], hue);
-      const dist = Math.abs(l - seedLightness);
-      if (dist < anchorDist) {
-        anchorDist = dist;
-        anchorLabel = label;
-      }
-    }
-    const anchorFactor = CHROMA_FACTORS[anchorLabel] ?? 1;
-    // chromaScale × anchorFactor = seedChroma → chromaScale = seedChroma / anchorFactor
-    chromaScale = seedChroma / anchorFactor;
+    const seedMaxC = maxChroma(seedLightness, hue);
+    seedIntensity = seedMaxC > 0 ? Math.min(seedChroma / seedMaxC, 1.0) : 1.0;
+    // Boost slightly — seeds from images may be below max
+    seedIntensity = Math.min(seedIntensity * 1.2, 1.0);
   }
 
   return labels.map((label, index) => {
-    const { light, dark } = isNeutral
-      ? generateNeutralStop(label, hue, seedChroma!)
-      : mode === "opinionated"
-        ? generateOpinionatedStop(label, hue, chromaScale)
-        : generatePureStop(label, hue, index, labels.length);
+    const t = labels.length > 1 ? index / (labels.length - 1) : 0.5;
 
-    return {
-      index,
-      label,
-      color: light,
-      darkColor: dark,
-    };
+    if (isNeutral) {
+      const { light, dark } = generateNeutralStop(t, hue, seedChroma!);
+      return { index, label, color: light, darkColor: dark };
+    }
+
+    if (mode === "pure") {
+      return generatePureStop(label, hue, index, labels.length);
+    }
+
+    // ---- Opinionated generation ----
+    const l = lightnessAt(t);
+    const drift = hueDriftAt(t, hue);
+    const h = (((hue + drift) % 360) + 360) % 360;
+
+    // Gamut-relative chroma
+    const gamutMax = maxChroma(l, h);
+    const intensity = chromaIntensityAt(t, seedIntensity);
+    const c = gamutMax * intensity;
+
+    const light = clampToGamut({ l, c, h });
+    const dark = darkModeAdjust(l, c, h, t);
+
+    return { index, label, color: light, darkColor: dark };
   });
 }
 
-/**
- * Generate custom stop labels for non-preset counts.
- * Distributes labels between 50 and 950.
- */
+// ---- Pure Mode ----
+
+function generatePureStop(
+  label: string,
+  seedHue: number,
+  index: number,
+  total: number,
+): { index: number; label: string; color: OklchColor; darkColor: OklchColor } {
+  const t = total > 1 ? index / (total - 1) : 0.5;
+  const l = L_MAX - (L_MAX - L_MIN) * t; // linear
+  const mc = maxChroma(l, seedHue);
+  const c = mc * 0.85;
+  const color = clampToGamut({ l, c, h: seedHue });
+  const darkColor = clampToGamut({
+    l: Math.max(0.05, Math.min(0.98, l + 0.03)),
+    c: c * 0.9,
+    h: seedHue,
+  });
+  return { index, label, color, darkColor };
+}
+
+// ---- Helpers ----
+
 function generateCustomLabels(count: number): string[] {
   if (count <= 1) return ["500"];
   if (count === 2) return ["200", "800"];
-
   const labels: string[] = [];
   for (let i = 0; i < count; i++) {
     const t = i / (count - 1);
     const value = Math.round(50 + t * 900);
-    // Snap to nearest 50
     const snapped = Math.round(value / 50) * 50;
     labels.push(String(snapped));
   }
@@ -377,22 +289,17 @@ const HUE_NAMES: [number, string][] = [
   [360, "rose"],
 ];
 
-/** Get a name for a hue angle */
 export function nameForHue(hue: number): string {
   const normalized = ((hue % 360) + 360) % 360;
   for (const [threshold, name] of HUE_NAMES) {
     if (normalized < threshold) return name;
   }
-  return "red"; // wraps around
+  return "red";
 }
 
-/**
- * Get a unique ramp name, given existing names on the canvas.
- */
 export function uniqueRampName(hue: number, existingNames: string[]): string {
   const base = nameForHue(hue);
   if (!existingNames.includes(base)) return base;
-
   let i = 2;
   while (existingNames.includes(`${base}-${i}`)) i++;
   return `${base}-${i}`;
