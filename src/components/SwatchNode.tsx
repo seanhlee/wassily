@@ -102,6 +102,7 @@ export function SwatchNode({
   );
 
   const outlineColor = darkMode ? "#000" : "#fff";
+  // Note: darkMode=true means light canvas (D was pressed), darkMode=false means dark canvas
 
   return (
     <div
@@ -130,7 +131,7 @@ export function SwatchNode({
             left: 0,
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
-            color: darkMode ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
+            color: darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
             whiteSpace: "nowrap",
             userSelect: "none",
             pointerEvents: "none",
@@ -178,6 +179,7 @@ export function RampNode({
   );
 
   const outlineColor = darkMode ? "#000" : "#fff";
+  // Note: darkMode=true means light canvas (D was pressed), darkMode=false means dark canvas
 
   return (
     <div
@@ -202,7 +204,7 @@ export function RampNode({
           marginBottom: 4,
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 9,
-          color: darkMode ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
+          color: darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
           textTransform: "uppercase",
           letterSpacing: "-0.55px",
           userSelect: "none",
@@ -261,7 +263,7 @@ export function RampNode({
                 width: 48,
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 9,
-                color: darkMode ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
+                color: darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
                 textAlign: "center",
                 marginTop: 4,
                 userSelect: "none",

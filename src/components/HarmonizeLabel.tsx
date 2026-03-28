@@ -40,7 +40,7 @@ export function HarmonizeOverlay() {
         fontSize: 9,
         textTransform: "uppercase",
         letterSpacing: "0.5px",
-        color: "rgba(255,255,255,0.4)",
+        color: "rgba(255,255,255,0.7)",
         pointerEvents: "none",
         zIndex: 9998,
       }}
