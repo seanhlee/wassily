@@ -264,37 +264,15 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         .filter((o): o is Ramp => o.type === "ramp")
         .map((r) => r.name);
 
+      // Pass the seed color's chroma and lightness so the ramp generator
+      // can calibrate the chroma curve to flow through the original color.
       const stops = generateRamp({
         hue: swatch.color.h,
         stopCount: action.stopCount,
         mode: "opinionated",
-        seedChroma: isNeutral ? swatch.color.c : undefined,
+        seedChroma: swatch.color.c,
+        seedLightness: swatch.color.l,
       });
-
-      // Snap the closest stop to the original swatch color.
-      // The color you gave us should appear exactly in the ramp.
-      let finalStops = stops;
-      if (!isNeutral) {
-        let closestIdx = 0;
-        let closestDist = Infinity;
-        for (let i = 0; i < stops.length; i++) {
-          const dist = Math.abs(stops[i].color.l - swatch.color.l);
-          if (dist < closestDist) {
-            closestDist = dist;
-            closestIdx = i;
-          }
-        }
-        const snappedColor = {
-          l: swatch.color.l,
-          c: swatch.color.c,
-          h: swatch.color.h,
-        };
-        finalStops = stops.map((stop, i) =>
-          i === closestIdx
-            ? { ...stop, color: snappedColor, darkColor: snappedColor }
-            : stop,
-        );
-      }
 
       // Neutral ramps get named "gray", "warm-gray", "cool-gray"
       let name: string;
@@ -318,7 +296,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         id: swatch.id,
         type: "ramp",
         seedHue: swatch.color.h,
-        stops: finalStops,
+        stops,
         stopCount: action.stopCount,
         position: swatch.position,
         name,

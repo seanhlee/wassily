@@ -194,10 +194,15 @@ function adaptiveLightness(baseL: number, seedHue: number): number {
 
 /**
  * Generate an opinionated ramp stop.
+ *
+ * chromaScale: if provided, scales the chroma curve so the anchor
+ * stop matches the seed color's chroma. This lets the ramp flow
+ * smoothly through the original color instead of snapping.
  */
 function generateOpinionatedStop(
   label: string,
   seedHue: number,
+  chromaScale?: number,
 ): { light: OklchColor; dark: OklchColor } {
   const l = adaptiveLightness(LIGHTNESS_MAP[label], seedHue);
   const chromaFactor = CHROMA_FACTORS[label];
@@ -205,7 +210,10 @@ function generateOpinionatedStop(
 
   const h = (seedHue + hueDrift + 360) % 360;
   const maxC = maxChroma(l, h);
-  const c = maxC * chromaFactor;
+  const c =
+    chromaScale !== undefined
+      ? Math.min(chromaFactor * chromaScale, maxC)
+      : maxC * chromaFactor;
 
   const lightColor = clampToGamut({ l, c, h });
 
@@ -214,7 +222,10 @@ function generateOpinionatedStop(
   const darkL = Math.max(0.05, Math.min(0.98, l + darkAdj.lShift));
   const darkH = (h + (label >= "700" ? 2 : 0) + 360) % 360; // extra warm drift in dark mode shadows
   const darkMaxC = maxChroma(darkL, darkH);
-  const darkC = darkMaxC * chromaFactor * darkAdj.cScale;
+  const darkC =
+    chromaScale !== undefined
+      ? Math.min(chromaFactor * chromaScale * darkAdj.cScale, darkMaxC)
+      : darkMaxC * chromaFactor * darkAdj.cScale;
 
   const darkColor = clampToGamut({ l: darkL, c: darkC, h: darkH });
 
@@ -283,7 +294,7 @@ function generateNeutralStop(
  * Generate a full ramp from a config.
  */
 export function generateRamp(config: RampConfig): RampStop[] {
-  const { hue, stopCount, mode, seedChroma } = config;
+  const { hue, stopCount, mode, seedChroma, seedLightness } = config;
   const isNeutral = seedChroma !== undefined && seedChroma < 0.05;
 
   // Get stop labels for this count
@@ -292,11 +303,32 @@ export function generateRamp(config: RampConfig): RampStop[] {
       ? STOP_PRESETS[stopCount as StopPreset]
       : generateCustomLabels(stopCount);
 
+  // Chroma calibration: if we have a seed color, scale the chroma curve
+  // so the stop closest to the seed's lightness naturally produces the
+  // seed's chroma. The ramp flows smoothly THROUGH the original color.
+  let chromaScale: number | undefined;
+  if (seedChroma !== undefined && seedLightness !== undefined && !isNeutral) {
+    // Find which stop is closest to the seed lightness
+    let anchorLabel = "500";
+    let anchorDist = Infinity;
+    for (const label of labels) {
+      const l = adaptiveLightness(LIGHTNESS_MAP[label], hue);
+      const dist = Math.abs(l - seedLightness);
+      if (dist < anchorDist) {
+        anchorDist = dist;
+        anchorLabel = label;
+      }
+    }
+    const anchorFactor = CHROMA_FACTORS[anchorLabel] ?? 1;
+    // chromaScale × anchorFactor = seedChroma → chromaScale = seedChroma / anchorFactor
+    chromaScale = seedChroma / anchorFactor;
+  }
+
   return labels.map((label, index) => {
     const { light, dark } = isNeutral
       ? generateNeutralStop(label, hue, seedChroma!)
       : mode === "opinionated"
-        ? generateOpinionatedStop(label, hue)
+        ? generateOpinionatedStop(label, hue, chromaScale)
         : generatePureStop(label, hue, index, labels.length);
 
     return {
