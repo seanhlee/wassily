@@ -271,6 +271,24 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         seedChroma: isNeutral ? swatch.color.c : undefined,
       });
 
+      // Snap the closest stop to the original swatch color.
+      // The color you gave us should appear exactly in the ramp.
+      if (!isNeutral) {
+        let closestIdx = 0;
+        let closestDist = Infinity;
+        for (let i = 0; i < stops.length; i++) {
+          const dist = Math.abs(stops[i].color.l - swatch.color.l);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestIdx = i;
+          }
+        }
+        stops[closestIdx] = {
+          ...stops[closestIdx],
+          color: swatch.color,
+        };
+      }
+
       // Neutral ramps get named "gray", "warm-gray", "cool-gray"
       let name: string;
       if (isNeutral) {
