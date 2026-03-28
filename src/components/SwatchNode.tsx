@@ -237,9 +237,8 @@ export function RampNode({
         }}
       >
         {displayStops.map((stop) => {
-          // darkMode=true means LIGHT canvas (D pressed), show vivid color
-          // darkMode=false means DARK canvas, show dark-optimized variant
-          const color = darkMode ? stop.color : stop.darkColor;
+          // Always show vivid colors — dark variant is for export only
+          const color = stop.color;
           const hex = toHex(color);
 
           return (
@@ -268,9 +267,8 @@ export function RampNode({
         }}
       >
         {displayStops.map((stop) => {
-          // darkMode=true means LIGHT canvas (D pressed), show vivid color
-          // darkMode=false means DARK canvas, show dark-optimized variant
-          const color = darkMode ? stop.color : stop.darkColor;
+          // Always show vivid colors — dark variant is for export only
+          const color = stop.color;
           const hex = toHex(color);
           return (
             <div

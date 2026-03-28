@@ -72,18 +72,11 @@ function lightnessAt(t: number): number {
  * seedIntensity scales the peak — a vivid seed pushes the whole
  * ramp more saturated, a muted seed keeps it restrained.
  */
-function chromaIntensityAt(t: number, seedIntensity: number): number {
-  // Use the gamut boundary as the natural shape — just apply a flat
-  // percentage with gentle rolloff at the extremes (near white/black).
-  // This lets each hue peak where IT wants, not where we dictate.
-  const edgeRolloff =
-    t < 0.1
-      ? 0.15 + 0.85 * (t / 0.1)
-      : t > 0.85
-        ? 0.15 + 0.85 * ((1 - t) / 0.15)
-        : 1.0;
-
-  return edgeRolloff * 0.92 * seedIntensity;
+function chromaIntensityAt(_t: number, seedIntensity: number): number {
+  // Flat percentage of gamut max. The gamut boundary itself provides
+  // all the shaping — it rolls off naturally at extreme lightness.
+  // No artificial bell curve or edge rolloff needed.
+  return 0.92 * seedIntensity;
 }
 
 // ---- Hue Drift ----
