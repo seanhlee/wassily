@@ -212,17 +212,20 @@ describe("ramp generation", () => {
     }
   });
 
-  it("chroma contours in opinionated mode (peaks in middle)", () => {
+  it("chroma is gamut-relative (not zero at extremes, peaks where gamut allows)", () => {
     const stops = generateRamp({
       hue: 260,
       stopCount: 11,
       mode: "opinionated",
     });
-    const chroma50 = stops[0].color.c;
-    const chroma500 = stops[5].color.c;
-    const chroma950 = stops[10].color.c;
-    expect(chroma500).toBeGreaterThan(chroma50);
-    expect(chroma500).toBeGreaterThan(chroma950);
+    // Every stop should have some chroma (gamut-relative, no zero rolloff)
+    for (const stop of stops) {
+      expect(stop.color.c).toBeGreaterThan(0);
+    }
+    // Blue peaks at low lightness (where gamut is largest)
+    const chroma300 = stops[3].color.c;
+    const chroma800 = stops[8].color.c;
+    expect(chroma800).toBeGreaterThan(chroma300);
   });
 });
 
