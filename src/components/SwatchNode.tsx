@@ -285,3 +285,68 @@ export function RampNode({
     </div>
   );
 }
+
+// ---- Reference Image ----
+
+interface RefImageNodeProps {
+  image: import("../types").ReferenceImage;
+  darkMode: boolean;
+  onSelect: (id: string, additive: boolean) => void;
+  onMove: (id: string, x: number, y: number) => void;
+  onMoveSelected: (dx: number, dy: number) => void;
+  selected: boolean;
+  zoom: number;
+}
+
+export function RefImageNode({
+  image,
+  darkMode,
+  onSelect,
+  onMove,
+  onMoveSelected,
+  selected,
+  zoom,
+}: RefImageNodeProps) {
+  const handleMouseDown = useDrag(
+    image.id,
+    image.position,
+    zoom,
+    selected,
+    onSelect,
+    onMove,
+    onMoveSelected,
+  );
+
+  const outlineColor = darkMode ? "#000" : "#fff";
+
+  return (
+    <div
+      className="ref-image-node"
+      data-object-id={image.id}
+      onMouseDown={handleMouseDown}
+      style={{
+        position: "absolute",
+        left: image.position.x,
+        top: image.position.y,
+        width: image.size.width,
+        height: image.size.height,
+        cursor: "default",
+        outline: selected ? `1px solid ${outlineColor}` : "none",
+        outlineOffset: 3,
+        opacity: 0.4,
+      }}
+    >
+      <img
+        src={image.dataUrl}
+        alt=""
+        draggable={false}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          pointerEvents: "none",
+        }}
+      />
+    </div>
+  );
+}

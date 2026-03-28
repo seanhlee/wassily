@@ -15,7 +15,11 @@ import { randomPurifiedColor, purifyColor } from "../engine/purify";
 import { maxChroma, clampToGamut } from "../engine/gamut";
 import { generateRamp, uniqueRampName } from "../engine/ramp";
 import { harmonizeMultiple } from "../engine/harmonize";
-import type { OklchColor, HarmonicRelationship } from "../types";
+import type {
+  OklchColor,
+  HarmonicRelationship,
+  ReferenceImage,
+} from "../types";
 
 // ---- Initial State ----
 
@@ -39,6 +43,16 @@ type Action =
   | { type: "MOVE_SELECTED"; dx: number; dy: number }
   | { type: "UPDATE_SWATCH_COLOR"; id: string; color: OklchColor }
   | { type: "ROTATE_HUE"; id: string; delta: number }
+  | {
+      type: "CREATE_SWATCHES";
+      swatches: { position: Point; color: OklchColor }[];
+    }
+  | {
+      type: "ADD_REFERENCE_IMAGE";
+      dataUrl: string;
+      position: Point;
+      size: { width: number; height: number };
+    }
   | { type: "PROMOTE_TO_RAMP"; id: string; stopCount: number }
   | { type: "HARMONIZE_SELECTED"; startAfter?: HarmonicRelationship }
   | { type: "SET_CAMERA"; camera: Camera }
@@ -77,6 +91,41 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         ...state,
         objects: { ...state.objects, [id]: swatch },
         selectedIds: [id],
+      };
+    }
+
+    case "CREATE_SWATCHES": {
+      const newObjects = { ...state.objects };
+      const newIds: string[] = [];
+      for (const s of action.swatches) {
+        const id = genId();
+        newIds.push(id);
+        newObjects[id] = {
+          id,
+          type: "swatch",
+          color: s.color,
+          position: s.position,
+        };
+      }
+      return {
+        ...state,
+        objects: newObjects,
+        selectedIds: newIds,
+      };
+    }
+
+    case "ADD_REFERENCE_IMAGE": {
+      const id = genId();
+      const img: ReferenceImage = {
+        id,
+        type: "reference-image",
+        dataUrl: action.dataUrl,
+        position: action.position,
+        size: action.size,
+      };
+      return {
+        ...state,
+        objects: { ...state.objects, [id]: img },
       };
     }
 
@@ -332,8 +381,15 @@ const STORAGE_KEY = "wassily-canvas";
 
 function saveToStorage(state: CanvasState) {
   try {
+    // Exclude reference images — too large for localStorage
+    const filteredObjects: Record<string, any> = {};
+    for (const [id, obj] of Object.entries(state.objects)) {
+      if (obj.type !== "reference-image") {
+        filteredObjects[id] = obj;
+      }
+    }
     const serializable = {
-      objects: state.objects,
+      objects: filteredObjects,
       selectedIds: [],
       camera: state.camera,
       darkMode: state.darkMode,
@@ -416,6 +472,21 @@ export function useCanvasState() {
     [],
   );
 
+  const createSwatches = useCallback(
+    (swatches: { position: Point; color: OklchColor }[]) =>
+      dispatch({ type: "CREATE_SWATCHES", swatches }),
+    [],
+  );
+
+  const addReferenceImage = useCallback(
+    (
+      dataUrl: string,
+      position: Point,
+      size: { width: number; height: number },
+    ) => dispatch({ type: "ADD_REFERENCE_IMAGE", dataUrl, position, size }),
+    [],
+  );
+
   const promoteToRamp = useCallback(
     (id: string, stopCount: number = 11) =>
       dispatch({ type: "PROMOTE_TO_RAMP", id, stopCount }),
@@ -447,6 +518,8 @@ export function useCanvasState() {
     moveObject,
     moveSelected,
     rotateHue,
+    createSwatches,
+    addReferenceImage,
     promoteToRamp,
     harmonizeSelected,
     setCamera,

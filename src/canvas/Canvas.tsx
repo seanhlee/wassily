@@ -1,6 +1,11 @@
 import { useCallback, useRef, useEffect, useState } from "react";
 import { useCanvasState } from "../state/canvas";
-import { SwatchNode, RampNode } from "../components/SwatchNode";
+import { SwatchNode, RampNode, RefImageNode } from "../components/SwatchNode";
+import {
+  extractColors,
+  imageFileToImageData,
+  fileToDataUrl,
+} from "../engine/extract";
 import { useContextMenu, ContextMenuOverlay } from "../components/ContextMenu";
 import { showHarmonizeFeedback } from "../components/HarmonizeLabel";
 import { harmonizeMultiple } from "../engine/harmonize";
@@ -17,6 +22,8 @@ export function Canvas() {
     moveObject,
     moveSelected,
     rotateHue,
+    createSwatches,
+    addReferenceImage,
     promoteToRamp,
     harmonizeSelected,
     setCamera,
@@ -256,6 +263,59 @@ export function Canvas() {
     harmonizeSelected,
   ]);
 
+  // ---- Drop handler (images) ----
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+
+      const file = e.dataTransfer.files[0];
+      if (!file || !file.type.startsWith("image/")) return;
+
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const cam = cameraRef.current;
+      const dropX = (e.clientX - rect.left - cam.x) / cam.zoom;
+      const dropY = (e.clientY - rect.top - cam.y) / cam.zoom;
+
+      // Load image and extract colors
+      const [imageData, dataUrl] = await Promise.all([
+        imageFileToImageData(file),
+        fileToDataUrl(file),
+      ]);
+
+      // Add reference image to canvas (display at reasonable size)
+      const displayWidth = 200;
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((r) => {
+        img.onload = r;
+      });
+      const aspectRatio = img.naturalHeight / img.naturalWidth;
+      const displayHeight = Math.round(displayWidth * aspectRatio);
+
+      addReferenceImage(
+        dataUrl,
+        { x: dropX, y: dropY },
+        { width: displayWidth, height: displayHeight },
+      );
+
+      // Extract colors and place swatches beside the image
+      const result = extractColors(imageData);
+      const swatches = result.colors.map((color, i) => ({
+        position: { x: dropX + displayWidth + 16, y: dropY + i * 56 },
+        color,
+      }));
+
+      createSwatches(swatches);
+    },
+    [addReferenceImage, createSwatches],
+  );
+
   // ---- Paste handler ----
   useEffect(() => {
     const handler = (e: ClipboardEvent) => {
@@ -306,6 +366,8 @@ export function Canvas() {
       ref={containerRef}
       onClick={handleCanvasClick}
       onContextMenu={handleContextMenu}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -351,6 +413,20 @@ export function Canvas() {
               <RampNode
                 key={obj.id}
                 ramp={obj as Ramp}
+                selected={state.selectedIds.includes(obj.id)}
+                zoom={state.camera.zoom}
+                darkMode={state.darkMode}
+                onSelect={select}
+                onMove={(id, x, y) => moveObject(id, { x, y })}
+                onMoveSelected={moveSelected}
+              />
+            );
+          }
+          if (obj.type === "reference-image") {
+            return (
+              <RefImageNode
+                key={obj.id}
+                image={obj as import("../types").ReferenceImage}
                 selected={state.selectedIds.includes(obj.id)}
                 zoom={state.camera.zoom}
                 darkMode={state.darkMode}
