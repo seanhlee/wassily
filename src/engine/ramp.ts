@@ -82,36 +82,63 @@ const BASE_HUE_DRIFT: Record<string, number> = {
 /**
  * Hue-adaptive warm shadow drift.
  *
- * "Warm" universally means toward red/orange. But in OKLCH:
- * - For blue (H≈260): +degrees moves toward purple → warmer. ✓
- * - For yellow (H≈90): +degrees moves toward GREEN → colder! ✗
+ * Dark stops drift toward warm amber (H≈55 in OKLCH). Instead of
+ * multiplying a small base, we calculate directly: how far does
+ * this hue need to rotate to reach amber?
  *
- * Fix: for hues in the yellow-green-cyan zone (60-180), warm drift
- * must be NEGATIVE (toward orange/red). For everything else, positive.
- *
- * Yellow also needs stronger drift because its gamut collapses at
- * low lightness — without aggressive hue shift, darks go olive.
+ * Yellow (H≈98) needs ~43° toward amber. Blue (H≈260) needs ~5°
+ * toward purple. The drift fraction increases with stop depth.
  */
+const WARM_DRIFT_FRACTION: Record<string, number> = {
+  "50": 0,
+  "100": 0,
+  "200": 0,
+  "300": 0,
+  "400": 0,
+  "500": 0,
+  "600": 0.15,
+  "700": 0.35,
+  "800": 0.55,
+  "900": 0.75,
+  "950": 0.9,
+};
+
 function getHueDrift(label: string, seedHue: number): number {
-  const base = BASE_HUE_DRIFT[label] ?? 0;
-  if (base <= 0) return base; // cool highlight lift — not hue-dependent
+  // Cool highlight lift — unchanged
+  const baseCoolDrift = BASE_HUE_DRIFT[label] ?? 0;
+  if (baseCoolDrift < 0) return baseCoolDrift;
+
+  const fraction = WARM_DRIFT_FRACTION[label] ?? 0;
+  if (fraction === 0) return 0;
 
   const h = ((seedHue % 360) + 360) % 360;
 
-  // Direction: negative for yellow-green-cyan zone, positive otherwise
-  const direction = h >= 50 && h <= 190 ? -1 : 1;
+  // Target: warm amber at H≈55
+  let delta = 55 - h;
+  if (delta > 180) delta -= 360;
+  if (delta < -180) delta += 360;
 
-  // Magnitude multiplier: yellow needs more, blue needs less
-  let multiplier = 1;
+  // Proximity: hues near the yellow-green problem zone (60-120)
+  // get strong drift. Everything else gets subtle drift.
+  let intensity: number;
   if (h >= 60 && h <= 120) {
-    const t = 1 - Math.abs(h - 90) / 30;
-    multiplier = 1 + t * 2; // up to 3x at pure yellow
+    // Yellow-green zone: full intensity
+    intensity = 1.0;
   } else if (h > 120 && h <= 180) {
-    const t = 1 - (h - 120) / 60;
-    multiplier = 1 + t * 1; // 2x → 1x
+    // Cyan-green: taper off
+    intensity = 1 - (h - 120) / 60;
+  } else if (h >= 30 && h < 60) {
+    // Orange: slight taper
+    intensity = (h - 30) / 30;
+  } else {
+    // Blue, purple, red: minimal drift (just the original subtle base)
+    return BASE_HUE_DRIFT[label] ?? 0;
   }
 
-  return base * direction * multiplier;
+  const maxDrift = Math.abs(delta);
+  const direction = delta >= 0 ? 1 : -1;
+
+  return direction * maxDrift * fraction * intensity;
 }
 
 // ---- Dark Mode Adjustments ----
@@ -147,7 +174,7 @@ const DARK_ADJUSTMENTS: Record<string, { lShift: number; cScale: number }> = {
 function adaptiveLightness(baseL: number, seedHue: number): number {
   const peak = chromaPeakLightness(seedHue);
   const anchorBase = 0.55;
-  const shift = (peak.l - anchorBase) * 0.4;
+  const shift = (peak.l - anchorBase) * 0.5;
   const anchorNew = anchorBase + shift;
 
   const ceil = 0.98;
