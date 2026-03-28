@@ -42,6 +42,7 @@ type Action =
   | { type: "MOVE_OBJECT"; id: string; position: Point }
   | { type: "MOVE_SELECTED"; dx: number; dy: number }
   | { type: "UPDATE_SWATCH_COLOR"; id: string; color: OklchColor }
+  | { type: "ADJUST_SWATCH_COLOR"; id: string; dl: number; dc: number }
   | { type: "ROTATE_HUE"; id: string; delta: number }
   | {
       type: "CREATE_SWATCHES";
@@ -201,6 +202,25 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         objects: {
           ...state.objects,
           [action.id]: { ...obj, color: action.color },
+        },
+      };
+    }
+
+    case "ADJUST_SWATCH_COLOR": {
+      const obj = state.objects[action.id];
+      if (!obj || obj.type !== "swatch") return state;
+      const sw = obj as Swatch;
+      const newL = Math.max(0.06, Math.min(0.97, sw.color.l + action.dl));
+      const mc = maxChroma(newL, sw.color.h);
+      const newC = Math.max(0, Math.min(mc, sw.color.c + action.dc));
+      return {
+        ...state,
+        objects: {
+          ...state.objects,
+          [action.id]: {
+            ...sw,
+            color: clampToGamut({ l: newL, c: newC, h: sw.color.h }),
+          },
         },
       };
     }
@@ -496,6 +516,9 @@ const SKIP_HISTORY: Set<string> = new Set([
   "SET_CAMERA",
   "MOVE_OBJECT",
   "MOVE_SELECTED",
+  "ROTATE_HUE",
+  "UPDATE_SWATCH_COLOR",
+  "ADJUST_SWATCH_COLOR",
   "LOAD_STATE",
 ]);
 
@@ -622,6 +645,18 @@ export function useCanvasState() {
     [],
   );
 
+  const updateSwatchColor = useCallback(
+    (id: string, color: OklchColor) =>
+      dispatch({ type: "UPDATE_SWATCH_COLOR", id, color }),
+    [],
+  );
+
+  const adjustSwatchColor = useCallback(
+    (id: string, dl: number, dc: number) =>
+      dispatch({ type: "ADJUST_SWATCH_COLOR", id, dl, dc }),
+    [],
+  );
+
   const createSwatches = useCallback(
     (swatches: { position: Point; color: OklchColor }[]) =>
       dispatch({ type: "CREATE_SWATCHES", swatches }),
@@ -678,6 +713,8 @@ export function useCanvasState() {
     moveObject,
     moveSelected,
     rotateHue,
+    updateSwatchColor,
+    adjustSwatchColor,
     createSwatches,
     addReferenceImage,
     promoteToRamp,

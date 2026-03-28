@@ -9,8 +9,14 @@ import {
 import { useContextMenu, ContextMenuOverlay } from "../components/ContextMenu";
 import { showHarmonizeFeedback } from "../components/HarmonizeLabel";
 import { harmonizeMultiple } from "../engine/harmonize";
-import { toHex, toOklchString, parseColor } from "../engine/gamut";
-import type { Swatch, Ramp, Point } from "../types";
+import {
+  toHex,
+  toOklchString,
+  parseColor,
+  clampToGamut,
+  maxChroma,
+} from "../engine/gamut";
+import type { Swatch, Ramp, Point, OklchColor } from "../types";
 
 export function Canvas() {
   const {
@@ -22,6 +28,8 @@ export function Canvas() {
     moveObject,
     moveSelected,
     rotateHue,
+    updateSwatchColor,
+    adjustSwatchColor,
     createSwatches,
     addReferenceImage,
     promoteToRamp,
@@ -36,12 +44,16 @@ export function Canvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [peekPureMode, setPeekPureMode] = useState(false);
+  const [eKeyHeld, setEKeyHeld] = useState(false);
   const isPanning = useRef(false);
   const panStart = useRef<Point>({ x: 0, y: 0 });
   const cameraStart = useRef(state.camera);
 
   const cameraRef = useRef(state.camera);
   cameraRef.current = state.camera;
+
+  const selectedIdsRef = useRef(state.selectedIds);
+  selectedIdsRef.current = state.selectedIds;
 
   // ---- Canvas click → deselect only ----
   const handleCanvasClick = useCallback(
@@ -54,7 +66,7 @@ export function Canvas() {
         deselectAll();
       }
     },
-    [state.camera, state.selectedIds, createSwatch, deselectAll],
+    [state.camera, state.selectedIds, deselectAll],
   );
 
   // ---- Wheel: pinch-to-zoom + two-finger-pan + hue rotation ----
@@ -78,6 +90,17 @@ export function Canvas() {
         const newY = mouseY - (mouseY - cam.y) * (newZoom / cam.zoom);
         setCamera({ x: newX, y: newY, zoom: newZoom });
       } else {
+        // Scroll on selected swatch → hue rotation
+        const swatchEl = (e.target as HTMLElement).closest(".swatch-node");
+        if (swatchEl) {
+          const objId = swatchEl.getAttribute("data-object-id");
+          if (objId && selectedIdsRef.current.includes(objId)) {
+            const delta = e.deltaY * 0.5;
+            rotateHue(objId, delta);
+            return;
+          }
+        }
+
         // Two-finger scroll → pan
         setCamera({
           x: cam.x - e.deltaX,
@@ -137,6 +160,11 @@ export function Canvas() {
       if (e.key === " " && !e.repeat) {
         e.preventDefault();
         setSpaceHeld(true);
+        return;
+      }
+
+      if (e.key === "e" && !e.repeat && !e.metaKey && !e.ctrlKey) {
+        setEKeyHeld(true);
         return;
       }
 
@@ -281,6 +309,29 @@ export function Canvas() {
           if (state.selectedIds.length > 0) deleteSelected();
           break;
 
+        case "ArrowUp":
+        case "ArrowDown":
+        case "ArrowLeft":
+        case "ArrowRight": {
+          if (!selectedObj || selectedObj.type !== "swatch") break;
+          e.preventDefault();
+          const sw = selectedObj as Swatch;
+          const step = e.shiftKey ? 5 : 1;
+          let newColor: OklchColor;
+          if (e.key === "ArrowUp") {
+            newColor = { ...sw.color, l: Math.min(0.97, sw.color.l + 0.01 * step) };
+          } else if (e.key === "ArrowDown") {
+            newColor = { ...sw.color, l: Math.max(0.06, sw.color.l - 0.01 * step) };
+          } else if (e.key === "ArrowRight") {
+            const max = maxChroma(sw.color.l, sw.color.h);
+            newColor = { ...sw.color, c: Math.min(max, sw.color.c + 0.005 * step) };
+          } else {
+            newColor = { ...sw.color, c: Math.max(0, sw.color.c - 0.005 * step) };
+          }
+          updateSwatchColor(selected, clampToGamut(newColor));
+          break;
+        }
+
         case "0":
           if (e.metaKey || e.ctrlKey) {
             e.preventDefault();
@@ -293,6 +344,7 @@ export function Canvas() {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === " ") setSpaceHeld(false);
       if (e.key === "m") setPeekPureMode(false);
+      if (e.key === "e") setEKeyHeld(false);
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -314,7 +366,19 @@ export function Canvas() {
     select,
     undo,
     redo,
+    updateSwatchColor,
   ]);
+
+  // ---- Reset modifier keys on window blur (prevents stuck states) ----
+  useEffect(() => {
+    const handleBlur = () => {
+      setSpaceHeld(false);
+      setPeekPureMode(false);
+      setEKeyHeld(false);
+    };
+    window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, []);
 
   // ---- Drop handler (images) ----
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -498,9 +562,11 @@ export function Canvas() {
                 selected={state.selectedIds.includes(obj.id)}
                 zoom={state.camera.zoom}
                 darkMode={state.darkMode}
+                eKeyHeld={eKeyHeld}
                 onSelect={select}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
+                onAdjustColor={adjustSwatchColor}
               />
             );
           }
