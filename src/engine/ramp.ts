@@ -64,7 +64,8 @@ const CHROMA_FACTORS: Record<string, number> = {
 
 // ---- Hue Drift ----
 
-const HUE_DRIFT: Record<string, number> = {
+/** Base drift values — multiplied by a hue-dependent factor */
+const BASE_HUE_DRIFT: Record<string, number> = {
   "50": -4, // cool highlight lift
   "100": -3,
   "200": -2,
@@ -77,6 +78,32 @@ const HUE_DRIFT: Record<string, number> = {
   "900": +7,
   "950": +8,
 };
+
+/**
+ * Hue-adaptive warm drift multiplier.
+ * Yellow-green hues (60-120) need much more warm shift in darks
+ * to avoid going olive/mud. Blue-purple hues need less.
+ */
+function hueDriftMultiplier(seedHue: number): number {
+  const h = ((seedHue % 360) + 360) % 360;
+  // Yellow-green zone: H 60-120 needs 2.5-3x more drift
+  if (h >= 60 && h <= 120) {
+    const t = 1 - Math.abs(h - 90) / 30; // peaks at H=90
+    return 1 + t * 2; // 1x at edges, 3x at center
+  }
+  // Lime-cyan zone: H 120-180 needs moderate extra drift
+  if (h > 120 && h <= 180) {
+    const t = 1 - (h - 120) / 60;
+    return 1 + t * 1; // 2x → 1x
+  }
+  return 1; // default for blue, purple, red, orange
+}
+
+function getHueDrift(label: string, seedHue: number): number {
+  const base = BASE_HUE_DRIFT[label] ?? 0;
+  if (base <= 0) return base; // cool drift doesn't need adaptation
+  return base * hueDriftMultiplier(seedHue);
+}
 
 // ---- Dark Mode Adjustments ----
 
@@ -105,7 +132,7 @@ function generateOpinionatedStop(
 ): { light: OklchColor; dark: OklchColor } {
   const l = LIGHTNESS_MAP[label];
   const chromaFactor = CHROMA_FACTORS[label];
-  const hueDrift = HUE_DRIFT[label];
+  const hueDrift = getHueDrift(label, seedHue);
 
   const h = (seedHue + hueDrift + 360) % 360;
   const maxC = maxChroma(l, h);
@@ -163,7 +190,7 @@ function generateNeutralStop(
   seedChroma: number,
 ): { light: OklchColor; dark: OklchColor } {
   const l = LIGHTNESS_MAP[label];
-  const hueDrift = HUE_DRIFT[label];
+  const hueDrift = getHueDrift(label, seedHue);
   const h = (seedHue + hueDrift + 360) % 360;
 
   // Keep chroma proportional to seed, with subtle contouring
