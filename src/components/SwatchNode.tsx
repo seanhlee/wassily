@@ -556,6 +556,12 @@ export function SwatchNode({
   const hex = toHex(swatch.color);
   const showDetail = zoom > 1.5;
   const [hovered, setHovered] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  // Close editor when deselected
+  useEffect(() => {
+    if (!selected) setEditing(false);
+  }, [selected]);
 
   // E+drag: adjust lightness (vertical) and chroma (horizontal)
   const handleEditDrag = useCallback(
@@ -685,6 +691,10 @@ export function SwatchNode({
       onMouseDown={(e) => {
         if (!handleEditDrag(e)) handleMouseDown(e);
       }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        if (selected) setEditing(true);
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -700,8 +710,8 @@ export function SwatchNode({
         zIndex: selected ? 10 : "auto",
       }}
     >
-      {/* L×C color field — appears to the right of the swatch when selected */}
-      {selected && (
+      {/* L×C color field — appears on double-click */}
+      {editing && (
         <>
           <ColorField
             color={swatch.color}
@@ -721,7 +731,7 @@ export function SwatchNode({
         <div
           style={{
             position: "absolute",
-            top: selected ? FIELD_TOP + FIELD_SIZE + 4 : 52,
+            top: editing ? FIELD_TOP + FIELD_SIZE + 4 : 52,
             left: 0,
             zIndex: 2,
             fontFamily: "'IBM Plex Mono', monospace",
@@ -729,11 +739,11 @@ export function SwatchNode({
             color: darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
             whiteSpace: "nowrap",
             userSelect: "none",
-            pointerEvents: selected ? "auto" : "none",
+            pointerEvents: editing ? "auto" : "none",
           }}
         >
           <div>{hex}</div>
-          {selected && (
+          {editing && (
             <>
               <div style={{ marginTop: 2, opacity: 0.7, display: "flex", gap: "0.6ch" }}>
                 <LchControl

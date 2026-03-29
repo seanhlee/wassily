@@ -20,6 +20,11 @@ import type {
   HarmonicRelationship,
   ReferenceImage,
 } from "../types";
+import {
+  storeImageBlob,
+  loadAllImageBlobs,
+  cleanOrphanedBlobs,
+} from "./imageStore";
 
 // ---- Initial State ----
 
@@ -50,10 +55,12 @@ type Action =
     }
   | {
       type: "ADD_REFERENCE_IMAGE";
+      id?: string;
       dataUrl: string;
       position: Point;
       size: { width: number; height: number };
     }
+  | { type: "RESTORE_IMAGE_URLS"; urls: Record<string, string> }
   | { type: "PROMOTE_TO_RAMP"; id: string; stopCount: number }
   | { type: "CHANGE_STOP_COUNT"; id: string; delta: number }
   | { type: "HARMONIZE_SELECTED"; startAfter?: HarmonicRelationship }
@@ -96,7 +103,6 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       return {
         ...state,
         objects: { ...state.objects, [id]: swatch },
-        selectedIds: [id],
       };
     }
 
@@ -116,12 +122,11 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       return {
         ...state,
         objects: newObjects,
-        selectedIds: newIds,
       };
     }
 
     case "ADD_REFERENCE_IMAGE": {
-      const id = genId();
+      const id = action.id ?? genId();
       const img: ReferenceImage = {
         id,
         type: "reference-image",
@@ -133,6 +138,17 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         ...state,
         objects: { ...state.objects, [id]: img },
       };
+    }
+
+    case "RESTORE_IMAGE_URLS": {
+      const objects = { ...state.objects };
+      for (const [id, url] of Object.entries(action.urls)) {
+        const obj = objects[id];
+        if (obj && obj.type === "reference-image") {
+          objects[id] = { ...(obj as ReferenceImage), dataUrl: url };
+        }
+      }
+      return { ...state, objects };
     }
 
     case "SELECT": {
@@ -474,20 +490,27 @@ const STORAGE_KEY = "wassily-canvas";
 
 function saveToStorage(state: CanvasState) {
   try {
-    // Exclude reference images — too large for localStorage
-    const filteredObjects: Record<string, any> = {};
+    // Include reference images but strip dataUrl (blob lives in IndexedDB)
+    const serializedObjects: Record<string, any> = {};
+    const activeImageIds = new Set<string>();
     for (const [id, obj] of Object.entries(state.objects)) {
-      if (obj.type !== "reference-image") {
-        filteredObjects[id] = obj;
+      if (obj.type === "reference-image") {
+        serializedObjects[id] = { ...obj, dataUrl: "" };
+        activeImageIds.add(id);
+      } else {
+        serializedObjects[id] = obj;
       }
     }
     const serializable = {
-      objects: filteredObjects,
+      objects: serializedObjects,
       selectedIds: [],
       camera: state.camera,
       darkMode: state.darkMode,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
+
+    // Clean up orphaned blobs in IndexedDB (deleted images)
+    cleanOrphanedBlobs(activeImageIds);
   } catch {
     // localStorage full or unavailable — silently ignore
   }
@@ -525,6 +548,7 @@ const SKIP_HISTORY: Set<string> = new Set([
   "UPDATE_SWATCH_COLOR",
   "ADJUST_SWATCH_COLOR",
   "LOAD_STATE",
+  "RESTORE_IMAGE_URLS",
 ]);
 
 interface HistoryState {
@@ -603,6 +627,19 @@ export function useCanvasState() {
     [],
   );
 
+  // Restore reference image blobs from IndexedDB on mount
+  useEffect(() => {
+    (async () => {
+      const blobs = await loadAllImageBlobs();
+      if (blobs.length === 0) return;
+      const urls: Record<string, string> = {};
+      for (const { id, blob } of blobs) {
+        urls[id] = URL.createObjectURL(blob);
+      }
+      dispatch({ type: "RESTORE_IMAGE_URLS", urls });
+    })();
+  }, [dispatch]);
+
   // Auto-save to localStorage on every state change (debounced)
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
@@ -670,10 +707,16 @@ export function useCanvasState() {
 
   const addReferenceImage = useCallback(
     (
+      blob: Blob,
       dataUrl: string,
       position: Point,
       size: { width: number; height: number },
-    ) => dispatch({ type: "ADD_REFERENCE_IMAGE", dataUrl, position, size }),
+    ) => {
+      const id = `img_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      // Store blob in IndexedDB (fire and forget — non-blocking)
+      storeImageBlob(id, blob);
+      dispatch({ type: "ADD_REFERENCE_IMAGE", id, dataUrl, position, size });
+    },
     [],
   );
 

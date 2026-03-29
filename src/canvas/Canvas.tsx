@@ -417,6 +417,7 @@ export function Canvas() {
       const displayHeight = Math.round(displayWidth * aspectRatio);
 
       addReferenceImage(
+        file,
         dataUrl,
         { x: dropX, y: dropY },
         { width: displayWidth, height: displayHeight },
@@ -473,6 +474,7 @@ export function Canvas() {
             const displayHeight = Math.round(displayWidth * aspectRatio);
 
             addReferenceImage(
+              file,
               dataUrl,
               { x: cx, y: cy },
               { width: displayWidth, height: displayHeight },
