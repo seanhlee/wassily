@@ -1,66 +1,462 @@
-import { useCallback, useRef, useState, useEffect } from "react";
-import type { Swatch, Ramp } from "../types";
-import { toHex, maxChroma } from "../engine/gamut";
+import { useCallback, useRef, useState, useEffect, useMemo } from "react";
+import type { Swatch, Ramp, OklchColor } from "../types";
+import { toHex, maxChroma, clampToGamut, generateFieldImage, oklchToOkhsl, okhslToOklch } from "../engine/gamut";
 import { generateRamp, nameForHue } from "../engine/ramp";
 
-// ---- Hue arc indicator (ghost readout) ----
+// ---- Color picker controls ----
+//
+// Layout (all positions relative to the swatch's top-left):
+//
+//   [swatch 48×48]  8px  [field 128×128]  4px  [hue strip 6px]
+//
+// When selected, the SL field and hue strip appear to the right of the swatch.
+// The field shows the Okhsl saturation × lightness space for the current hue.
+// The hue strip shows the full spectrum; drag to change hue and repaint the field.
+//
+// Indicators use SVG at sub-pixel stroke with mix-blend-mode: difference.
+// Both field and strip use matching bracket indicators (four inward-pointing L-corners).
 
-function HueArc({ hue, darkMode }: { hue: number; darkMode: boolean }) {
-  const size = 88;
-  const stroke = 2;
-  const r = (size - stroke) / 2;
-  const cx = size / 2;
-  const cy = size / 2;
+const FIELD_SIZE = 128;
+const FIELD_LEFT = 56;                          // 48 (swatch) + 8 (gap)
+const FIELD_TOP = 24 - FIELD_SIZE / 2;          // vertically centered on swatch
+const HUE_STRIP_W = 6;
+const HUE_STRIP_LEFT = FIELD_LEFT + FIELD_SIZE + 4;
 
-  // Convert hue to radians for the marker position (0° = top, clockwise)
-  const rad = ((hue - 90) * Math.PI) / 180;
-  const mx = cx + r * Math.cos(rad);
-  const my = cy + r * Math.sin(rad);
+// Shared SVG indicator style
+const INDICATOR_SVG: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  width: "100%",
+  height: "100%",
+  pointerEvents: "none",
+  mixBlendMode: "difference",
+  overflow: "visible",
+};
 
-  const labelColor = darkMode ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)";
-  const arcColor = darkMode ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)";
-  const markerColor = darkMode ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)";
+// Sub-pixel bracket indicator geometry.
+//
+// Both the field and strip use the same bracket language:
+// four L-shaped corners forming a rectangle, arms pointing INWARD.
+//
+// Field (around a point):          Strip (around a Y position):
+//
+//   ┌     ┐                        ┌──────┐
+//     · point                      │strip │
+//   └     ┘                        └──────┘
+
+const BRACKET = {
+  arm: 5,      // length of each L-shaped arm in px
+  gap: 2,      // distance from target to nearest bracket corner
+  stroke: 0.75, // SVG stroke weight
+};
+
+/**
+ * Four corner brackets framing a point in the SL color field.
+ * Arms point inward toward the target point.
+ *
+ * Geometry for top-left ┌ (corner at (x-g, y-g)):
+ *   Horizontal arm runs RIGHT from corner: (x-g, y-g) → (x-g+a, y-g)
+ *   Vertical arm runs DOWN from corner:    (x-g, y-g) → (x-g, y-g+a)
+ *
+ * Path is drawn: arm-tip → corner → arm-tip (two segments per bracket).
+ */
+function FieldIndicator({ x, y }: { x: number; y: number }) {
+  const { arm: a, gap: g, stroke } = BRACKET;
+  return (
+    <svg style={INDICATOR_SVG}>
+      <path
+        d={[
+          // ┌ top-left: corner at (x-g, y-g), arms → right and ↓ down
+          `M${x - g + a},${y - g} L${x - g},${y - g} L${x - g},${y - g + a}`,
+          // ┐ top-right: corner at (x+g, y-g), arms ← left and ↓ down
+          `M${x + g - a},${y - g} L${x + g},${y - g} L${x + g},${y - g + a}`,
+          // └ bottom-left: corner at (x-g, y+g), arms → right and ↑ up
+          `M${x - g},${y + g - a} L${x - g},${y + g} L${x - g + a},${y + g}`,
+          // ┘ bottom-right: corner at (x+g, y+g), arms ← left and ↑ up
+          `M${x + g},${y + g - a} L${x + g},${y + g} L${x + g - a},${y + g}`,
+        ].join(" ")}
+        fill="none"
+        stroke="#fff"
+        strokeWidth={stroke}
+      />
+    </svg>
+  );
+}
+
+/**
+ * Four corner brackets framing a position on the hue strip.
+ * Same visual language as the field indicator, but the rectangle
+ * spans the strip width instead of framing a point.
+ *
+ * The bracket rectangle is:
+ *   left:   -gap
+ *   right:  stripWidth + gap
+ *   top:    y - gap
+ *   bottom: y + gap
+ */
+function StripIndicator({ y, stripWidth }: { y: number; stripWidth: number }) {
+  const { arm: a, gap: g, stroke } = BRACKET;
+  const l = -g;              // left edge of bracket rectangle
+  const r = stripWidth + g;  // right edge
+  const t = y - g;           // top edge
+  const b = y + g;           // bottom edge
+  return (
+    <svg style={INDICATOR_SVG}>
+      <path
+        d={[
+          // ┌ top-left: corner at (l, t), arms → right and ↓ down
+          `M${l + a},${t} L${l},${t} L${l},${t + a}`,
+          // ┐ top-right: corner at (r, t), arms ← left and ↓ down
+          `M${r - a},${t} L${r},${t} L${r},${t + a}`,
+          // └ bottom-left: corner at (l, b), arms → right and ↑ up
+          `M${l},${b - a} L${l},${b} L${l + a},${b}`,
+          // ┘ bottom-right: corner at (r, b), arms ← left and ↑ up
+          `M${r},${b - a} L${r},${b} L${r - a},${b}`,
+        ].join(" ")}
+        fill="none"
+        stroke="#fff"
+        strokeWidth={stroke}
+      />
+    </svg>
+  );
+}
+
+/**
+ * Okhsl saturation × lightness field.
+ * X = saturation [0→1], Y = lightness [1→0] (top = light, bottom = dark).
+ * Every pixel maps to a valid in-gamut sRGB color.
+ */
+function ColorField({
+  color,
+  onColorChange,
+  onDragStart,
+  onDragEnd,
+}: {
+  color: OklchColor;
+  onColorChange: (color: OklchColor) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+}) {
+  const fieldRef = useRef<HTMLDivElement>(null);
+
+  const dataUrl = useMemo(
+    () => generateFieldImage(Math.round(color.h), FIELD_SIZE, FIELD_SIZE),
+    [Math.round(color.h)],
+  );
+
+  const okhsl = oklchToOkhsl(color);
+  const indicatorX = okhsl.s * FIELD_SIZE;
+  const indicatorY = (1 - okhsl.l) * FIELD_SIZE;
+
+  const colorFromPosition = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!fieldRef.current) return color;
+      const rect = fieldRef.current.getBoundingClientRect();
+      const s = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const l = 1 - Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+      return okhslToOklch(color.h, s, l);
+    },
+    [color],
+  );
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      onDragStart?.();
+      onColorChange(colorFromPosition(e.clientX, e.clientY));
+
+      const handleMove = (me: MouseEvent) => {
+        onColorChange(colorFromPosition(me.clientX, me.clientY));
+      };
+      const handleUp = () => {
+        window.removeEventListener("mousemove", handleMove);
+        window.removeEventListener("mouseup", handleUp);
+        onDragEnd?.();
+      };
+      window.addEventListener("mousemove", handleMove);
+      window.addEventListener("mouseup", handleUp);
+    },
+    [onColorChange, onDragStart, onDragEnd, colorFromPosition],
+  );
 
   return (
     <div
+      ref={fieldRef}
+      onMouseDown={handleMouseDown}
       style={{
         position: "absolute",
-        left: 24 - size / 2,
-        top: 24 - size / 2,
-        width: size,
-        height: size,
-        pointerEvents: "none",
+        left: FIELD_LEFT,
+        top: FIELD_TOP,
+        width: FIELD_SIZE,
+        height: FIELD_SIZE,
+        backgroundImage: `url(${dataUrl})`,
+        backgroundSize: "cover",
+        pointerEvents: "auto",
+        cursor: "crosshair",
       }}
     >
-      <svg width={size} height={size}>
-        <circle
-          cx={cx}
-          cy={cy}
-          r={r}
-          fill="none"
-          stroke={arcColor}
-          strokeWidth={stroke}
-        />
-        <circle cx={mx} cy={my} r={3} fill={markerColor} />
-      </svg>
-      <div
+      <FieldIndicator x={indicatorX} y={indicatorY} />
+    </div>
+  );
+}
+
+/**
+ * Vertical hue spectrum strip.
+ * 0° at top, 360° at bottom. Click or drag to set hue.
+ * The field repaints to show the new hue's saturation × lightness space.
+ */
+function HueStrip({
+  hue,
+  onHueChange,
+  onDragStart,
+  onDragEnd,
+}: {
+  hue: number;
+  onHueChange: (h: number) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+}) {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const markerY = (hue / 360) * FIELD_SIZE;
+
+  const hueFromY = useCallback((clientY: number) => {
+    if (!stripRef.current) return hue;
+    const rect = stripRef.current.getBoundingClientRect();
+    const t = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    return t * 360;
+  }, [hue]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onDragStart?.();
+    onHueChange(hueFromY(e.clientY));
+
+    const handleMove = (me: MouseEvent) => onHueChange(hueFromY(me.clientY));
+    const handleUp = () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+      onDragEnd?.();
+    };
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+  }, [onHueChange, onDragStart, onDragEnd, hueFromY]);
+
+  const stops = useMemo(() => {
+    const result: string[] = [];
+    for (let i = 0; i <= 12; i++) {
+      const h = (i / 12) * 360;
+      result.push(`${toHex(okhslToOklch(h, 1, 0.65))} ${(i / 12) * 100}%`);
+    }
+    return result;
+  }, []);
+
+  return (
+    <div
+      ref={stripRef}
+      onMouseDown={handleMouseDown}
+      style={{
+        position: "absolute",
+        left: HUE_STRIP_LEFT,
+        top: FIELD_TOP,
+        width: HUE_STRIP_W,
+        height: FIELD_SIZE,
+        cursor: "ns-resize",
+      }}
+    >
+      <div style={{
+        width: HUE_STRIP_W,
+        height: FIELD_SIZE,
+        background: `linear-gradient(to bottom, ${stops.join(", ")})`,
+      }} />
+      <StripIndicator y={markerY} stripWidth={HUE_STRIP_W} />
+    </div>
+  );
+}
+
+// ---- Scrubbable / typeable LCH control ----
+
+type LchChannel = "l" | "c" | "h";
+
+const CHANNEL_SENSITIVITY: Record<LchChannel, { normal: number; fine: number }> = {
+  l: { normal: 0.002, fine: 0.0004 },
+  c: { normal: 0.001, fine: 0.0002 },
+  h: { normal: 0.5, fine: 0.1 },
+};
+
+function formatValue(channel: LchChannel, value: number): string {
+  if (channel === "l") return value.toFixed(2);
+  if (channel === "c") return value.toFixed(3);
+  return String(Math.round(value));
+}
+
+function clampChannel(
+  channel: LchChannel,
+  value: number,
+  color: OklchColor,
+): number {
+  if (channel === "l") return Math.max(0.06, Math.min(0.97, value));
+  if (channel === "c") return Math.max(0, Math.min(maxChroma(color.l, color.h), value));
+  // hue wraps
+  return ((value % 360) + 360) % 360;
+}
+
+function LchControl({
+  channel,
+  value,
+  color,
+  darkMode,
+  zoom,
+  onValueChange,
+  onScrubStart,
+  onScrubEnd,
+  onCommit,
+}: {
+  channel: LchChannel;
+  value: number;
+  color: OklchColor;
+  darkMode: boolean;
+  zoom: number;
+  onValueChange: (channel: LchChannel, value: number) => void;
+  onScrubStart: (channel: LchChannel) => void;
+  onScrubEnd: () => void;
+  onCommit?: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const labelColor = darkMode ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)";
+
+  // Auto-select input text on mount
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  // Scrub: drag on the channel letter
+  const handleLabelMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      let lastX = e.clientX;
+      let currentValue = value;
+      onScrubStart(channel);
+
+      const handleMove = (me: MouseEvent) => {
+        const dx = (me.clientX - lastX) / zoom;
+        lastX = me.clientX;
+        const sens = me.altKey
+          ? CHANNEL_SENSITIVITY[channel].fine
+          : CHANNEL_SENSITIVITY[channel].normal;
+        currentValue = clampChannel(channel, currentValue + dx * sens, color);
+        onValueChange(channel, currentValue);
+      };
+
+      const handleUp = () => {
+        window.removeEventListener("mousemove", handleMove);
+        window.removeEventListener("mouseup", handleUp);
+        onScrubEnd();
+      };
+
+      window.addEventListener("mousemove", handleMove);
+      window.addEventListener("mouseup", handleUp);
+    },
+    [channel, value, color, zoom, onValueChange, onScrubStart, onScrubEnd],
+  );
+
+  // Type: click on the numeric value
+  const handleValueClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setEditValue(formatValue(channel, value));
+      setEditing(true);
+    },
+    [channel, value],
+  );
+
+  const commitEdit = useCallback(
+    (raw: string) => {
+      setEditing(false);
+      const parsed = parseFloat(raw);
+      if (isNaN(parsed)) return; // invalid → revert silently
+      onCommit?.(); // capture pre-change state for undo
+      const clamped = clampChannel(channel, parsed, color);
+      onValueChange(channel, clamped);
+      onCommit?.(); // capture post-change state for undo
+    },
+    [channel, color, onValueChange, onCommit],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      e.stopPropagation();
+      if (e.key === "Enter") {
+        commitEdit(editValue);
+      } else if (e.key === "Escape") {
+        setEditing(false);
+      }
+    },
+    [editValue, commitEdit],
+  );
+
+  const formatted = formatValue(channel, value);
+
+  return (
+    <span style={{ display: "inline-flex", gap: "0.2ch", alignItems: "baseline" }}>
+      {/* Channel letter — drag handle */}
+      <span
+        onMouseDown={handleLabelMouseDown}
         style={{
-          position: "absolute",
-          top: -14,
-          left: 0,
-          width: size,
-          textAlign: "center",
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 9,
+          cursor: "ew-resize",
+          userSelect: "none",
           color: labelColor,
-          textTransform: "uppercase",
-          letterSpacing: "-0.55px",
+        }}
+      >
+        {channel.toUpperCase()}
+      </span>
+      {/* Value — the span always occupies space; input overlays it */}
+      <span
+        onClick={!editing ? handleValueClick : undefined}
+        onMouseDown={(e) => e.stopPropagation()}
+        style={{
+          position: "relative",
+          cursor: editing ? "auto" : "text",
           userSelect: "none",
         }}
       >
-        {nameForHue(hue)} {Math.round(hue)}°
-      </div>
-    </div>
+        {/* Invisible text holds the width stable */}
+        <span style={{ visibility: editing ? "hidden" : "visible" }}>
+          {formatted}
+        </span>
+        {editing && (
+          <input
+            ref={inputRef}
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={() => commitEdit(editValue)}
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              fontFamily: "inherit",
+              fontSize: "inherit",
+              color: "inherit",
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              padding: 0,
+              margin: 0,
+              width: "100%",
+            }}
+          />
+        )}
+      </span>
+    </span>
   );
 }
 
@@ -140,6 +536,8 @@ interface SwatchNodeProps {
   onMove: (id: string, x: number, y: number) => void;
   onMoveSelected: (dx: number, dy: number) => void;
   onAdjustColor?: (id: string, dl: number, dc: number) => void;
+  onUpdateColor?: (id: string, color: OklchColor) => void;
+  onSnapshot?: () => void;
 }
 
 export function SwatchNode({
@@ -152,30 +550,19 @@ export function SwatchNode({
   onMove,
   onMoveSelected,
   onAdjustColor,
+  onUpdateColor,
+  onSnapshot,
 }: SwatchNodeProps) {
   const hex = toHex(swatch.color);
   const showDetail = zoom > 1.5;
   const [hovered, setHovered] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  // Detect wheel events on this swatch to show the hue arc
-  const handleWheel = useCallback(() => {
-    if (!selected) return;
-    setIsScrolling(true);
-    clearTimeout(scrollTimer.current);
-    scrollTimer.current = setTimeout(() => setIsScrolling(false), 400);
-  }, [selected]);
-
-  // Clean up timer on unmount
-  useEffect(() => () => clearTimeout(scrollTimer.current), []);
 
   // E+drag: adjust lightness (vertical) and chroma (horizontal)
-  const [editAxis, setEditAxis] = useState<"l" | "c" | null>(null);
   const handleEditDrag = useCallback(
     (e: React.MouseEvent) => {
       if (!eKeyHeld || !selected || !onAdjustColor) return false;
       e.stopPropagation();
+      onSnapshot?.(); // capture pre-gesture state for undo
 
       const startY = e.clientY;
       const startX = e.clientX;
@@ -191,7 +578,7 @@ export function SwatchNode({
         if (!axis) {
           if (Math.abs(dy) > 3 || Math.abs(dx) > 3) {
             axis = Math.abs(dy) > Math.abs(dx) ? "l" : "c";
-            setEditAxis(axis);
+            // axis locked
           }
           return;
         }
@@ -212,15 +599,71 @@ export function SwatchNode({
       const handleUp = () => {
         window.removeEventListener("mousemove", handleMove);
         window.removeEventListener("mouseup", handleUp);
-        setEditAxis(null);
+        onSnapshot?.(); // undo checkpoint after E+drag gesture
       };
 
       window.addEventListener("mousemove", handleMove);
       window.addEventListener("mouseup", handleUp);
       return true;
     },
-    [eKeyHeld, selected, onAdjustColor, swatch.id, zoom],
+    [eKeyHeld, selected, onAdjustColor, onSnapshot, swatch.id, zoom],
   );
+
+  // ---- Color field value change (click/drag in L×C field) ----
+  const handleFieldColorChange = useCallback(
+    (newColor: OklchColor) => {
+      if (!onUpdateColor) return;
+      onUpdateColor(swatch.id, newColor);
+    },
+    [swatch.id, onUpdateColor],
+  );
+
+  const handleFieldDragStart = useCallback(() => {
+    onSnapshot?.();
+  }, [onSnapshot]);
+
+  const handleFieldDragEnd = useCallback(() => {
+    onSnapshot?.();
+  }, [onSnapshot]);
+
+  // ---- Hue strip change ----
+  const handleHueStripChange = useCallback(
+    (newHue: number) => {
+      if (!onUpdateColor) return;
+      const { l, c } = swatch.color;
+      const mc = maxChroma(l, newHue);
+      onUpdateColor(swatch.id, clampToGamut({ l, c: Math.min(c, mc), h: newHue }));
+    },
+    [swatch.id, swatch.color, onUpdateColor],
+  );
+
+  // ---- LCH label value change (scrub or typed) ----
+  const handleLchChange = useCallback(
+    (channel: LchChannel, newValue: number) => {
+      if (!onUpdateColor) return;
+      const { l, c, h } = swatch.color;
+      let color: OklchColor;
+      if (channel === "l") {
+        const mc = maxChroma(newValue, h);
+        color = { l: newValue, c: Math.min(c, mc), h };
+      } else if (channel === "c") {
+        color = { l, c: newValue, h };
+      } else {
+        const mc = maxChroma(l, newValue);
+        color = { l, c: Math.min(c, mc), h: newValue };
+      }
+      onUpdateColor(swatch.id, clampToGamut(color));
+    },
+    [swatch.id, swatch.color, onUpdateColor],
+  );
+
+  const handleScrubStart = useCallback((_ch: LchChannel) => {
+    onSnapshot?.();
+  }, [onSnapshot]);
+
+  const handleScrubEnd = useCallback(() => {
+    onSnapshot?.();
+  }, [onSnapshot]);
 
   const handleMouseDown = useDrag(
     swatch.id,
@@ -244,7 +687,6 @@ export function SwatchNode({
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onWheel={handleWheel}
       style={{
         position: "absolute",
         left: swatch.position.x,
@@ -255,137 +697,78 @@ export function SwatchNode({
         cursor: "default",
         outline: selected ? `1px solid ${outlineColor}` : "none",
         outlineOffset: 3,
+        zIndex: selected ? 10 : "auto",
       }}
     >
-      {isScrolling && (
-        <HueArc hue={swatch.color.h} darkMode={darkMode} />
-      )}
-      {editAxis === "l" && (
-        <div
-          style={{
-            position: "absolute",
-            left: -28,
-            top: -8,
-            width: 20,
-            height: 64,
-            pointerEvents: "none",
-          }}
-        >
-          {/* Lightness scale */}
-          <div
-            style={{
-              position: "absolute",
-              left: 8,
-              top: 0,
-              width: 1,
-              height: 64,
-              background: darkMode
-                ? "rgba(0,0,0,0.15)"
-                : "rgba(255,255,255,0.15)",
-            }}
+      {/* L×C color field — appears to the right of the swatch when selected */}
+      {selected && (
+        <>
+          <ColorField
+            color={swatch.color}
+            onColorChange={handleFieldColorChange}
+            onDragStart={handleFieldDragStart}
+            onDragEnd={handleFieldDragEnd}
           />
-          {/* Current L position marker */}
-          <div
-            style={{
-              position: "absolute",
-              left: 4,
-              top: (1 - swatch.color.l) * 64 - 1,
-              width: 9,
-              height: 2,
-              background: darkMode
-                ? "rgba(0,0,0,0.6)"
-                : "rgba(255,255,255,0.6)",
-            }}
+          <HueStrip
+            hue={swatch.color.h}
+            onHueChange={handleHueStripChange}
+            onDragStart={handleFieldDragStart}
+            onDragEnd={handleFieldDragEnd}
           />
-          <div
-            style={{
-              position: "absolute",
-              left: -24,
-              top: (1 - swatch.color.l) * 64 - 5,
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 9,
-              color: darkMode ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)",
-              userSelect: "none",
-            }}
-          >
-            {swatch.color.l.toFixed(2)}
-          </div>
-        </div>
-      )}
-      {editAxis === "c" && (
-        <div
-          style={{
-            position: "absolute",
-            left: -8,
-            top: 56,
-            width: 64,
-            height: 20,
-            pointerEvents: "none",
-          }}
-        >
-          {/* Chroma bar background (gamut max) */}
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 8,
-              width: 64,
-              height: 2,
-              background: darkMode
-                ? "rgba(0,0,0,0.1)"
-                : "rgba(255,255,255,0.1)",
-            }}
-          />
-          {/* Current C fill */}
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 8,
-              width: Math.min(64, (swatch.color.c / (maxChroma(swatch.color.l, swatch.color.h) || 0.4)) * 64),
-              height: 2,
-              background: darkMode
-                ? "rgba(0,0,0,0.5)"
-                : "rgba(255,255,255,0.5)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 14,
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 9,
-              color: darkMode ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)",
-              whiteSpace: "nowrap",
-              userSelect: "none",
-            }}
-          >
-            C {swatch.color.c.toFixed(3)}
-          </div>
-        </div>
+        </>
       )}
       {(hovered || showDetail || selected) && (
         <div
           style={{
             position: "absolute",
-            top: 52,
+            top: selected ? FIELD_TOP + FIELD_SIZE + 4 : 52,
             left: 0,
+            zIndex: 2,
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
             color: darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
             whiteSpace: "nowrap",
             userSelect: "none",
-            pointerEvents: "none",
+            pointerEvents: selected ? "auto" : "none",
           }}
         >
           <div>{hex}</div>
           {selected && (
             <>
-              <div style={{ marginTop: 2, opacity: 0.7 }}>
-                L {swatch.color.l.toFixed(2)}{" "}
-                C {swatch.color.c.toFixed(3)}{" "}
-                H {Math.round(swatch.color.h)}
+              <div style={{ marginTop: 2, opacity: 0.7, display: "flex", gap: "0.6ch" }}>
+                <LchControl
+                  channel="l"
+                  value={swatch.color.l}
+                  color={swatch.color}
+                  darkMode={darkMode}
+                  zoom={zoom}
+                  onValueChange={handleLchChange}
+                  onScrubStart={handleScrubStart}
+                  onScrubEnd={handleScrubEnd}
+                  onCommit={onSnapshot}
+                />
+                <LchControl
+                  channel="c"
+                  value={swatch.color.c}
+                  color={swatch.color}
+                  darkMode={darkMode}
+                  zoom={zoom}
+                  onValueChange={handleLchChange}
+                  onScrubStart={handleScrubStart}
+                  onScrubEnd={handleScrubEnd}
+                  onCommit={onSnapshot}
+                />
+                <LchControl
+                  channel="h"
+                  value={swatch.color.h}
+                  color={swatch.color}
+                  darkMode={darkMode}
+                  zoom={zoom}
+                  onValueChange={handleLchChange}
+                  onScrubStart={handleScrubStart}
+                  onScrubEnd={handleScrubEnd}
+                  onCommit={onSnapshot}
+                />
               </div>
               <div
                 style={{

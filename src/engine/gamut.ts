@@ -5,7 +5,8 @@
  * When desired chroma exceeds the boundary, chroma is reduced (never lightness).
  */
 
-import { oklch, rgb, displayable, clampChroma, type Oklch } from "culori";
+// @ts-expect-error culori types don't expose okhsl but the runtime does
+import { oklch, rgb, displayable, clampChroma, type Oklch, okhsl as toOkhslMode } from "culori";
 import type { OklchColor } from "../types";
 
 /** Convert our OklchColor to culori's format */
@@ -117,4 +118,50 @@ export function parseColor(input: string): OklchColor | null {
   }
 
   return null;
+}
+
+/** Convert OklchColor to Okhsl {h, s, l} for field positioning */
+export function oklchToOkhsl(color: OklchColor): { h: number; s: number; l: number } {
+  const result = toOkhslMode(toCulori(color));
+  return { h: result?.h ?? 0, s: result?.s ?? 0, l: result?.l ?? 0 };
+}
+
+/** Convert Okhsl {h, s, l} to OklchColor for field interaction */
+export function okhslToOklch(h: number, s: number, l: number): OklchColor {
+  const result = oklch({ mode: "okhsl" as any, h, s, l });
+  return { l: result?.l ?? 0, c: result?.c ?? 0, h: result?.h ?? h };
+}
+
+/**
+ * Generate an Okhsl color field image for a given hue.
+ * X axis = saturation [0 → 1], Y axis = lightness [1 → 0] (top = light).
+ * Every pixel is in-gamut — Okhsl maps sRGB to a clean rectangle.
+ */
+export function generateFieldImage(
+  hue: number,
+  width: number,
+  height: number,
+): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d")!;
+  const imageData = ctx.createImageData(width, height);
+  const data = imageData.data;
+
+  for (let y = 0; y < height; y++) {
+    const l = 1 - y / (height - 1); // top = 1 (light), bottom = 0 (dark)
+    for (let x = 0; x < width; x++) {
+      const s = x / (width - 1); // left = 0 (gray), right = 1 (saturated)
+      const rgbColor = rgb({ mode: "okhsl", h: hue, s, l });
+      const idx = (y * width + x) * 4;
+      data[idx] = Math.round(Math.max(0, Math.min(1, rgbColor.r)) * 255);
+      data[idx + 1] = Math.round(Math.max(0, Math.min(1, rgbColor.g)) * 255);
+      data[idx + 2] = Math.round(Math.max(0, Math.min(1, rgbColor.b)) * 255);
+      data[idx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL();
 }

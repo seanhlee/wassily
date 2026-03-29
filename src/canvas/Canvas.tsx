@@ -37,6 +37,7 @@ export function Canvas() {
     harmonizeSelected,
     setCamera,
     toggleDarkMode,
+    snapshot,
     undo,
     redo,
   } = useCanvasState();
@@ -95,7 +96,7 @@ export function Canvas() {
         if (swatchEl) {
           const objId = swatchEl.getAttribute("data-object-id");
           if (objId && selectedIdsRef.current.includes(objId)) {
-            const delta = e.deltaY * 0.5;
+            const delta = e.deltaY * (e.altKey ? 0.1 : 0.5);
             rotateHue(objId, delta);
             return;
           }
@@ -567,6 +568,8 @@ export function Canvas() {
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
                 onAdjustColor={adjustSwatchColor}
+                onUpdateColor={updateSwatchColor}
+                onSnapshot={snapshot}
               />
             );
           }

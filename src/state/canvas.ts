@@ -60,7 +60,8 @@ type Action =
   | { type: "SET_CAMERA"; camera: Camera }
   | { type: "TOGGLE_DARK_MODE" }
   | { type: "RENAME_RAMP"; id: string; name: string }
-  | { type: "LOAD_STATE"; state: CanvasState };
+  | { type: "LOAD_STATE"; state: CanvasState }
+  | { type: "SNAPSHOT" };
 
 // ---- Reducer ----
 
@@ -458,6 +459,10 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       return action.state;
     }
 
+    case "SNAPSHOT":
+      // No-op in the reducer — the historyReducer creates the undo checkpoint
+      return state;
+
     default:
       return state;
   }
@@ -700,6 +705,11 @@ export function useCanvasState() {
     [],
   );
 
+  const snapshot = useCallback(
+    () => dispatch({ type: "SNAPSHOT" }),
+    [],
+  );
+
   return {
     state,
     undo,
@@ -722,5 +732,6 @@ export function useCanvasState() {
     harmonizeSelected,
     setCamera,
     toggleDarkMode,
+    snapshot,
   };
 }
