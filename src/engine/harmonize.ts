@@ -25,7 +25,7 @@ function normalizeHue(h: number): number {
 }
 
 /** Shortest angular distance between two hues (signed) */
-function angularDistance(a: number, b: number): number {
+export function angularDistance(a: number, b: number): number {
   const diff = normalizeHue(b - a);
   return diff > 180 ? diff - 360 : diff;
 }
@@ -128,21 +128,30 @@ export function harmonizeMultiple(
   const relationship: HarmonicRelationship =
     count === 3 ? "triadic" : count === 4 ? "tetradic" : "analogous";
 
-  // Find the centroid hue (circular mean)
-  const sinSum = hues.reduce(
-    (s, h) => s + Math.sin((h.hue * Math.PI) / 180),
-    0,
-  );
-  const cosSum = hues.reduce(
-    (s, h) => s + Math.cos((h.hue * Math.PI) / 180),
-    0,
-  );
-  const centroid = normalizeHue((Math.atan2(sinSum, cosSum) * 180) / Math.PI);
+  // If any hue is locked, use the first locked hue as anchor
+  // instead of the centroid — distribute others evenly around it
+  const lockedHues = hues.filter((h) => h.locked);
+  let anchor: number;
 
-  // Distribute evenly from centroid
+  if (lockedHues.length > 0) {
+    anchor = lockedHues[0].hue;
+  } else {
+    // Find the centroid hue (circular mean)
+    const sinSum = hues.reduce(
+      (s, h) => s + Math.sin((h.hue * Math.PI) / 180),
+      0,
+    );
+    const cosSum = hues.reduce(
+      (s, h) => s + Math.cos((h.hue * Math.PI) / 180),
+      0,
+    );
+    anchor = normalizeHue((Math.atan2(sinSum, cosSum) * 180) / Math.PI);
+  }
+
+  // Distribute evenly from anchor
   const sorted = [...hues].sort((a, b) => a.hue - b.hue);
   const adjustments = sorted.map((h, i) => {
-    const targetHue = normalizeHue(centroid + i * angleStep);
+    const targetHue = normalizeHue(anchor + i * angleStep);
     return {
       id: h.id,
       originalHue: h.hue,

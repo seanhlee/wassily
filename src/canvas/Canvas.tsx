@@ -16,7 +16,79 @@ import {
   clampToGamut,
   maxChroma,
 } from "../engine/gamut";
-import type { Swatch, Ramp, Point, OklchColor } from "../types";
+import { ConnectionLine } from "../components/ConnectionLine";
+import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, CanvasObject } from "../types";
+
+/** Bounding box of a canvas object (canvas space) */
+function getObjectBounds(obj: CanvasObject): { x: number; y: number; w: number; h: number } | null {
+  if (obj.type === "swatch") return { x: obj.position.x, y: obj.position.y, w: 48, h: 48 };
+  if (obj.type === "ramp") return { x: obj.position.x, y: obj.position.y, w: (obj as Ramp).stops.length * 48, h: 48 };
+  if (obj.type === "reference-image") {
+    const img = obj as import("../types").ReferenceImage;
+    return { x: img.position.x, y: img.position.y, w: img.size.width, h: img.size.height };
+  }
+  return null; // connections have no bounds
+}
+
+/** Check if two rectangles overlap (with padding) */
+function rectsOverlap(
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+  pad: number,
+): boolean {
+  return !(
+    a.x + a.w + pad <= b.x ||
+    b.x + b.w + pad <= a.x ||
+    a.y + a.h + pad <= b.y ||
+    b.y + b.h + pad <= a.y
+  );
+}
+
+/**
+ * Find a clear position for a new vertical strip of swatches.
+ * Starts to the right of the selected objects, scans rightward until no collisions.
+ */
+function findStripPlacement(
+  objects: Record<string, CanvasObject>,
+  selectedIds: string[],
+  stripCount: number,
+): Point {
+  const stripW = 48;
+  const stripH = stripCount * 48 + (stripCount - 1) * 8;
+  const padding = 40; // gap between strip and nearest object
+
+  // Get bounding box of selected objects
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const id of selectedIds) {
+    const b = getObjectBounds(objects[id]);
+    if (!b) continue;
+    minX = Math.min(minX, b.x);
+    minY = Math.min(minY, b.y);
+    maxX = Math.max(maxX, b.x + b.w);
+    maxY = Math.max(maxY, b.y + b.h);
+  }
+
+  // Vertical center of the selection
+  const selCenterY = (minY + maxY) / 2;
+  const startY = selCenterY - stripH / 2;
+
+  // Collect all existing object bounds
+  const allBounds = Object.values(objects)
+    .map(getObjectBounds)
+    .filter((b): b is NonNullable<typeof b> => b !== null);
+
+  // Start to the right of selection, scan rightward
+  let x = maxX + padding;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const candidate = { x, y: startY, w: stripW, h: stripH };
+    const collision = allBounds.some((b) => rectsOverlap(candidate, b, padding / 2));
+    if (!collision) return { x, y: startY };
+    x += 80; // step rightward
+  }
+
+  // Fallback: just place it far right
+  return { x, y: startY };
+}
 
 export function Canvas() {
   const {
@@ -35,6 +107,8 @@ export function Canvas() {
     promoteToRamp,
     changeStopCount,
     harmonizeSelected,
+    toggleLockSelected,
+    createConnection,
     setCamera,
     toggleDarkMode,
     snapshot,
@@ -55,6 +129,17 @@ export function Canvas() {
 
   const selectedIdsRef = useRef(state.selectedIds);
   selectedIdsRef.current = state.selectedIds;
+
+  // ---- Harmony cycling state ----
+  const lastHarmonyRef = useRef<{
+    selectionKey: string;
+    relationship: HarmonicRelationship;
+  } | null>(null);
+
+  // Clear cycling when selection changes
+  useEffect(() => {
+    lastHarmonyRef.current = null;
+  }, [state.selectedIds]);
 
   // ---- Canvas click → deselect only ----
   const handleCanvasClick = useCallback(
@@ -224,7 +309,7 @@ export function Canvas() {
         case "h":
           if (!e.metaKey && !e.ctrlKey && !e.repeat) {
             if (state.selectedIds.length >= 2) {
-              // Compute the result to show feedback
+              // Extract hues with locked flag (matches reducer exactly)
               const hues = state.selectedIds
                 .map((id) => {
                   const o = state.objects[id];
@@ -236,17 +321,63 @@ export function Canvas() {
                       o.type === "swatch"
                         ? (o as Swatch).color.h
                         : (o as Ramp).seedHue,
+                    locked: (o as Swatch | Ramp).locked,
                   };
                 })
                 .filter((h): h is NonNullable<typeof h> => h !== null);
+
               if (hues.length >= 2) {
-                const result = harmonizeMultiple(hues);
+                // Cycling: only for 2-hue case
+                const selectionKey = state.selectedIds.slice().sort().join(",");
+                const startAfter =
+                  hues.length === 2 &&
+                  lastHarmonyRef.current?.selectionKey === selectionKey
+                    ? lastHarmonyRef.current.relationship
+                    : undefined;
+
+                const result = harmonizeMultiple(hues, startAfter);
+
+                // Find clear placement for the new vertical strip
+                const placement = findStripPlacement(
+                  state.objects,
+                  state.selectedIds,
+                  hues.length,
+                );
+
+                // Brief label near the strip
                 showHarmonizeFeedback({
                   relationship: result.relationship,
                   angle: result.angle,
+                  placement,
+                  camera: cameraRef.current,
+                  darkMode: state.darkMode,
                 });
+
+                // Duplicate + harmonize at placement
+                harmonizeSelected(placement, startAfter);
+
+                // Track for cycling
+                lastHarmonyRef.current = {
+                  selectionKey,
+                  relationship: result.relationship,
+                };
               }
-              harmonizeSelected();
+            }
+          }
+          break;
+
+        case "k":
+          if (!e.metaKey && !e.ctrlKey && !e.repeat) {
+            if (state.selectedIds.length > 0) {
+              toggleLockSelected();
+            }
+          }
+          break;
+
+        case "l":
+          if (!e.metaKey && !e.ctrlKey && !e.repeat) {
+            if (state.selectedIds.length === 2) {
+              createConnection();
             }
           }
           break;
@@ -336,7 +467,32 @@ export function Canvas() {
         case "0":
           if (e.metaKey || e.ctrlKey) {
             e.preventDefault();
-            setCamera({ x: 0, y: 0, zoom: 1 });
+            // Fit camera to content bounds (fall back to origin if canvas is empty)
+            const allObjects = Object.values(state.objects);
+            let cMinX = Infinity, cMinY = Infinity, cMaxX = -Infinity, cMaxY = -Infinity;
+            let hasContent = false;
+            for (const obj of allObjects) {
+              const b = getObjectBounds(obj);
+              if (!b) continue;
+              hasContent = true;
+              cMinX = Math.min(cMinX, b.x);
+              cMinY = Math.min(cMinY, b.y);
+              cMaxX = Math.max(cMaxX, b.x + b.w);
+              cMaxY = Math.max(cMaxY, b.y + b.h);
+            }
+            if (!hasContent) {
+              setCamera({ x: 0, y: 0, zoom: 1 });
+            } else {
+              const pad = 64;
+              const contentW = cMaxX - cMinX + pad * 2;
+              const contentH = cMaxY - cMinY + pad * 2;
+              const vw = window.innerWidth;
+              const vh = window.innerHeight;
+              const zoom = Math.min(vw / contentW, vh / contentH, 2);
+              const cx = (vw - contentW * zoom) / 2 - (cMinX - pad) * zoom;
+              const cy = (vh - contentH * zoom) / 2 - (cMinY - pad) * zoom;
+              setCamera({ x: cx, y: cy, zoom });
+            }
           }
           break;
       }
@@ -364,6 +520,8 @@ export function Canvas() {
     deleteSelected,
     setCamera,
     harmonizeSelected,
+    toggleLockSelected,
+    createConnection,
     select,
     undo,
     redo,
@@ -516,7 +674,16 @@ export function Canvas() {
     onSelect: select,
     onDeleteSelected: deleteSelected,
     onPromoteToRamp: promoteToRamp,
-    onHarmonize: harmonizeSelected,
+    onHarmonize: () => {
+      const hueCount = state.selectedIds.filter((id) => {
+        const obj = state.objects[id];
+        return obj && (obj.type === "swatch" || obj.type === "ramp");
+      }).length;
+      if (hueCount >= 2) {
+        const placement = findStripPlacement(state.objects, state.selectedIds, hueCount);
+        harmonizeSelected(placement);
+      }
+    },
     containerRef,
   });
 
@@ -556,6 +723,45 @@ export function Canvas() {
           height: 0,
         }}
       >
+        {/* Connection lines — rendered below objects */}
+        <svg
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 0,
+            height: 0,
+            overflow: "visible",
+            pointerEvents: "none",
+          }}
+        >
+          {objects
+            .filter((obj) => obj.type === "connection")
+            .map((obj) => {
+              const conn = obj as Connection;
+              const fromObj = state.objects[conn.fromId];
+              const toObj = state.objects[conn.toId];
+              if (
+                !fromObj ||
+                !toObj ||
+                (fromObj.type !== "swatch" && fromObj.type !== "ramp") ||
+                (toObj.type !== "swatch" && toObj.type !== "ramp")
+              )
+                return null;
+              return (
+                <ConnectionLine
+                  key={conn.id}
+                  connection={conn}
+                  fromObj={fromObj as Swatch | Ramp}
+                  toObj={toObj as Swatch | Ramp}
+                  darkMode={state.darkMode}
+                  selected={state.selectedIds.includes(conn.id)}
+                  onSelect={select}
+                />
+              );
+            })}
+        </svg>
+
         {objects.map((obj) => {
           if (obj.type === "swatch") {
             return (

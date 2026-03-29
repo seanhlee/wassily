@@ -63,7 +63,14 @@ type Action =
   | { type: "RESTORE_IMAGE_URLS"; urls: Record<string, string> }
   | { type: "PROMOTE_TO_RAMP"; id: string; stopCount: number }
   | { type: "CHANGE_STOP_COUNT"; id: string; delta: number }
-  | { type: "HARMONIZE_SELECTED"; startAfter?: HarmonicRelationship }
+  | {
+      type: "HARMONIZE_SELECTED";
+      startAfter?: HarmonicRelationship;
+      /** Canvas-space position for the top-left of the new vertical strip */
+      placement: Point;
+    }
+  | { type: "TOGGLE_LOCK_SELECTED" }
+  | { type: "CREATE_CONNECTION" }
   | { type: "SET_CAMERA"; camera: Camera }
   | { type: "TOGGLE_DARK_MODE" }
   | { type: "RENAME_RAMP"; id: string; name: string }
@@ -387,7 +394,52 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       };
     }
 
+    case "TOGGLE_LOCK_SELECTED": {
+      const objects = { ...state.objects };
+      // If ANY selected swatch/ramp is unlocked, lock all; otherwise unlock all
+      const selected = state.selectedIds
+        .map((id) => objects[id])
+        .filter(
+          (o): o is Swatch | Ramp =>
+            !!o && (o.type === "swatch" || o.type === "ramp"),
+        );
+      if (selected.length === 0) return state;
+      const anyUnlocked = selected.some((o) => !o.locked);
+      for (const obj of selected) {
+        objects[obj.id] = { ...obj, locked: anyUnlocked } as typeof obj;
+      }
+      return { ...state, objects };
+    }
+
+    case "CREATE_CONNECTION": {
+      // Requires exactly 2 selected swatches or ramps
+      const endpoints = state.selectedIds.filter((id) => {
+        const obj = state.objects[id];
+        return obj && (obj.type === "swatch" || obj.type === "ramp");
+      });
+      if (endpoints.length !== 2) return state;
+      const [fromId, toId] = endpoints;
+      // Check for existing connection between the pair (either direction)
+      const exists = Object.values(state.objects).some(
+        (obj) =>
+          obj.type === "connection" &&
+          ((obj as Connection).fromId === fromId &&
+            (obj as Connection).toId === toId) ||
+          ((obj as Connection).fromId === toId &&
+            (obj as Connection).toId === fromId),
+      );
+      if (exists) return state;
+      const id = genId();
+      const conn: Connection = { id, type: "connection", fromId, toId };
+      return {
+        ...state,
+        objects: { ...state.objects, [id]: conn },
+      };
+    }
+
     case "HARMONIZE_SELECTED": {
+      // Non-destructive: duplicate selected objects, harmonize the copies,
+      // arrange in a vertical strip at action.placement. Originals untouched.
       const hues = state.selectedIds
         .map((id) => {
           const obj = state.objects[id];
@@ -405,26 +457,40 @@ function reducer(state: CanvasState, action: Action): CanvasState {
 
       const result = harmonizeMultiple(hues, action.startAfter);
       const objects = { ...state.objects };
+      const newIds: string[] = [];
+      const stripGap = 8; // px between swatches in vertical strip
 
-      for (const adj of result.adjustments) {
-        const obj = objects[adj.id];
-        if (!obj) continue;
+      for (let i = 0; i < result.adjustments.length; i++) {
+        const adj = result.adjustments[i];
+        const sourceObj = state.objects[adj.id];
+        if (!sourceObj) continue;
 
-        if (obj.type === "swatch") {
-          const swatch = obj as Swatch;
+        const newId = genId();
+        newIds.push(newId);
+
+        // Position in vertical strip
+        const pos: Point = {
+          x: action.placement.x,
+          y: action.placement.y + i * (48 + stripGap),
+        };
+
+        if (sourceObj.type === "swatch") {
+          const swatch = sourceObj as Swatch;
           const newC = maxChroma(swatch.color.l, adj.newHue);
-          objects[adj.id] = {
-            ...swatch,
+          objects[newId] = {
+            id: newId,
+            type: "swatch",
             color: clampToGamut({
               l: swatch.color.l,
               c: Math.min(swatch.color.c, newC),
               h: adj.newHue,
             }),
+            position: pos,
           };
         }
 
-        if (obj.type === "ramp") {
-          const ramp = obj as Ramp;
+        if (sourceObj.type === "ramp") {
+          const ramp = sourceObj as Ramp;
           const stops = generateRamp({
             hue: adj.newHue,
             stopCount: ramp.stopCount,
@@ -433,18 +499,21 @@ function reducer(state: CanvasState, action: Action): CanvasState {
           const existingNames = Object.values(objects)
             .filter((o): o is Ramp => o.type === "ramp" && o.id !== ramp.id)
             .map((r) => r.name);
-          objects[adj.id] = {
-            ...ramp,
+          objects[newId] = {
+            id: newId,
+            type: "ramp",
             seedHue: adj.newHue,
             stops,
-            name: ramp.customName
-              ? ramp.name
-              : uniqueRampName(adj.newHue, existingNames),
+            stopCount: ramp.stopCount,
+            position: pos,
+            name: uniqueRampName(adj.newHue, existingNames),
+            mode: ramp.mode,
           };
         }
       }
 
-      return { ...state, objects };
+      // Select the new group (so user can drag it immediately)
+      return { ...state, objects, selectedIds: newIds };
     }
 
     case "SET_CAMERA":
@@ -733,8 +802,18 @@ export function useCanvasState() {
   );
 
   const harmonizeSelected = useCallback(
-    (startAfter?: HarmonicRelationship) =>
-      dispatch({ type: "HARMONIZE_SELECTED", startAfter }),
+    (placement: Point, startAfter?: HarmonicRelationship) =>
+      dispatch({ type: "HARMONIZE_SELECTED", placement, startAfter }),
+    [],
+  );
+
+  const toggleLockSelected = useCallback(
+    () => dispatch({ type: "TOGGLE_LOCK_SELECTED" }),
+    [],
+  );
+
+  const createConnection = useCallback(
+    () => dispatch({ type: "CREATE_CONNECTION" }),
     [],
   );
 
@@ -773,6 +852,8 @@ export function useCanvasState() {
     promoteToRamp,
     changeStopCount,
     harmonizeSelected,
+    toggleLockSelected,
+    createConnection,
     setCamera,
     toggleDarkMode,
     snapshot,

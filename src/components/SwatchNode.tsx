@@ -710,6 +710,23 @@ export function SwatchNode({
         zIndex: selected ? 10 : "auto",
       }}
     >
+      {/* Lock indicator — always visible when locked */}
+      {swatch.locked && (
+        <div
+          style={{
+            position: "absolute",
+            top: -6,
+            right: -6,
+            width: 3,
+            height: 3,
+            borderRadius: "50%",
+            backgroundColor: darkMode
+              ? "rgba(0,0,0,0.7)"
+              : "rgba(255,255,255,0.7)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
       {/* L×C color field — appears on double-click */}
       {editing && (
         <>
@@ -860,6 +877,24 @@ export function RampNode({
         cursor: "default",
       }}
     >
+      {/* Lock indicator — always visible when locked */}
+      {ramp.locked && (
+        <div
+          style={{
+            position: "absolute",
+            top: -6,
+            right: -6,
+            width: 3,
+            height: 3,
+            borderRadius: "50%",
+            backgroundColor: darkMode
+              ? "rgba(0,0,0,0.7)"
+              : "rgba(255,255,255,0.7)",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+      )}
       {/* Name label — absolutely positioned above, no layout shift */}
       <div
         style={{
