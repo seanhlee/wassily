@@ -26,6 +26,13 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 - `npm run build` — production build
 - `npm run preview` — preview production build
 
+## Deploy
+
+- GitHub Pages via GitHub Actions (`.github/workflows/deploy.yml`)
+- Auto-deploys on push to `main`
+- Vite `base: "/wassily/"` for GitHub Pages path
+- Live at https://seanhlee.github.io/wassily/
+
 ## Architecture
 
 - `src/engine/` — color science (purification, ramp generation v2, harmonization, image extraction, gamut mapping)
@@ -53,19 +60,36 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 - **Always vivid display** — ramps show `stop.color` (vivid) in the tool. Dark variants (`stop.darkColor`) are for export only.
 - **Harmonization** — select 2+ objects, press H, hues snap to nearest harmonic geometry. Feedback: relationship name centered on screen for 1.2s.
 - **Image extraction** — drop/paste an image, get 3-7 adaptive dominant colors in OKLCH space. Neutrals (C < 0.04) are NOT purified — grays stay gray.
-- **Hover-only labels** — all text/values hidden until hover. No zoom-level-based display.
-- **Dark mode** — D toggles canvas between #000 (default) and #fff.
+- **Hover-only labels** — ramp names/values hidden until hover. Swatch hex is only visible in edit mode (context menu for quick copy).
+- **Light mode default** — canvas starts white (#fff). D toggles between light and dark (#000).
 - **Persistence** — localStorage (auto-save, debounced). Reference images are session-only.
 
 ## Design
 
 - IBM Plex Mono 400, 9px everywhere
-- Labels: uppercase, letter-spacing -0.55px (ramp names) or 0.5px (context menu)
+- Labels: uppercase, letter-spacing -0.55px (ramp names) or 0.5px (context menu, LCH labels)
 - Values: hex uppercase (#0059E9), CSS functions lowercase (oklch(...))
 - No rounded corners anywhere — all sharp edges
-- Canvas bg: #000 dark default, #fff light toggle
+- Canvas bg: #fff light default, #000 dark toggle
 - Context menu: #000 bg, 9px uppercase, edge-aware positioning
 - The color is always the loudest thing on screen
+
+## Selection Chrome
+
+- **Corner brackets** — SVG L-shaped corners at each corner of selected objects (swatches, ramps, ref images). Replaces CSS outline. Constants in `SEL` object: gap 4px, arm 8px, stroke 0.75px.
+- **Lock icon** — small padlock SVG at lower-right of swatch/ramp when hue-locked (K key). Color adapts to swatch lightness (dark icon on light colors, light icon on dark colors).
+- **No hover labels** — hex value removed from hover/select display. Available via context menu or edit mode.
+
+## Edit Mode
+
+Double-click a selected swatch to enter edit mode. Two-column layout:
+
+- **Left column**: swatch with selection brackets + "HEX" label + click-to-edit hex value (accepts hex, oklch, rgb, named colors via `parseColor`)
+- **Right column**: 216×216 SL color field (Okhsl space) + 16px hue strip with filled triangle marker + labeled LCH controls (HUE, CHROMA, LIGHTNESS)
+- **Field indicator**: bracket crosshair in the color field (gap 4px, arm 8px, mix-blend-mode difference)
+- **Hue triangle**: filled triangle pointing left, sits against strip right edge, color adapts to canvas mode
+- **LCH controls**: drag-to-scrub on channel letter, click-to-edit on value. Order: HUE, CHROMA, LIGHTNESS with full uppercase labels above values.
+- Layout constants: `FIELD_SIZE=216`, `FIELD_LEFT=64`, `FIELD_TOP=0` (top-aligned), `HUE_STRIP_W=16`
 
 ## Copy Shortcuts
 
@@ -89,6 +113,6 @@ Created via right-click context menu:
 
 ## Known Tech Debt
 
-- **darkMode naming is backwards**: `darkMode: true` in state means the canvas is LIGHT (white background). `darkMode: false` means DARK (black, the default). The flag should be renamed to something like `lightCanvas` or the logic inverted.
+- **darkMode naming is backwards**: `darkMode: true` in state means the canvas is LIGHT (white background, the default). `darkMode: false` means DARK (black). The flag should be renamed to something like `lightCanvas` or the logic inverted.
 - **Hue rotation removed**: Scroll-on-swatch hue rotation was removed as too accidental. Will return with spectral ghost controls (JIT UI — faint arc during gesture).
 - ~~**genId counter resets on reload**~~: Fixed — `nextId` is now seeded from persisted objects in the `useReducer` initializer.
