@@ -444,9 +444,20 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       // new hues and arranges in a vertical strip. Originals untouched.
       const objects = { ...state.objects };
 
-      // Cycling: delete previous strip before creating new one
+      // Cycling: delete previous strip and any connections referencing it
       if (action.replaceIds) {
+        const removing = new Set(action.replaceIds);
         for (const id of action.replaceIds) delete objects[id];
+        // Clean up orphaned connections (same pattern as DELETE_SELECTED)
+        for (const [connId, obj] of Object.entries(objects)) {
+          if (
+            obj.type === "connection" &&
+            (removing.has((obj as Connection).fromId) ||
+              removing.has((obj as Connection).toId))
+          ) {
+            delete objects[connId];
+          }
+        }
       }
 
       const newIds: string[] = [];

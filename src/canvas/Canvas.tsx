@@ -218,16 +218,18 @@ export function Canvas() {
     stripIds: string[]; // IDs of strip objects (for replaceIds on cycling)
     relationship: HarmonicRelationship;
     cycleCount: number;
+    pendingCapture: boolean; // true = next selection change should capture stripIds
   } | null>(null);
 
-  // Capture strip IDs after harmonization completes (selection changes to new strip)
+  // Capture strip IDs after harmonization completes (selection changes to new strip).
+  // Only fires when pendingCapture is set by the H handler, not on arbitrary selection changes.
   useEffect(() => {
     if (
-      lastHarmonyRef.current &&
-      lastHarmonyRef.current.stripIds.length === 0 &&
+      lastHarmonyRef.current?.pendingCapture &&
       state.selectedIds.length > 0
     ) {
       lastHarmonyRef.current.stripIds = [...state.selectedIds];
+      lastHarmonyRef.current.pendingCapture = false;
     }
   }, [state.selectedIds]);
 
@@ -469,11 +471,15 @@ export function Canvas() {
                 (ref.stripIds.length > 0 &&
                   ref.stripIds.slice().sort().join(",") === selectionKey));
 
-            // Source IDs: use originals when cycling, otherwise current selection
-            const sourceIds = isCycling ? ref!.sourceIds : state.selectedIds;
-
-            // Extract hues from source objects
-            const hues = extractHues(state.objects, sourceIds);
+            // Source IDs: use originals when cycling, fall back to current
+            // selection if source objects have been deleted
+            let sourceIds = isCycling ? ref!.sourceIds : state.selectedIds;
+            let hues = extractHues(state.objects, sourceIds);
+            if (hues.length < 2 && isCycling) {
+              // Source objects were deleted — fall back to current selection
+              sourceIds = state.selectedIds;
+              hues = extractHues(state.objects, sourceIds);
+            }
             if (hues.length >= 2) {
               // Cycling: use startAfter to skip to next relationship
               const startAfter = isCycling ? ref!.relationship : undefined;
@@ -496,6 +502,7 @@ export function Canvas() {
                   stripIds: isCycling ? ref!.stripIds : [],
                   relationship: result.relationship,
                   cycleCount,
+                  pendingCapture: false,
                 };
                 break;
               }
@@ -525,13 +532,14 @@ export function Canvas() {
                 camera: state.camera,
               });
 
-              // Track for cycling — stripIds captured lazily via useEffect
+              // Track for cycling — stripIds captured by useEffect on next selection change
               lastHarmonyRef.current = {
                 sourceKey: isCycling ? ref!.sourceKey : selectionKey,
                 sourceIds: [...sourceIds],
-                stripIds: [], // filled by useEffect when selectedIds updates
+                stripIds: [],
                 relationship: result.relationship,
                 cycleCount,
+                pendingCapture: true,
               };
             }
           }
