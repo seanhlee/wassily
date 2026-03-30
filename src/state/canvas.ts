@@ -692,6 +692,14 @@ export function useCanvasState() {
     { current: initialState, past: [], future: [] },
     (init) => {
       const loaded = loadFromStorage();
+      if (loaded) {
+        // Seed nextId from persisted objects to prevent ID collisions
+        const maxId = Object.keys(loaded.objects).reduce((max, key) => {
+          const num = parseInt(key.replace("obj_", ""), 10);
+          return isNaN(num) ? max : Math.max(max, num);
+        }, 0);
+        nextId = maxId + 1;
+      }
       return { current: loaded || init.current, past: [], future: [] };
     },
   );

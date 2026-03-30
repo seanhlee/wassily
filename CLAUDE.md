@@ -91,4 +91,4 @@ Created via right-click context menu:
 
 - **darkMode naming is backwards**: `darkMode: true` in state means the canvas is LIGHT (white background). `darkMode: false` means DARK (black, the default). The flag should be renamed to something like `lightCanvas` or the logic inverted.
 - **Hue rotation removed**: Scroll-on-swatch hue rotation was removed as too accidental. Will return with spectral ghost controls (JIT UI — faint arc during gesture).
-- **genId counter resets on reload**: `nextId` starts at 1 on every module load, which can collide with existing object IDs loaded from localStorage.
+- ~~**genId counter resets on reload**~~: Fixed — `nextId` is now seeded from persisted objects in the `useReducer` initializer.
