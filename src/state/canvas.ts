@@ -35,6 +35,7 @@ export const initialState: CanvasState = {
   selectedIds: [],
   camera: initialCamera,
   darkMode: false,
+  showConnections: true,
 };
 
 // ---- Actions ----
@@ -71,6 +72,7 @@ type Action =
     }
   | { type: "TOGGLE_LOCK_SELECTED" }
   | { type: "CREATE_CONNECTION" }
+  | { type: "TOGGLE_CONNECTIONS" }
   | { type: "SET_CAMERA"; camera: Camera }
   | { type: "TOGGLE_DARK_MODE" }
   | { type: "RENAME_RAMP"; id: string; name: string }
@@ -412,30 +414,37 @@ function reducer(state: CanvasState, action: Action): CanvasState {
     }
 
     case "CREATE_CONNECTION": {
-      // Requires exactly 2 selected swatches or ramps
+      // Chain-connect adjacent pairs in selection order
       const endpoints = state.selectedIds.filter((id) => {
         const obj = state.objects[id];
         return obj && (obj.type === "swatch" || obj.type === "ramp");
       });
-      if (endpoints.length !== 2) return state;
-      const [fromId, toId] = endpoints;
-      // Check for existing connection between the pair (either direction)
-      const exists = Object.values(state.objects).some(
-        (obj) =>
-          obj.type === "connection" &&
-          (((obj as Connection).fromId === fromId &&
-            (obj as Connection).toId === toId) ||
-            ((obj as Connection).fromId === toId &&
-              (obj as Connection).toId === fromId)),
-      );
-      if (exists) return state;
-      const id = genId();
-      const conn: Connection = { id, type: "connection", fromId, toId };
-      return {
-        ...state,
-        objects: { ...state.objects, [id]: conn },
-      };
+      if (endpoints.length < 2) return state;
+      const newObjects = { ...state.objects };
+      let added = false;
+      for (let i = 0; i < endpoints.length - 1; i++) {
+        const fromId = endpoints[i];
+        const toId = endpoints[i + 1];
+        // Skip if connection already exists between this pair
+        const exists = Object.values(newObjects).some(
+          (obj) =>
+            obj.type === "connection" &&
+            (((obj as Connection).fromId === fromId &&
+              (obj as Connection).toId === toId) ||
+              ((obj as Connection).fromId === toId &&
+                (obj as Connection).toId === fromId)),
+        );
+        if (exists) continue;
+        const id = genId();
+        newObjects[id] = { id, type: "connection", fromId, toId } as Connection;
+        added = true;
+      }
+      if (!added) return state;
+      return { ...state, objects: newObjects, showConnections: true };
     }
+
+    case "TOGGLE_CONNECTIONS":
+      return { ...state, showConnections: !state.showConnections };
 
     case "HARMONIZE_SELECTED": {
       // Non-destructive: duplicate selected objects, harmonize the copies,
@@ -575,6 +584,7 @@ function saveToStorage(state: CanvasState) {
       selectedIds: [],
       camera: state.camera,
       darkMode: state.darkMode,
+      showConnections: state.showConnections,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
 
@@ -596,6 +606,7 @@ function loadFromStorage(): CanvasState | null {
         selectedIds: [],
         camera: parsed.camera,
         darkMode: parsed.darkMode ?? false,
+        showConnections: parsed.showConnections ?? true,
       };
     }
   } catch {
@@ -817,6 +828,11 @@ export function useCanvasState() {
     [],
   );
 
+  const toggleConnections = useCallback(
+    () => dispatch({ type: "TOGGLE_CONNECTIONS" }),
+    [],
+  );
+
   const setCamera = useCallback(
     (camera: Camera) => dispatch({ type: "SET_CAMERA", camera }),
     [],
@@ -854,6 +870,7 @@ export function useCanvasState() {
     harmonizeSelected,
     toggleLockSelected,
     createConnection,
+    toggleConnections,
     setCamera,
     toggleDarkMode,
     snapshot,

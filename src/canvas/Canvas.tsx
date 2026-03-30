@@ -108,6 +108,7 @@ export function Canvas() {
     harmonizeSelected,
     toggleLockSelected,
     createConnection,
+    toggleConnections,
     setCamera,
     toggleDarkMode,
     snapshot,
@@ -366,8 +367,16 @@ export function Canvas() {
 
         case "l":
           if (!e.metaKey && !e.ctrlKey && !e.repeat) {
-            if (state.selectedIds.length === 2) {
+            // 2+ swatches/ramps selected → create connections
+            // Otherwise → toggle connection visibility
+            const swatchEndpoints = state.selectedIds.filter((id) => {
+              const obj = state.objects[id];
+              return obj && (obj.type === "swatch" || obj.type === "ramp");
+            });
+            if (swatchEndpoints.length >= 2) {
               createConnection();
+            } else {
+              toggleConnections();
             }
           }
           break;
@@ -512,6 +521,7 @@ export function Canvas() {
     harmonizeSelected,
     toggleLockSelected,
     createConnection,
+    toggleConnections,
     select,
     undo,
     redo,
@@ -714,7 +724,7 @@ export function Canvas() {
         }}
       >
         {/* Connection lines — rendered below objects */}
-        <svg
+        {state.showConnections && <svg
           style={{
             position: "absolute",
             left: 0,
@@ -750,7 +760,7 @@ export function Canvas() {
                 />
               );
             })}
-        </svg>
+        </svg>}
 
         {objects.map((obj) => {
           if (obj.type === "swatch") {

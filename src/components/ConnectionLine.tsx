@@ -90,9 +90,24 @@ export const ConnectionLine = memo(
     const labelBg = darkMode ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.85)";
     const labelColor = darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)";
 
-    // Midpoint for hover label
-    const mx = (from.x + to.x) / 2;
-    const my = (from.y + to.y) / 2;
+    // Cubic bezier curve: offset control points perpendicular to the line
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    // Perpendicular unit vector
+    const px = -dy / (dist || 1);
+    const py = dx / (dist || 1);
+    // Bow amount: proportional to distance, capped
+    const bow = Math.min(dist * 0.15, 60);
+    const c1x = from.x + dx * 0.33 + px * bow;
+    const c1y = from.y + dy * 0.33 + py * bow;
+    const c2x = from.x + dx * 0.67 + px * bow;
+    const c2y = from.y + dy * 0.67 + py * bow;
+    const curvePath = `M ${from.x} ${from.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${to.x} ${to.y}`;
+
+    // Midpoint on the bezier curve (t=0.5)
+    const mx = (from.x + 3 * c1x + 3 * c2x + to.x) / 8;
+    const my = (from.y + 3 * c1y + 3 * c2y + to.y) / 8;
 
     return (
       <g
@@ -100,22 +115,18 @@ export const ConnectionLine = memo(
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Visible line */}
-        <line
-          x1={from.x}
-          y1={from.y}
-          x2={to.x}
-          y2={to.y}
+        {/* Visible curve */}
+        <path
+          d={curvePath}
+          fill="none"
           stroke={stroke}
           strokeWidth={lineWidth}
           vectorEffect="non-scaling-stroke"
         />
         {/* Invisible hit target for click/hover */}
-        <line
-          x1={from.x}
-          y1={from.y}
-          x2={to.x}
-          y2={to.y}
+        <path
+          d={curvePath}
+          fill="none"
           stroke="transparent"
           strokeWidth={8}
           vectorEffect="non-scaling-stroke"

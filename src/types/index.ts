@@ -80,6 +80,7 @@ export interface CanvasState {
   selectedIds: string[];
   camera: Camera;
   darkMode: boolean;
+  showConnections: boolean;
 }
 
 // ---- Ramp Generation Config ----
