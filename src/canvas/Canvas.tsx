@@ -16,7 +16,8 @@ import {
   maxChroma,
 } from "../engine/gamut";
 import { ConnectionLine } from "../components/ConnectionLine";
-import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, CanvasObject } from "../types";
+import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, CanvasObject, ReferenceImage } from "../types";
+import { oklch } from "culori";
 
 /** Bounding box of a canvas object (canvas space) */
 function getObjectBounds(obj: CanvasObject): { x: number; y: number; w: number; h: number } | null {
@@ -89,6 +90,59 @@ function findStripPlacement(
   return { x, y: startY };
 }
 
+/** Prime an offscreen canvas for pixel sampling from a reference image */
+function primeImageCanvas(
+  image: ReferenceImage,
+  cache: Map<string, CanvasRenderingContext2D>,
+) {
+  if (cache.has(image.id)) return;
+  if (!image.dataUrl) return; // skip images with expired/empty URLs
+  const img = new Image();
+  img.src = image.dataUrl;
+  const draw = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = image.size.width;
+    canvas.height = image.size.height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (ctx) {
+      ctx.drawImage(img, 0, 0, image.size.width, image.size.height);
+      cache.set(image.id, ctx);
+    }
+  };
+  if (img.complete && img.naturalWidth > 0) draw();
+  else img.onload = draw;
+}
+
+/** Sample the pixel color at a viewport position from reference images */
+function samplePixelAt(
+  clientX: number,
+  clientY: number,
+  containerRect: DOMRect,
+  camera: { x: number; y: number; zoom: number },
+  objects: Record<string, CanvasObject>,
+  cache: Map<string, CanvasRenderingContext2D>,
+): OklchColor | null {
+  const canvasX = (clientX - containerRect.left - camera.x) / camera.zoom;
+  const canvasY = (clientY - containerRect.top - camera.y) / camera.zoom;
+
+  for (const obj of Object.values(objects)) {
+    if (obj.type !== "reference-image") continue;
+    const img = obj as ReferenceImage;
+    const localX = canvasX - img.position.x;
+    const localY = canvasY - img.position.y;
+    if (localX < 0 || localY < 0 || localX >= img.size.width || localY >= img.size.height) continue;
+
+    const ctx = cache.get(img.id);
+    if (!ctx) continue;
+
+    const pixel = ctx.getImageData(Math.floor(localX), Math.floor(localY), 1, 1).data;
+    const result = oklch({ mode: "rgb", r: pixel[0] / 255, g: pixel[1] / 255, b: pixel[2] / 255 });
+    if (!result) continue;
+    return { l: result.l ?? 0, c: result.c ?? 0, h: result.h ?? 0 };
+  }
+  return null;
+}
+
 export function Canvas() {
   const {
     state,
@@ -98,7 +152,6 @@ export function Canvas() {
     deleteSelected,
     moveObject,
     moveSelected,
-    rotateHue,
     updateSwatchColor,
     adjustSwatchColor,
     createSwatches,
@@ -120,9 +173,16 @@ export function Canvas() {
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [peekPureMode, setPeekPureMode] = useState(false);
   const [eKeyHeld, setEKeyHeld] = useState(false);
+  const [iKeyHeld, setIKeyHeld] = useState(false);
   const isPanning = useRef(false);
   const panStart = useRef<Point>({ x: 0, y: 0 });
   const cameraStart = useRef(state.camera);
+
+  // ---- Eyedropper state ----
+  const eyedropperOriginalColor = useRef<OklchColor | null>(null);
+  const eyedropperCommitted = useRef(false);
+  const eyedropperTargetId = useRef<string | null>(null);
+  const eyedropperCanvasCache = useRef<Map<string, CanvasRenderingContext2D>>(new Map());
 
   const cameraRef = useRef(state.camera);
   cameraRef.current = state.camera;
@@ -141,9 +201,42 @@ export function Canvas() {
     lastHarmonyRef.current = null;
   }, [state.selectedIds]);
 
-  // ---- Canvas click → deselect only ----
+  // ---- Eyedropper: prime offscreen canvases for ref images ----
+  useEffect(() => {
+    const cache = eyedropperCanvasCache.current;
+    const imageIds = new Set<string>();
+    for (const obj of Object.values(state.objects)) {
+      if (obj.type === "reference-image") {
+        imageIds.add(obj.id);
+        primeImageCanvas(obj as ReferenceImage, cache);
+      }
+    }
+    // Remove stale entries
+    for (const id of cache.keys()) {
+      if (!imageIds.has(id)) cache.delete(id);
+    }
+  }, [state.objects]);
+
+  // ---- Canvas click → deselect only (+ eyedropper commit) ----
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent) => {
+      // Eyedropper: commit sampled color on click
+      if (iKeyHeld && eyedropperTargetId.current) {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+          const color = samplePixelAt(
+            e.clientX, e.clientY, rect, cameraRef.current,
+            state.objects, eyedropperCanvasCache.current,
+          );
+          if (color) {
+            snapshot();
+            updateSwatchColor(eyedropperTargetId.current, color);
+            eyedropperCommitted.current = true;
+          }
+        }
+        return; // never deselect during eyedropper
+      }
+
       if (isPanning.current) return;
       const target = e.target as HTMLElement;
       if (target.closest(".swatch-node, .ramp-node, .ref-image-node")) return;
@@ -152,7 +245,7 @@ export function Canvas() {
         deselectAll();
       }
     },
-    [state.camera, state.selectedIds, deselectAll],
+    [state.camera, state.selectedIds, state.objects, deselectAll, iKeyHeld, snapshot, updateSwatchColor],
   );
 
   // ---- Wheel: pinch-to-zoom + two-finger-pan + hue rotation ----
@@ -176,17 +269,6 @@ export function Canvas() {
         const newY = mouseY - (mouseY - cam.y) * (newZoom / cam.zoom);
         setCamera({ x: newX, y: newY, zoom: newZoom });
       } else {
-        // Scroll on selected swatch → hue rotation
-        const swatchEl = (e.target as HTMLElement).closest(".swatch-node");
-        if (swatchEl) {
-          const objId = swatchEl.getAttribute("data-object-id");
-          if (objId && selectedIdsRef.current.includes(objId)) {
-            const delta = e.deltaY * (e.altKey ? 0.1 : 0.5);
-            rotateHue(objId, delta);
-            return;
-          }
-        }
-
         // Two-finger scroll → pan
         setCamera({
           x: cam.x - e.deltaX,
@@ -198,11 +280,12 @@ export function Canvas() {
 
     el.addEventListener("wheel", handler, { passive: false });
     return () => el.removeEventListener("wheel", handler);
-  }, [setCamera, rotateHue]);
+  }, [setCamera]);
 
   // ---- Space+drag → pan ----
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (iKeyHeld) return; // eyedropper mode — don't start panning
       if (spaceHeld) {
         isPanning.current = true;
         panStart.current = { x: e.clientX, y: e.clientY };
@@ -210,11 +293,29 @@ export function Canvas() {
         e.preventDefault();
       }
     },
-    [spaceHeld],
+    [spaceHeld, iKeyHeld],
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
+      // Eyedropper: live preview
+      if (iKeyHeld && eyedropperTargetId.current) {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+          const color = samplePixelAt(
+            e.clientX, e.clientY, rect, cameraRef.current,
+            state.objects, eyedropperCanvasCache.current,
+          );
+          if (color) {
+            updateSwatchColor(eyedropperTargetId.current, color);
+          } else if (eyedropperOriginalColor.current) {
+            // Off image — revert to original
+            updateSwatchColor(eyedropperTargetId.current, eyedropperOriginalColor.current);
+          }
+        }
+        return;
+      }
+
       if (isPanning.current) {
         const dx = e.clientX - panStart.current.x;
         const dy = e.clientY - panStart.current.y;
@@ -225,7 +326,7 @@ export function Canvas() {
         });
       }
     },
-    [setCamera],
+    [setCamera, iKeyHeld, state.objects, updateSwatchColor],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -251,6 +352,21 @@ export function Canvas() {
 
       if (e.key === "e" && !e.repeat && !e.metaKey && !e.ctrlKey) {
         setEKeyHeld(true);
+        return;
+      }
+
+      if (e.key === "i" && !e.repeat && !e.metaKey && !e.ctrlKey) {
+        // Store original color for revert on cancel
+        const targetId = state.selectedIds[0];
+        const targetObj = targetId ? state.objects[targetId] : null;
+        if (targetObj?.type === "swatch") {
+          eyedropperTargetId.current = targetId;
+          eyedropperOriginalColor.current = { ...(targetObj as Swatch).color };
+          eyedropperCommitted.current = false;
+        } else {
+          eyedropperTargetId.current = null;
+        }
+        setIKeyHeld(true);
         return;
       }
 
@@ -501,6 +617,15 @@ export function Canvas() {
       if (e.key === " ") setSpaceHeld(false);
       if (e.key === "m") setPeekPureMode(false);
       if (e.key === "e") setEKeyHeld(false);
+      if (e.key === "i") {
+        // Revert if not committed
+        if (!eyedropperCommitted.current && eyedropperTargetId.current && eyedropperOriginalColor.current) {
+          updateSwatchColor(eyedropperTargetId.current, eyedropperOriginalColor.current);
+        }
+        setIKeyHeld(false);
+        eyedropperTargetId.current = null;
+        eyedropperOriginalColor.current = null;
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -529,11 +654,21 @@ export function Canvas() {
   ]);
 
   // ---- Reset modifier keys on window blur (prevents stuck states) ----
+  const updateSwatchColorRef = useRef(updateSwatchColor);
+  updateSwatchColorRef.current = updateSwatchColor;
+
   useEffect(() => {
     const handleBlur = () => {
       setSpaceHeld(false);
       setPeekPureMode(false);
       setEKeyHeld(false);
+      // Revert eyedropper on blur
+      if (!eyedropperCommitted.current && eyedropperTargetId.current && eyedropperOriginalColor.current) {
+        updateSwatchColorRef.current(eyedropperTargetId.current, eyedropperOriginalColor.current);
+      }
+      setIKeyHeld(false);
+      eyedropperTargetId.current = null;
+      eyedropperOriginalColor.current = null;
     };
     window.addEventListener("blur", handleBlur);
     return () => window.removeEventListener("blur", handleBlur);
@@ -710,7 +845,9 @@ export function Canvas() {
             ? isPanning.current
               ? "grabbing"
               : "grab"
-            : "default",
+            : iKeyHeld && eyedropperTargetId.current
+              ? "crosshair"
+              : "default",
           userSelect: "none",
         }}
       >
@@ -800,10 +937,11 @@ export function Canvas() {
             return (
               <RefImageNode
                 key={obj.id}
-                image={obj as import("../types").ReferenceImage}
+                image={obj as ReferenceImage}
                 selected={state.selectedIds.includes(obj.id)}
                 zoom={state.camera.zoom}
                 darkMode={state.darkMode}
+                eyedropperActive={iKeyHeld && !!eyedropperTargetId.current}
                 onSelect={select}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}

@@ -1132,6 +1132,7 @@ export function RampNode({
 interface RefImageNodeProps {
   image: import("../types").ReferenceImage;
   darkMode: boolean;
+  eyedropperActive?: boolean;
   onSelect: (id: string, additive: boolean) => void;
   onMove: (id: string, x: number, y: number) => void;
   onMoveSelected: (dx: number, dy: number) => void;
@@ -1142,6 +1143,7 @@ interface RefImageNodeProps {
 export function RefImageNode({
   image,
   darkMode,
+  eyedropperActive,
   onSelect,
   onMove,
   onMoveSelected,
@@ -1173,6 +1175,7 @@ export function RefImageNode({
         height: image.size.height,
         cursor: "default",
         opacity: 1,
+        pointerEvents: eyedropperActive ? "none" : undefined,
       }}
     >
       {/* Selection brackets */}
@@ -1183,7 +1186,7 @@ export function RefImageNode({
           color={outlineColor}
         />
       )}
-      <img
+      {image.dataUrl && <img
         src={image.dataUrl}
         alt=""
         draggable={false}
@@ -1193,7 +1196,7 @@ export function RefImageNode({
           objectFit: "cover",
           pointerEvents: "none",
         }}
-      />
+      />}
     </div>
   );
 }
