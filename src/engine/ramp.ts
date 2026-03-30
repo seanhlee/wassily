@@ -8,7 +8,7 @@
  */
 
 import type { OklchColor, RampStop, RampConfig, StopPreset } from "../types";
-import { maxChroma, clampToGamut } from "./gamut";
+import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "./gamut";
 
 // ---- Stop Presets ----
 
@@ -182,7 +182,7 @@ function generateNeutralStop(
 
 export function generateRamp(config: RampConfig): RampStop[] {
   const { hue, stopCount, mode, seedChroma, seedLightness } = config;
-  const isNeutral = seedChroma !== undefined && seedChroma < 0.05;
+  const isNeutral = seedChroma !== undefined && seedChroma < NEUTRAL_CHROMA;
 
   const labels =
     stopCount in STOP_PRESETS

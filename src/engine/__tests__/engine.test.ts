@@ -317,4 +317,86 @@ describe("harmonization", () => {
     expect(result.relationship).toBe("triadic");
     expect(result.adjustments).toHaveLength(3);
   });
+
+  it("handles hue wrap-around (350 and 10 are close)", () => {
+    const result = harmonizePair(350, 10);
+    expect(result.relationship).toBe("analogous");
+    expect(result.totalDisplacement).toBeLessThan(15);
+  });
+
+  it("detects already-harmonized colors (displacement near 0)", () => {
+    const result = harmonizePair(0, 180);
+    expect(result.relationship).toBe("complementary");
+    expect(result.totalDisplacement).toBeLessThan(1);
+  });
+
+  it("optimal assignment minimizes displacement for 3 hues", () => {
+    // Hues near triadic positions — naive sort would assign badly
+    const result = harmonizeMultiple([
+      { id: "a", hue: 350 },
+      { id: "b", hue: 110 },
+      { id: "c", hue: 240 },
+    ]);
+    expect(result.relationship).toBe("triadic");
+    // Optimal: 350->~0 (10°), 110->~120 (10°), 240->~240 (0°)
+    // Naive sort gave 445° total. Optimal should be well under 100°.
+    expect(result.totalDisplacement).toBeLessThan(100);
+  });
+
+  it("locked hues are pre-assigned to nearest target", () => {
+    const result = harmonizeMultiple([
+      { id: "a", hue: 45, locked: true },
+      { id: "b", hue: 100 },
+      { id: "c", hue: 200 },
+    ]);
+    const adjA = result.adjustments.find((a) => a.id === "a")!;
+    expect(adjA.newHue).toBeCloseTo(45, 0); // locked stays put
+  });
+
+  it("clustered hues get analogous, not triadic", () => {
+    // 3 teals spanning only 15° — should pick analogous (30°), not triadic (120°)
+    const result = harmonizeMultiple([
+      { id: "a", hue: 195 },
+      { id: "b", hue: 200 },
+      { id: "c", hue: 210 },
+    ]);
+    expect(result.relationship).toBe("analogous");
+    // Displacement is moderate (~90°) since hues still need to spread to 30° spacing
+    // but much less than triadic would require (~240°)
+    expect(result.totalDisplacement).toBeLessThan(120);
+  });
+
+  it("wide-spread hues get tetradic or triadic", () => {
+    // 3 hues spanning ~200° — characteristic angle ~100°, nearest to tetradic (90°)
+    const result = harmonizeMultiple([
+      { id: "a", hue: 0 },
+      { id: "b", hue: 100 },
+      { id: "c", hue: 200 },
+    ]);
+    expect(["tetradic", "triadic"]).toContain(result.relationship);
+  });
+
+  it("cycling via startAfter works for 3+ hues", () => {
+    const hues = [
+      { id: "a", hue: 195 },
+      { id: "b", hue: 200 },
+      { id: "c", hue: 210 },
+    ];
+    const r1 = harmonizeMultiple(hues);
+    expect(r1.relationship).toBe("analogous");
+    // Cycle past analogous → should pick a different relationship
+    const r2 = harmonizeMultiple(hues, "analogous");
+    expect(r2.relationship).not.toBe("analogous");
+  });
+
+  it("all locked hues stay unchanged", () => {
+    const result = harmonizeMultiple([
+      { id: "a", hue: 10, locked: true },
+      { id: "b", hue: 130, locked: true },
+      { id: "c", hue: 250, locked: true },
+    ]);
+    for (const adj of result.adjustments) {
+      expect(adj.newHue).toBeCloseTo(adj.originalHue, 0);
+    }
+  });
 });

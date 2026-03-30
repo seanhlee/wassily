@@ -59,6 +59,8 @@ export function extractColors(imageData: ImageData): ExtractionResult {
 
   // Only purify colors that were already chromatic in the image.
   // Grays stay gray — they're intentionally neutral, not detuned.
+  // Image extraction uses a stricter threshold (0.04 vs 0.05) because
+  // sampled colors have compression noise that inflates chroma slightly.
   const colors = filtered.map((color) => {
     if (color.c > 0.04) {
       return purifyColor(color);

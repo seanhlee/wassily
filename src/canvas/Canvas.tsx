@@ -17,6 +17,7 @@ import {
 } from "../engine/gamut";
 import { ConnectionLine } from "../components/ConnectionLine";
 import { HelpOverlay } from "../components/HelpOverlay";
+import { HarmonizeOverlay, showHarmonizeFeedback } from "../components/HarmonizeLabel";
 import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, CanvasObject, ReferenceImage } from "../types";
 import { oklch } from "culori";
 
@@ -92,6 +93,24 @@ function findStripPlacement(
 }
 
 /** Prime an offscreen canvas for pixel sampling from a reference image */
+/** Extract hues with locked flag from selected objects */
+function extractHues(
+  objects: Record<string, CanvasObject>,
+  ids: string[],
+): { id: string; hue: number; locked?: boolean }[] {
+  return ids
+    .map((id) => {
+      const o = objects[id];
+      if (!o || (o.type !== "swatch" && o.type !== "ramp")) return null;
+      return {
+        id,
+        hue: o.type === "swatch" ? (o as Swatch).color.h : (o as Ramp).seedHue,
+        locked: (o as Swatch | Ramp).locked,
+      };
+    })
+    .filter((h): h is NonNullable<typeof h> => h !== null);
+}
+
 function primeImageCanvas(
   image: ReferenceImage,
   cache: Map<string, CanvasRenderingContext2D>,
@@ -194,13 +213,24 @@ export function Canvas() {
 
   // ---- Harmony cycling state ----
   const lastHarmonyRef = useRef<{
-    selectionKey: string;
+    sourceKey: string; // selectionKey of the original objects
+    sourceIds: string[]; // IDs of original source objects
+    stripIds: string[]; // IDs of strip objects (for replaceIds on cycling)
     relationship: HarmonicRelationship;
+    cycleCount: number;
+    pendingCapture: boolean; // true = next selection change should capture stripIds
   } | null>(null);
 
-  // Clear cycling when selection changes
+  // Capture strip IDs after harmonization completes (selection changes to new strip).
+  // Only fires when pendingCapture is set by the H handler, not on arbitrary selection changes.
   useEffect(() => {
-    lastHarmonyRef.current = null;
+    if (
+      lastHarmonyRef.current?.pendingCapture &&
+      state.selectedIds.length > 0
+    ) {
+      lastHarmonyRef.current.stripIds = [...state.selectedIds];
+      lastHarmonyRef.current.pendingCapture = false;
+    }
   }, [state.selectedIds]);
 
   // ---- Eyedropper: prime offscreen canvases for ref images ----
@@ -431,51 +461,86 @@ export function Canvas() {
 
         case "h":
           if (!e.metaKey && !e.ctrlKey && !e.repeat) {
-            if (state.selectedIds.length >= 2) {
-              // Extract hues with locked flag (matches reducer exactly)
-              const hues = state.selectedIds
-                .map((id) => {
-                  const o = state.objects[id];
-                  if (!o || (o.type !== "swatch" && o.type !== "ramp"))
-                    return null;
-                  return {
-                    id,
-                    hue:
-                      o.type === "swatch"
-                        ? (o as Swatch).color.h
-                        : (o as Ramp).seedHue,
-                    locked: (o as Swatch | Ramp).locked,
-                  };
-                })
-                .filter((h): h is NonNullable<typeof h> => h !== null);
+            const selectionKey = state.selectedIds.slice().sort().join(",");
+            const ref = lastHarmonyRef.current;
 
-              if (hues.length >= 2) {
-                // Cycling: only for 2-hue case
-                const selectionKey = state.selectedIds.slice().sort().join(",");
-                const startAfter =
-                  hues.length === 2 &&
-                  lastHarmonyRef.current?.selectionKey === selectionKey
-                    ? lastHarmonyRef.current.relationship
-                    : undefined;
+            // Determine if cycling: current selection matches the source or the strip
+            const isCycling =
+              ref !== null &&
+              (ref.sourceKey === selectionKey ||
+                (ref.stripIds.length > 0 &&
+                  ref.stripIds.slice().sort().join(",") === selectionKey));
 
-                const result = harmonizeMultiple(hues, startAfter);
+            // Source IDs: use originals when cycling, fall back to current
+            // selection if source objects have been deleted
+            let sourceIds = isCycling ? ref!.sourceIds : state.selectedIds;
+            let hues = extractHues(state.objects, sourceIds);
+            if (hues.length < 2 && isCycling) {
+              // Source objects were deleted — fall back to current selection
+              sourceIds = state.selectedIds;
+              hues = extractHues(state.objects, sourceIds);
+            }
+            if (hues.length >= 2) {
+              // Cycling: use startAfter to skip to next relationship
+              const startAfter = isCycling ? ref!.relationship : undefined;
+              const cycleCount = isCycling ? ref!.cycleCount + 1 : 0;
 
-                // Find clear placement for the new vertical strip
-                const placement = findStripPlacement(
-                  state.objects,
-                  state.selectedIds,
-                  hues.length,
-                );
+              const result = harmonizeMultiple(hues, startAfter);
 
-                // Duplicate + harmonize at placement
-                harmonizeSelected(placement, startAfter);
-
-                // Track for cycling
+              // No-op: already harmonized
+              if (result.totalDisplacement < 1) {
+                showHarmonizeFeedback({
+                  ...result,
+                  count: hues.length,
+                  alreadyHarmonized: true,
+                  camera: state.camera,
+                });
+                // Update ref so next H press cycles to a different relationship
                 lastHarmonyRef.current = {
-                  selectionKey,
+                  sourceKey: isCycling ? ref!.sourceKey : selectionKey,
+                  sourceIds: [...sourceIds],
+                  stripIds: isCycling ? ref!.stripIds : [],
                   relationship: result.relationship,
+                  cycleCount,
+                  pendingCapture: false,
                 };
+                break;
               }
+
+              // Cycling: reuse the old strip's position; otherwise find clear space
+              const replaceIds = isCycling && ref!.stripIds.length > 0
+                ? ref!.stripIds
+                : undefined;
+              let placement: Point;
+              if (replaceIds) {
+                // Reuse position of the first object in the strip being replaced
+                const firstReplace = state.objects[replaceIds[0]];
+                placement = firstReplace && "position" in firstReplace
+                  ? (firstReplace as { position: Point }).position
+                  : findStripPlacement(state.objects, sourceIds, hues.length);
+              } else {
+                placement = findStripPlacement(state.objects, sourceIds, hues.length);
+              }
+              harmonizeSelected(result.adjustments, placement, replaceIds);
+
+              // Show feedback above the strip
+              showHarmonizeFeedback({
+                ...result,
+                count: hues.length,
+                alreadyHarmonized: false,
+                placement,
+                camera: state.camera,
+              });
+
+              // Track for cycling — stripIds captured by useEffect on next selection change
+              lastHarmonyRef.current = {
+                sourceKey: isCycling ? ref!.sourceKey : selectionKey,
+                sourceIds: [...sourceIds],
+                stripIds: [],
+                relationship: result.relationship,
+                cycleCount,
+                pendingCapture: true,
+              };
             }
           }
           break;
@@ -813,14 +878,16 @@ export function Canvas() {
 
   // ---- Context menu harmonize handler ----
   const handleHarmonize = useCallback(() => {
-    const hueCount = state.selectedIds.filter((id) => {
-      const obj = state.objects[id];
-      return obj && (obj.type === "swatch" || obj.type === "ramp");
-    }).length;
-    if (hueCount >= 2) {
-      const placement = findStripPlacement(state.objects, state.selectedIds, hueCount);
-      harmonizeSelected(placement);
+    const hues = extractHues(state.objects, state.selectedIds);
+    if (hues.length < 2) return;
+    const result = harmonizeMultiple(hues);
+    if (result.totalDisplacement < 1) {
+      showHarmonizeFeedback({ ...result, count: hues.length, alreadyHarmonized: true, camera: state.camera });
+      return;
     }
+    const placement = findStripPlacement(state.objects, state.selectedIds, hues.length);
+    harmonizeSelected(result.adjustments, placement);
+    showHarmonizeFeedback({ ...result, count: hues.length, alreadyHarmonized: false, placement, camera: state.camera });
   }, [state.selectedIds, state.objects, harmonizeSelected]);
 
   // ---- Render ----
@@ -971,6 +1038,7 @@ export function Canvas() {
           onDismiss={() => setShowHelp(false)}
         />
       )}
+      <HarmonizeOverlay />
     </CanvasContextMenu>
   );
 }
