@@ -39,7 +39,7 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 1. **Swatch** — single purified color (the atomic unit)
 2. **Ramp** — linked strip of colors generated from a swatch (promoted via R key)
 3. **Reference Image** — dropped/pasted photograph for color extraction (session-only, not persisted)
-4. **Connection** — relationship line between swatches (designed, NOT YET BUILT)
+4. **Connection** — curved bezier line between swatches/ramps showing contrast ratio, hue distance, and deltaE on hover. L to create (chain-connects 2+ selected), L to toggle visibility, Delete to remove.
 
 ## Key Concepts
 
@@ -90,5 +90,5 @@ Created via right-click context menu:
 ## Known Tech Debt
 
 - **darkMode naming is backwards**: `darkMode: true` in state means the canvas is LIGHT (white background). `darkMode: false` means DARK (black, the default). The flag should be renamed to something like `lightCanvas` or the logic inverted.
-- **Toast component exists but is unused**: `ToastContainer` is mounted in `main.tsx` but `showToast` is never called from copy shortcuts. Can be removed or repurposed.
 - **Hue rotation removed**: Scroll-on-swatch hue rotation was removed as too accidental. Will return with spectral ghost controls (JIT UI — faint arc during gesture).
+- **genId counter resets on reload**: `nextId` starts at 1 on every module load, which can collide with existing object IDs loaded from localStorage.
