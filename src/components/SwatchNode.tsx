@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, useEffect, useMemo } from "react";
 import type { Swatch, Ramp, OklchColor } from "../types";
-import { toHex, maxChroma, clampToGamut, generateFieldImage, oklchToOkhsl, okhslToOklch } from "../engine/gamut";
-import { generateRamp, nameForHue } from "../engine/ramp";
+import { toHex, maxChroma, clampToGamut, generateFieldImage, oklchToOkhsl, okhslToOklch, parseColor } from "../engine/gamut";
+import { generateRamp } from "../engine/ramp";
 
 // ---- Color picker controls ----
 //
@@ -16,11 +16,11 @@ import { generateRamp, nameForHue } from "../engine/ramp";
 // Indicators use SVG at sub-pixel stroke with mix-blend-mode: difference.
 // Both field and strip use matching bracket indicators (four inward-pointing L-corners).
 
-const FIELD_SIZE = 128;
-const FIELD_LEFT = 56;                          // 48 (swatch) + 8 (gap)
-const FIELD_TOP = 24 - FIELD_SIZE / 2;          // vertically centered on swatch
-const HUE_STRIP_W = 6;
-const HUE_STRIP_LEFT = FIELD_LEFT + FIELD_SIZE + 4;
+const FIELD_SIZE = 216;
+const FIELD_LEFT = 64;                          // 48 (swatch) + 16 (gap)
+const FIELD_TOP = 0;                            // top-aligned with swatch
+const HUE_STRIP_W = 16;
+const HUE_STRIP_LEFT = FIELD_LEFT + FIELD_SIZE + 8; // 272
 
 // Shared SVG indicator style
 const INDICATOR_SVG: React.CSSProperties = {
@@ -32,6 +32,95 @@ const INDICATOR_SVG: React.CSSProperties = {
   mixBlendMode: "difference",
   overflow: "visible",
 };
+
+// ---- Selection chrome ----
+//
+// Corner brackets replace the old CSS outline on selected objects.
+// All geometry on a 4px / 2px grid for visual consistency.
+//
+//   ┌           ┐
+//   │  swatch   │
+//   └           ┘
+
+const SEL = {
+  gap: 4,          // bracket corner offset from object edge
+  arm: 8,          // bracket arm length
+  stroke: 0.75,    // bracket stroke weight
+};
+
+/** Four corner brackets framing a selected object. */
+function SelectionBrackets({
+  width,
+  height,
+  color,
+}: {
+  width: number;
+  height: number;
+  color: string;
+}) {
+  const { gap: g, arm: a, stroke } = SEL;
+  // Bracket rectangle edges (offset outward by gap)
+  const l = -g;
+  const r = width + g;
+  const t = -g;
+  const b = height + g;
+  return (
+    <svg
+      style={{
+        position: "absolute",
+        inset: 0,
+        width,
+        height,
+        overflow: "visible",
+        pointerEvents: "none",
+      }}
+    >
+      <path
+        d={[
+          // ┌ top-left
+          `M${l + a},${t} L${l},${t} L${l},${t + a}`,
+          // ┐ top-right
+          `M${r - a},${t} L${r},${t} L${r},${t + a}`,
+          // └ bottom-left
+          `M${l},${b - a} L${l},${b} L${l + a},${b}`,
+          // ┘ bottom-right
+          `M${r},${b - a} L${r},${b} L${r - a},${b}`,
+        ].join(" ")}
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke}
+      />
+    </svg>
+  );
+}
+
+/** Small padlock icon at lower-right of its parent. Color adapts to swatch. */
+function LockIcon({ color }: { color: string }) {
+  // 9×10 bounding box, sharp corners
+  return (
+    <svg
+      viewBox="0 0 9 10"
+      width={9}
+      height={10}
+      style={{
+        position: "absolute",
+        bottom: 6,
+        right: 6,
+        pointerEvents: "none",
+      }}
+    >
+      {/* Hasp (U-shape) */}
+      <path
+        d="M2.5,4 L2.5,2.5 Q2.5,0.5 4.5,0.5 Q6.5,0.5 6.5,2.5 L6.5,4"
+        fill="none"
+        stroke={color}
+        strokeWidth={1}
+      />
+      {/* Body */}
+      <rect x={1} y={4} width={7} height={6} fill={color} />
+    </svg>
+  );
+}
 
 // Sub-pixel bracket indicator geometry.
 //
@@ -45,8 +134,8 @@ const INDICATOR_SVG: React.CSSProperties = {
 //   └     ┘                        └──────┘
 
 const BRACKET = {
-  arm: 5,      // length of each L-shaped arm in px
-  gap: 2,      // distance from target to nearest bracket corner
+  arm: 8,      // length of each L-shaped arm in px
+  gap: 4,      // distance from target to nearest bracket corner
   stroke: 0.75, // SVG stroke weight
 };
 
@@ -84,38 +173,28 @@ function FieldIndicator({ x, y }: { x: number; y: number }) {
 }
 
 /**
- * Four corner brackets framing a position on the hue strip.
- * Same visual language as the field indicator, but the rectangle
- * spans the strip width instead of framing a point.
- *
- * The bracket rectangle is:
- *   left:   -gap
- *   right:  stripWidth + gap
- *   top:    y - gap
- *   bottom: y + gap
+ * Filled triangle marker on the hue strip, sitting against the right edge.
+ * Points left (◀) to indicate the current hue position.
+ * Color adapts to canvas mode (not blend-mode — triangle sits against canvas bg).
  */
-function StripIndicator({ y, stripWidth }: { y: number; stripWidth: number }) {
-  const { arm: a, gap: g, stroke } = BRACKET;
-  const l = -g;              // left edge of bracket rectangle
-  const r = stripWidth + g;  // right edge
-  const t = y - g;           // top edge
-  const b = y + g;           // bottom edge
+function HueTriangle({ y, stripWidth, color }: { y: number; stripWidth: number; color: string }) {
+  const tw = 6;   // triangle width (horizontal)
+  const th = 8;   // triangle height (vertical)
   return (
-    <svg style={INDICATOR_SVG}>
-      <path
-        d={[
-          // ┌ top-left: corner at (l, t), arms → right and ↓ down
-          `M${l + a},${t} L${l},${t} L${l},${t + a}`,
-          // ┐ top-right: corner at (r, t), arms ← left and ↓ down
-          `M${r - a},${t} L${r},${t} L${r},${t + a}`,
-          // └ bottom-left: corner at (l, b), arms → right and ↑ up
-          `M${l},${b - a} L${l},${b} L${l + a},${b}`,
-          // ┘ bottom-right: corner at (r, b), arms ← left and ↑ up
-          `M${r},${b - a} L${r},${b} L${r - a},${b}`,
-        ].join(" ")}
-        fill="none"
-        stroke="#fff"
-        strokeWidth={stroke}
+    <svg
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        overflow: "visible",
+      }}
+    >
+      <polygon
+        points={`${stripWidth + tw},${y - th / 2} ${stripWidth + tw},${y + th / 2} ${stripWidth},${y}`}
+        fill={color}
+        stroke="none"
       />
     </svg>
   );
@@ -211,11 +290,13 @@ function HueStrip({
   onHueChange,
   onDragStart,
   onDragEnd,
+  darkMode,
 }: {
   hue: number;
   onHueChange: (h: number) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  darkMode: boolean;
 }) {
   const stripRef = useRef<HTMLDivElement>(null);
   const markerY = (hue / 360) * FIELD_SIZE;
@@ -252,6 +333,8 @@ function HueStrip({
     return result;
   }, []);
 
+  const triW = 6; // triangle overhang beyond strip
+
   return (
     <div
       ref={stripRef}
@@ -260,7 +343,7 @@ function HueStrip({
         position: "absolute",
         left: HUE_STRIP_LEFT,
         top: FIELD_TOP,
-        width: HUE_STRIP_W,
+        width: HUE_STRIP_W + triW,
         height: FIELD_SIZE,
         cursor: "ns-resize",
       }}
@@ -270,7 +353,7 @@ function HueStrip({
         height: FIELD_SIZE,
         background: `linear-gradient(to bottom, ${stops.join(", ")})`,
       }} />
-      <StripIndicator y={markerY} stripWidth={HUE_STRIP_W} />
+      <HueTriangle y={markerY} stripWidth={HUE_STRIP_W} color={darkMode ? "#000" : "#fff"} />
     </div>
   );
 }
@@ -557,14 +640,37 @@ export function SwatchNode({
   onSnapshot,
 }: SwatchNodeProps) {
   const hex = toHex(swatch.color);
-  const showDetail = zoom > 1.5;
-  const [hovered, setHovered] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [hexEditing, setHexEditing] = useState(false);
+  const [hexEditValue, setHexEditValue] = useState("");
+  const hexInputRef = useRef<HTMLInputElement>(null);
 
   // Close editor when deselected
   useEffect(() => {
     if (!selected) setEditing(false);
   }, [selected]);
+
+  // Auto-select hex input text
+  useEffect(() => {
+    if (hexEditing && hexInputRef.current) {
+      hexInputRef.current.select();
+    }
+  }, [hexEditing]);
+
+  const handleHexClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHexEditValue(hex);
+    setHexEditing(true);
+  }, [hex]);
+
+  const commitHex = useCallback((raw: string) => {
+    setHexEditing(false);
+    const parsed = parseColor(raw.trim());
+    if (!parsed || !onUpdateColor) return;
+    onSnapshot?.();
+    onUpdateColor(swatch.id, parsed);
+    onSnapshot?.();
+  }, [swatch.id, onUpdateColor, onSnapshot]);
 
   // E+drag: adjust lightness (vertical) and chroma (horizontal)
   const handleEditDrag = useCallback(
@@ -698,8 +804,6 @@ export function SwatchNode({
         e.stopPropagation();
         if (selected) setEditing(true);
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       style={{
         position: "absolute",
         left: swatch.position.x,
@@ -708,26 +812,21 @@ export function SwatchNode({
         height: 48,
         backgroundColor: hex,
         cursor: "default",
-        outline: selected ? `0.5px solid ${outlineColor}` : "none",
-        outlineOffset: 3,
         zIndex: selected ? 10 : "auto",
       }}
     >
-      {/* Lock indicator — always visible when locked */}
+      {/* Selection brackets */}
+      {selected && (
+        <SelectionBrackets
+          width={48}
+          height={48}
+          color={outlineColor}
+        />
+      )}
+      {/* Lock indicator — color adapts to swatch lightness */}
       {swatch.locked && (
-        <div
-          style={{
-            position: "absolute",
-            top: -6,
-            right: -6,
-            width: 3,
-            height: 3,
-            borderRadius: "50%",
-            backgroundColor: darkMode
-              ? "rgba(0,0,0,0.7)"
-              : "rgba(255,255,255,0.7)",
-            pointerEvents: "none",
-          }}
+        <LockIcon
+          color={swatch.color.l > 0.5 ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)"}
         />
       )}
       {/* L×C color field — appears on double-click */}
@@ -744,75 +843,116 @@ export function SwatchNode({
             onHueChange={handleHueStripChange}
             onDragStart={handleFieldDragStart}
             onDragEnd={handleFieldDragEnd}
+            darkMode={darkMode}
           />
+          {/* Left column: HEX below swatch */}
+          <div
+            style={{
+              position: "absolute",
+              top: 56,
+              left: 0,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9,
+              color: darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
+              whiteSpace: "nowrap",
+              userSelect: "none",
+              pointerEvents: "auto",
+            }}
+          >
+            <div
+              style={{
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                opacity: 0.7,
+                marginBottom: 2,
+              }}
+            >
+              HEX
+            </div>
+            <div
+              onClick={!hexEditing ? handleHexClick : undefined}
+              onMouseDown={(e) => e.stopPropagation()}
+              style={{ cursor: hexEditing ? "auto" : "text", position: "relative" }}
+            >
+              <span style={{ visibility: hexEditing ? "hidden" : "visible" }}>{hex}</span>
+              {hexEditing && (
+                <input
+                  ref={hexInputRef}
+                  type="text"
+                  value={hexEditValue}
+                  onChange={(e) => setHexEditValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") commitHex(hexEditValue);
+                    else if (e.key === "Escape") setHexEditing(false);
+                  }}
+                  onBlur={() => commitHex(hexEditValue)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    fontFamily: "inherit",
+                    fontSize: "inherit",
+                    color: "inherit",
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    padding: 0,
+                    margin: 0,
+                    width: "100%",
+                  }}
+                />
+              )}
+            </div>
+          </div>
+          {/* Right column: LCH below field */}
+          <div
+            style={{
+              position: "absolute",
+              top: FIELD_SIZE + 8,
+              left: FIELD_LEFT,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9,
+              color: darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
+              whiteSpace: "nowrap",
+              userSelect: "none",
+              pointerEvents: "auto",
+              display: "flex",
+              gap: 24,
+            }}
+          >
+            {([
+              { label: "HUE", channel: "h" as LchChannel, value: swatch.color.h },
+              { label: "CHROMA", channel: "c" as LchChannel, value: swatch.color.c },
+              { label: "LIGHTNESS", channel: "l" as LchChannel, value: swatch.color.l },
+            ]).map(({ label, channel, value }) => (
+              <div key={channel}>
+                <div
+                  style={{
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    opacity: 0.7,
+                    marginBottom: 2,
+                  }}
+                >
+                  {label}
+                </div>
+                <LchControl
+                  channel={channel}
+                  value={value}
+                  color={swatch.color}
+                  darkMode={darkMode}
+                  zoom={zoom}
+                  onValueChange={handleLchChange}
+                  onScrubStart={handleScrubStart}
+                  onScrubEnd={handleScrubEnd}
+                  onCommit={onSnapshot}
+                />
+              </div>
+            ))}
+          </div>
         </>
-      )}
-      {(hovered || showDetail || selected) && (
-        <div
-          style={{
-            position: "absolute",
-            top: editing ? FIELD_TOP + FIELD_SIZE + 4 : 52,
-            left: 0,
-            zIndex: 2,
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 9,
-            color: darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
-            whiteSpace: "nowrap",
-            userSelect: "none",
-            pointerEvents: editing ? "auto" : "none",
-          }}
-        >
-          <div>{hex}</div>
-          {editing && (
-            <>
-              <div style={{ marginTop: 2, opacity: 0.7, display: "flex", gap: "0.6ch" }}>
-                <LchControl
-                  channel="l"
-                  value={swatch.color.l}
-                  color={swatch.color}
-                  darkMode={darkMode}
-                  zoom={zoom}
-                  onValueChange={handleLchChange}
-                  onScrubStart={handleScrubStart}
-                  onScrubEnd={handleScrubEnd}
-                  onCommit={onSnapshot}
-                />
-                <LchControl
-                  channel="c"
-                  value={swatch.color.c}
-                  color={swatch.color}
-                  darkMode={darkMode}
-                  zoom={zoom}
-                  onValueChange={handleLchChange}
-                  onScrubStart={handleScrubStart}
-                  onScrubEnd={handleScrubEnd}
-                  onCommit={onSnapshot}
-                />
-                <LchControl
-                  channel="h"
-                  value={swatch.color.h}
-                  color={swatch.color}
-                  darkMode={darkMode}
-                  zoom={zoom}
-                  onValueChange={handleLchChange}
-                  onScrubStart={handleScrubStart}
-                  onScrubEnd={handleScrubEnd}
-                  onCommit={onSnapshot}
-                />
-              </div>
-              <div
-                style={{
-                  marginTop: 2,
-                  textTransform: "uppercase",
-                  letterSpacing: "-0.55px",
-                  opacity: 0.7,
-                }}
-              >
-                {nameForHue(swatch.color.h)}
-              </div>
-            </>
-          )}
-        </div>
       )}
     </div>
   );
@@ -880,22 +1020,20 @@ export function RampNode({
         cursor: "default",
       }}
     >
-      {/* Lock indicator — always visible when locked */}
+      {/* Selection brackets */}
+      {selected && (
+        <SelectionBrackets
+          width={displayStops.length * 48}
+          height={48}
+          color={outlineColor}
+        />
+      )}
+      {/* Lock indicator — color adapts to darkest stop */}
       {ramp.locked && (
-        <div
-          style={{
-            position: "absolute",
-            top: -6,
-            right: -6,
-            width: 3,
-            height: 3,
-            borderRadius: "50%",
-            backgroundColor: darkMode
-              ? "rgba(0,0,0,0.7)"
-              : "rgba(255,255,255,0.7)",
-            pointerEvents: "none",
-            zIndex: 1,
-          }}
+        <LockIcon
+          color={displayStops[displayStops.length - 1].color.l > 0.5
+            ? "rgba(0,0,0,0.6)"
+            : "rgba(255,255,255,0.6)"}
         />
       )}
       {/* Name label — absolutely positioned above, no layout shift */}
@@ -923,8 +1061,6 @@ export function RampNode({
       <div
         style={{
           display: "flex",
-          outline: selected ? `0.5px solid ${outlineColor}` : "none",
-          outlineOffset: 3,
         }}
       >
         {displayStops.map((stop) => {
@@ -1036,11 +1172,17 @@ export function RefImageNode({
         width: image.size.width,
         height: image.size.height,
         cursor: "default",
-        outline: selected ? `0.5px solid ${outlineColor}` : "none",
-        outlineOffset: 3,
         opacity: 1,
       }}
     >
+      {/* Selection brackets */}
+      {selected && (
+        <SelectionBrackets
+          width={image.size.width}
+          height={image.size.height}
+          color={outlineColor}
+        />
+      )}
       <img
         src={image.dataUrl}
         alt=""
