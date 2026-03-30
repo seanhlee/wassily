@@ -6,8 +6,7 @@ import {
   imageFileToImageData,
   fileToDataUrl,
 } from "../engine/extract";
-import { useContextMenu, ContextMenuOverlay } from "../components/ContextMenu";
-import { showHarmonizeFeedback } from "../components/HarmonizeLabel";
+import { CanvasContextMenu } from "../components/ContextMenu";
 import { harmonizeMultiple } from "../engine/harmonize";
 import {
   toHex,
@@ -344,15 +343,6 @@ export function Canvas() {
                   hues.length,
                 );
 
-                // Brief label near the strip
-                showHarmonizeFeedback({
-                  relationship: result.relationship,
-                  angle: result.angle,
-                  placement,
-                  camera: cameraRef.current,
-                  darkMode: state.darkMode,
-                });
-
                 // Duplicate + harmonize at placement
                 harmonizeSelected(placement, startAfter);
 
@@ -664,56 +654,56 @@ export function Canvas() {
     return () => window.removeEventListener("paste", handler);
   }, [createSwatch, createSwatches, addReferenceImage]);
 
-  // ---- Context menu ----
-  const { menu, handleContextMenu } = useContextMenu({
-    objects: state.objects,
-    selectedIds: state.selectedIds,
-    darkMode: state.darkMode,
-    camera: state.camera,
-    onCreateSwatch: createSwatch,
-    onSelect: select,
-    onDeleteSelected: deleteSelected,
-    onPromoteToRamp: promoteToRamp,
-    onHarmonize: () => {
-      const hueCount = state.selectedIds.filter((id) => {
-        const obj = state.objects[id];
-        return obj && (obj.type === "swatch" || obj.type === "ramp");
-      }).length;
-      if (hueCount >= 2) {
-        const placement = findStripPlacement(state.objects, state.selectedIds, hueCount);
-        harmonizeSelected(placement);
-      }
-    },
-    containerRef,
-  });
+  // ---- Context menu harmonize handler ----
+  const handleHarmonize = useCallback(() => {
+    const hueCount = state.selectedIds.filter((id) => {
+      const obj = state.objects[id];
+      return obj && (obj.type === "swatch" || obj.type === "ramp");
+    }).length;
+    if (hueCount >= 2) {
+      const placement = findStripPlacement(state.objects, state.selectedIds, hueCount);
+      harmonizeSelected(placement);
+    }
+  }, [state.selectedIds, state.objects, harmonizeSelected]);
 
   // ---- Render ----
   const canvasBg = state.darkMode ? "#fff" : "#000";
   const objects = Object.values(state.objects);
 
   return (
-    <div
-      ref={containerRef}
-      onClick={handleCanvasClick}
-      onContextMenu={handleContextMenu}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      style={{
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: canvasBg,
-        overflow: "hidden",
-        cursor: spaceHeld
-          ? isPanning.current
-            ? "grabbing"
-            : "grab"
-          : "default",
-        userSelect: "none",
-      }}
+    <CanvasContextMenu
+      objects={state.objects}
+      selectedIds={state.selectedIds}
+      darkMode={state.darkMode}
+      camera={state.camera}
+      containerRef={containerRef}
+      onCreateSwatch={createSwatch}
+      onSelect={select}
+      onDeleteSelected={deleteSelected}
+      onPromoteToRamp={promoteToRamp}
+      onHarmonize={handleHarmonize}
+      onToggleLock={toggleLockSelected}
     >
+      <div
+        onClick={handleCanvasClick}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        style={{
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: canvasBg,
+          overflow: "hidden",
+          cursor: spaceHeld
+            ? isPanning.current
+              ? "grabbing"
+              : "grab"
+            : "default",
+          userSelect: "none",
+        }}
+      >
       <div
         style={{
           transform: `translate(${state.camera.x}px, ${state.camera.y}px) scale(${state.camera.zoom})`,
@@ -814,7 +804,7 @@ export function Canvas() {
         })}
       </div>
 
-      <ContextMenuOverlay menu={menu} />
-    </div>
+      </div>
+    </CanvasContextMenu>
   );
 }

@@ -477,10 +477,13 @@ function useDrag(
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0 || e.ctrlKey) return; // ignore right-click and Ctrl+click (macOS right-click)
       e.stopPropagation();
       isDragging.current = false;
       dragStart.current = { x: e.clientX, y: e.clientY };
       lastDelta.current = { x: 0, y: 0 };
+      // Capture shiftKey now — React's SyntheticEvent gets nullified after this handler returns
+      const shiftKey = e.shiftKey;
 
       const handleMove = (me: MouseEvent) => {
         const dx = (me.clientX - dragStart.current.x) / zoom;
@@ -508,7 +511,7 @@ function useDrag(
         window.removeEventListener("mousemove", handleMove);
         window.removeEventListener("mouseup", handleUp);
         if (!isDragging.current) {
-          onSelect(id, e.shiftKey);
+          onSelect(id, shiftKey);
         }
         setTimeout(() => {
           isDragging.current = false;

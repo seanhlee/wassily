@@ -1,5 +1,9 @@
 # Wassily
 
+## Working Style
+
+- **Always plan before implementing.** For any non-trivial feature or change, research the affected code, write out a plan, and get approval before writing code. Do not wing it. This applies to new features, refactors, bug fixes that touch multiple files, and any change to interaction behavior.
+
 ## Overview
 
 A color moodboard that thinks in OKLCH. Collect colors from anywhere — paste hex values, drop photographs, right-click for serendipity. Every color is purified to its ideal expression. Promote colors into ramps when you're ready. Export production tokens. The canvas is the collection. The collection is the tool.
