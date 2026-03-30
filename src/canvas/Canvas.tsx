@@ -16,6 +16,7 @@ import {
   maxChroma,
 } from "../engine/gamut";
 import { ConnectionLine } from "../components/ConnectionLine";
+import { HelpOverlay } from "../components/HelpOverlay";
 import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, CanvasObject, ReferenceImage } from "../types";
 import { oklch } from "culori";
 
@@ -174,6 +175,7 @@ export function Canvas() {
   const [peekPureMode, setPeekPureMode] = useState(false);
   const [eKeyHeld, setEKeyHeld] = useState(false);
   const [iKeyHeld, setIKeyHeld] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const isPanning = useRef(false);
   const panStart = useRef<Point>({ x: 0, y: 0 });
   const cameraStart = useRef(state.camera);
@@ -343,6 +345,11 @@ export function Canvas() {
         e.target instanceof HTMLTextAreaElement
       )
         return;
+
+      if (showHelp) {
+        setShowHelp(false);
+        return;
+      }
 
       if (e.key === " " && !e.repeat) {
         e.preventDefault();
@@ -610,6 +617,10 @@ export function Canvas() {
             }
           }
           break;
+
+        case "?":
+          setShowHelp(true);
+          break;
       }
     };
 
@@ -651,6 +662,7 @@ export function Canvas() {
     undo,
     redo,
     updateSwatchColor,
+    showHelp,
   ]);
 
   // ---- Reset modifier keys on window blur (prevents stuck states) ----
@@ -953,6 +965,12 @@ export function Canvas() {
       </div>
 
       </div>
+      {showHelp && (
+        <HelpOverlay
+          darkMode={state.darkMode}
+          onDismiss={() => setShowHelp(false)}
+        />
+      )}
     </CanvasContextMenu>
   );
 }
