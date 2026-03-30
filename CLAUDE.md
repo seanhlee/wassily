@@ -91,6 +91,14 @@ Double-click a selected swatch to enter edit mode. Two-column layout:
 - **LCH controls**: drag-to-scrub on channel letter, click-to-edit on value. Order: HUE, CHROMA, LIGHTNESS with full uppercase labels above values.
 - Layout constants: `FIELD_SIZE=216`, `FIELD_LEFT=64`, `FIELD_TOP=0` (top-aligned), `HUE_STRIP_W=16`
 
+## Eyedropper
+
+- **I** (hold) = eyedropper mode. Select a swatch, hold I, hover over a reference image — swatch color updates live. Click to commit, release I to cancel.
+- Sampled color used as-is (no purification) — user is picking a specific color from a photo.
+- Offscreen canvases primed eagerly at image load time (no async race on keypress).
+- Undo works: `snapshot()` before commit, `UPDATE_SWATCH_COLOR` is in `SKIP_HISTORY` so previews are free.
+- `pointerEvents: "none"` on ref-image-node during eyedropper to bypass `useDrag`'s `stopPropagation`.
+
 ## Copy Shortcuts
 
 - **C** = hex value
@@ -114,5 +122,5 @@ Created via right-click context menu:
 ## Known Tech Debt
 
 - **darkMode naming is backwards**: `darkMode: true` in state means the canvas is LIGHT (white background, the default). `darkMode: false` means DARK (black). The flag should be renamed to something like `lightCanvas` or the logic inverted.
-- **Hue rotation removed**: Scroll-on-swatch hue rotation was removed as too accidental. Will return with spectral ghost controls (JIT UI — faint arc during gesture).
+- ~~**Hue rotation removed**~~: Scroll-on-swatch hue rotation code removed. Will return with spectral ghost controls (JIT UI — faint arc during gesture).
 - ~~**genId counter resets on reload**~~: Fixed — `nextId` is now seeded from persisted objects in the `useReducer` initializer.
