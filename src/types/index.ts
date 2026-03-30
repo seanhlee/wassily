@@ -34,6 +34,8 @@ export interface Ramp {
   customName?: boolean; // true if user renamed
   locked?: boolean;
   mode: "opinionated" | "pure";
+  seedChroma?: number; // preserved from promotion for ramp regeneration fidelity
+  seedLightness?: number;
 }
 
 export interface Connection {

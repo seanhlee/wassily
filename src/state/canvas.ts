@@ -12,14 +12,9 @@ import type {
   Point,
 } from "../types";
 import { randomPurifiedColor, purifyColor } from "../engine/purify";
-import { maxChroma, clampToGamut } from "../engine/gamut";
+import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "../engine/gamut";
 import { generateRamp, uniqueRampName } from "../engine/ramp";
-import { harmonizeMultiple } from "../engine/harmonize";
-import type {
-  OklchColor,
-  HarmonicRelationship,
-  ReferenceImage,
-} from "../types";
+import type { OklchColor, ReferenceImage } from "../types";
 import {
   storeImageBlob,
   loadAllImageBlobs,
@@ -66,9 +61,12 @@ type Action =
   | { type: "CHANGE_STOP_COUNT"; id: string; delta: number }
   | {
       type: "HARMONIZE_SELECTED";
-      startAfter?: HarmonicRelationship;
+      /** Pre-computed hue adjustments from harmonizeMultiple */
+      adjustments: { id: string; newHue: number }[];
       /** Canvas-space position for the top-left of the new vertical strip */
       placement: Point;
+      /** For cycling: IDs of previous strip to delete before creating new */
+      replaceIds?: string[];
     }
   | { type: "TOGGLE_LOCK_SELECTED" }
   | { type: "CREATE_CONNECTION" }
@@ -86,20 +84,13 @@ function genId(): string {
   return `obj_${nextId++}`;
 }
 
-/** Get the hue of any canvas object */
-function getObjectHue(obj: Swatch | Ramp): number {
-  if (obj.type === "swatch") return obj.color.h;
-  if (obj.type === "ramp") return obj.seedHue;
-  return 0;
-}
-
 function reducer(state: CanvasState, action: Action): CanvasState {
   switch (action.type) {
     case "CREATE_SWATCH": {
       const id = genId();
-      // Don't purify intentionally neutral colors (C < 0.05)
+      // Don't purify intentionally neutral colors
       const color = action.color
-        ? action.color.c < 0.05
+        ? action.color.c < NEUTRAL_CHROMA
           ? action.color
           : purifyColor(action.color)
         : randomPurifiedColor();
@@ -277,6 +268,8 @@ function reducer(state: CanvasState, action: Action): CanvasState {
           hue: newHue,
           stopCount: ramp.stopCount,
           mode: ramp.mode,
+          seedChroma: ramp.seedChroma,
+          seedLightness: ramp.seedLightness,
         });
         const existingNames = Object.values(state.objects)
           .filter((o): o is Ramp => o.type === "ramp" && o.id !== ramp.id)
@@ -305,7 +298,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       if (!obj || obj.type !== "swatch") return state;
 
       const swatch = obj as Swatch;
-      const isNeutral = swatch.color.c < 0.05;
+      const isNeutral = swatch.color.c < NEUTRAL_CHROMA;
       const existingNames = Object.values(state.objects)
         .filter((o): o is Ramp => o.type === "ramp")
         .map((r) => r.name);
@@ -347,6 +340,8 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         position: swatch.position,
         name,
         mode: "opinionated",
+        seedChroma: swatch.color.c,
+        seedLightness: swatch.color.l,
       };
 
       return {
@@ -377,14 +372,12 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       const newCount = presets[newIdx];
       if (newCount === ramp.stopCount) return state;
 
-      const isNeutral = ramp.stops[0]?.color.c < 0.05;
       const stops = generateRamp({
         hue: ramp.seedHue,
         stopCount: newCount,
         mode: ramp.mode,
-        seedChroma: isNeutral
-          ? ramp.stops[Math.floor(ramp.stops.length / 2)]?.color.c
-          : undefined,
+        seedChroma: ramp.seedChroma,
+        seedLightness: ramp.seedLightness,
       });
 
       return {
@@ -447,37 +440,26 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       return { ...state, showConnections: !state.showConnections };
 
     case "HARMONIZE_SELECTED": {
-      // Non-destructive: duplicate selected objects, harmonize the copies,
-      // arrange in a vertical strip at action.placement. Originals untouched.
-      const hues = state.selectedIds
-        .map((id) => {
-          const obj = state.objects[id];
-          if (!obj || (obj.type !== "swatch" && obj.type !== "ramp"))
-            return null;
-          return {
-            id,
-            hue: getObjectHue(obj as Swatch | Ramp),
-            locked: (obj as Swatch | Ramp).locked,
-          };
-        })
-        .filter((h): h is NonNullable<typeof h> => h !== null);
-
-      if (hues.length < 2) return state;
-
-      const result = harmonizeMultiple(hues, action.startAfter);
+      // Receives pre-computed hue adjustments. Duplicates source objects with
+      // new hues and arranges in a vertical strip. Originals untouched.
       const objects = { ...state.objects };
+
+      // Cycling: delete previous strip before creating new one
+      if (action.replaceIds) {
+        for (const id of action.replaceIds) delete objects[id];
+      }
+
       const newIds: string[] = [];
       const stripGap = 8; // px between swatches in vertical strip
 
-      for (let i = 0; i < result.adjustments.length; i++) {
-        const adj = result.adjustments[i];
+      for (let i = 0; i < action.adjustments.length; i++) {
+        const adj = action.adjustments[i];
         const sourceObj = state.objects[adj.id];
         if (!sourceObj) continue;
 
         const newId = genId();
         newIds.push(newId);
 
-        // Position in vertical strip
         const pos: Point = {
           x: action.placement.x,
           y: action.placement.y + i * (48 + stripGap),
@@ -504,6 +486,8 @@ function reducer(state: CanvasState, action: Action): CanvasState {
             hue: adj.newHue,
             stopCount: ramp.stopCount,
             mode: ramp.mode,
+            seedChroma: ramp.seedChroma,
+            seedLightness: ramp.seedLightness,
           });
           const existingNames = Object.values(objects)
             .filter((o): o is Ramp => o.type === "ramp" && o.id !== ramp.id)
@@ -517,11 +501,12 @@ function reducer(state: CanvasState, action: Action): CanvasState {
             position: pos,
             name: uniqueRampName(adj.newHue, existingNames),
             mode: ramp.mode,
+            seedChroma: ramp.seedChroma,
+            seedLightness: ramp.seedLightness,
           };
         }
       }
 
-      // Select the new group (so user can drag it immediately)
       return { ...state, objects, selectedIds: newIds };
     }
 
@@ -821,8 +806,12 @@ export function useCanvasState() {
   );
 
   const harmonizeSelected = useCallback(
-    (placement: Point, startAfter?: HarmonicRelationship) =>
-      dispatch({ type: "HARMONIZE_SELECTED", placement, startAfter }),
+    (
+      adjustments: { id: string; newHue: number }[],
+      placement: Point,
+      replaceIds?: string[],
+    ) =>
+      dispatch({ type: "HARMONIZE_SELECTED", adjustments, placement, replaceIds }),
     [],
   );
 

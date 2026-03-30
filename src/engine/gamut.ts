@@ -9,6 +9,9 @@
 import { oklch, rgb, displayable, clampChroma, type Oklch, okhsl as toOkhslMode } from "culori";
 import type { OklchColor } from "../types";
 
+/** Chroma below this is considered achromatic. Matches perceptual threshold in OKLCH. */
+export const NEUTRAL_CHROMA = 0.05;
+
 /** Convert our OklchColor to culori's format */
 export function toCulori(color: OklchColor): Oklch {
   return { mode: "oklch", l: color.l, c: color.c, h: color.h };

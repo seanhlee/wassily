@@ -96,9 +96,25 @@ export function harmonizePair(
 }
 
 /**
+ * Compute the smallest arc (in degrees) that contains all hues.
+ * Returns 0 for a single hue, up to ~360 for hues covering the full circle.
+ */
+function hueSpread(hues: number[]): number {
+  if (hues.length <= 1) return 0;
+  const sorted = [...hues].map(normalizeHue).sort((a, b) => a - b);
+  let largestGap = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    largestGap = Math.max(largestGap, sorted[i] - sorted[i - 1]);
+  }
+  // Wrap-around gap
+  largestGap = Math.max(largestGap, 360 - sorted[sorted.length - 1] + sorted[0]);
+  return 360 - largestGap;
+}
+
+/**
  * Harmonize multiple hues. Finds the best-fit geometry for all simultaneously.
- * For 2: uses harmonizePair. For 3: triadic. For 4: tetradic.
- * Minimizes total hue displacement.
+ * For 2: uses harmonizePair. For 3+: spread-aware geometry selection.
+ * Minimizes total hue displacement via optimal cyclic assignment.
  */
 export function harmonizeMultiple(
   hues: { id: string; hue: number; locked?: boolean }[],
@@ -122,11 +138,46 @@ export function harmonizeMultiple(
     return result;
   }
 
-  // For 3+ hues: distribute evenly around the circle
+  // For 3+ hues: spread-aware geometry selection
   const count = hues.length;
-  const angleStep = 360 / count;
-  const relationship: HarmonicRelationship =
-    count === 3 ? "triadic" : count === 4 ? "tetradic" : "analogous";
+  const spread = hueSpread(hues.map((h) => h.hue));
+  const characteristicAngle = spread / (count - 1);
+
+  // Build candidate geometries: harmonic targets that fit this count,
+  // plus the even-distribution angle (360/count)
+  const evenAngle = 360 / count;
+  type Candidate = { relationship: HarmonicRelationship; angle: number };
+  const candidates: Candidate[] = HARMONIC_TARGETS
+    .filter((t) => t.angle * (count - 1) < 360)
+    .map((t) => ({ relationship: t.relationship, angle: t.angle }));
+
+  // Add even-distribution if not already covered by a harmonic target
+  if (!candidates.some((c) => Math.abs(c.angle - evenAngle) < 1)) {
+    // Label: use the closest named relationship
+    const closestName = HARMONIC_TARGETS.reduce((best, t) =>
+      Math.abs(t.angle - evenAngle) < Math.abs(best.angle - evenAngle) ? t : best,
+    ).relationship;
+    candidates.push({ relationship: closestName, angle: evenAngle });
+  }
+
+  // Sort by proximity to characteristic angle
+  let sorted = [...candidates].sort(
+    (a, b) =>
+      Math.abs(a.angle - characteristicAngle) -
+      Math.abs(b.angle - characteristicAngle),
+  );
+
+  // If cycling, skip past the last-used relationship
+  if (startAfter) {
+    const idx = sorted.findIndex((c) => c.relationship === startAfter);
+    if (idx !== -1) {
+      sorted = [...sorted.slice(idx + 1), ...sorted.slice(0, idx + 1)];
+    }
+  }
+
+  const best = sorted[0];
+  const angleStep = best.angle;
+  const relationship = best.relationship;
 
   // If any hue is locked, use the first locked hue as anchor
   // instead of the centroid — distribute others evenly around it
@@ -148,16 +199,87 @@ export function harmonizeMultiple(
     anchor = normalizeHue((Math.atan2(sinSum, cosSum) * 180) / Math.PI);
   }
 
-  // Distribute evenly from anchor
-  const sorted = [...hues].sort((a, b) => a.hue - b.hue);
-  const adjustments = sorted.map((h, i) => {
-    const targetHue = normalizeHue(anchor + i * angleStep);
-    return {
-      id: h.id,
-      originalHue: h.hue,
-      newHue: h.locked ? h.hue : targetHue,
-    };
-  });
+  // Generate evenly-spaced target positions
+  const targets = Array.from({ length: count }, (_, i) =>
+    normalizeHue(anchor + i * angleStep),
+  );
+
+  // --- Optimal assignment with locked pre-assignment ---
+  // 1. Pre-assign locked hues to their nearest available target
+  const usedTargetIndices = new Set<number>();
+  const lockedAssignments: { hue: typeof hues[0]; targetIdx: number }[] = [];
+
+  for (const lh of hues.filter((h) => h.locked)) {
+    let bestIdx = -1;
+    let bestDist = Infinity;
+    for (let t = 0; t < targets.length; t++) {
+      if (usedTargetIndices.has(t)) continue;
+      const dist = Math.abs(angularDistance(lh.hue, targets[t]));
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = t;
+      }
+    }
+    if (bestIdx !== -1) {
+      usedTargetIndices.add(bestIdx);
+      lockedAssignments.push({ hue: lh, targetIdx: bestIdx });
+    }
+  }
+
+  // 2. Collect unlocked hues and remaining targets
+  const unlocked = hues.filter((h) => !h.locked);
+  const remainingTargetIndices = Array.from(
+    { length: count },
+    (_, i) => i,
+  ).filter((i) => !usedTargetIndices.has(i));
+
+  // 3. Cyclic rotation on unlocked hues + remaining targets
+  const sortedUnlocked = [...unlocked].sort((a, b) => a.hue - b.hue);
+  const sortedRemainingTargets = remainingTargetIndices
+    .map((i) => ({ idx: i, hue: targets[i] }))
+    .sort((a, b) => a.hue - b.hue);
+
+  const m = sortedUnlocked.length;
+  let bestRotation = 0;
+  let bestCost = Infinity;
+
+  for (let r = 0; r < m; r++) {
+    let cost = 0;
+    for (let i = 0; i < m; i++) {
+      const hueIdx = (i + r) % m;
+      cost += Math.abs(
+        angularDistance(sortedUnlocked[hueIdx].hue, sortedRemainingTargets[i].hue),
+      );
+    }
+    if (cost < bestCost) {
+      bestCost = cost;
+      bestRotation = r;
+    }
+  }
+
+  // 4. Build assignments map: hue id → target hue
+  const assignmentMap = new Map<string, number>();
+
+  // Locked: keep original hue
+  for (const la of lockedAssignments) {
+    assignmentMap.set(la.hue.id, la.hue.hue);
+  }
+
+  // Unlocked: use winning rotation
+  for (let i = 0; i < m; i++) {
+    const hueIdx = (i + bestRotation) % m;
+    assignmentMap.set(
+      sortedUnlocked[hueIdx].id,
+      sortedRemainingTargets[i].hue,
+    );
+  }
+
+  // 5. Produce adjustments in original input order
+  const adjustments = hues.map((h) => ({
+    id: h.id,
+    originalHue: h.hue,
+    newHue: assignmentMap.get(h.id) ?? h.hue,
+  }));
 
   const totalDisplacement = adjustments.reduce(
     (sum, a) => sum + Math.abs(angularDistance(a.originalHue, a.newHue)),

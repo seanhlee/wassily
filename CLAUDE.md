@@ -51,14 +51,14 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 ## Key Concepts
 
 - **Color as primitive** — right-click = swatch. R = promote to ramp. Ramp is derived, not default. Click on empty space ONLY deselects.
-- **Purification** — every color that enters is maximized to peak chroma at its hue. Neutrals (C < 0.05) bypass purification.
+- **Purification** — every color that enters is maximized to peak chroma at its hue. Neutrals (C < `NEUTRAL_CHROMA` = 0.05 from `gamut.ts`) bypass purification. Image extraction uses a stricter 0.04 threshold (compression noise).
 - **Ramp engine v2** — easing curves + gamut-relative chroma. No bell curves or lookup tables. The gamut boundary IS the shape.
   - Lightness: easeInQuad from 0.98 to 0.25
   - Chroma: flat 92% of gamut max, scaled by seedIntensity
   - Hue drift: target-based toward amber (H~55), easeInCubic for darks, with hue-dependent intensity
   - seedIntensity: calibrates the whole ramp based on how vivid the seed is relative to gamut max
 - **Always vivid display** — ramps show `stop.color` (vivid) in the tool. Dark variants (`stop.darkColor`) are for export only.
-- **Harmonization** — select 2+ objects, press H, hues snap to nearest harmonic geometry. Feedback: relationship name centered on screen for 1.2s.
+- **Harmonization** — select 2+ objects, press H, hues snap to nearest harmonic geometry. Feedback overlay: "RELATIONSHIP · ANGLE" centered on screen for 1.2s (via `HarmonizeLabel.tsx`). Press H again to cycle: 2 objects cycle relationship types (analogous→triadic→complementary...), 3+ objects rotate the harmonic frame. Cycling replaces the previous strip (no accumulation). Already-harmonized colors show "ALREADY X" feedback. Uses optimal cyclic assignment with locked-hue pre-assignment for 3+ objects.
 - **Image extraction** — drop/paste an image, get 3-7 adaptive dominant colors in OKLCH space. Neutrals (C < 0.04) are NOT purified — grays stay gray.
 - **Hover-only labels** — ramp names/values hidden until hover. Swatch hex is only visible in edit mode (context menu for quick copy).
 - **Light mode default** — canvas starts white (#fff). D toggles between light and dark (#000).
