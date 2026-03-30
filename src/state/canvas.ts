@@ -34,7 +34,7 @@ export const initialState: CanvasState = {
   objects: {},
   selectedIds: [],
   camera: initialCamera,
-  darkMode: false,
+  darkMode: true,
   showConnections: true,
 };
 
