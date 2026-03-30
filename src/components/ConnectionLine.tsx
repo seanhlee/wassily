@@ -82,8 +82,8 @@ export const ConnectionLine = memo(
 
     // darkMode=true means light canvas
     const lineColor = darkMode ? "rgba(0,0,0," : "rgba(255,255,255,";
-    const lineOpacity = selected ? 0.4 : hovered ? 0.3 : 0.15;
-    const lineWidth = selected ? 1 : 0.5;
+    const lineOpacity = 1;
+    const lineWidth = selected ? 1.5 : 1;
     const stroke = `${lineColor}${lineOpacity})`;
 
     // Label bg and text color

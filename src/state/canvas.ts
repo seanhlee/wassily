@@ -423,10 +423,10 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       const exists = Object.values(state.objects).some(
         (obj) =>
           obj.type === "connection" &&
-          ((obj as Connection).fromId === fromId &&
+          (((obj as Connection).fromId === fromId &&
             (obj as Connection).toId === toId) ||
-          ((obj as Connection).fromId === toId &&
-            (obj as Connection).toId === fromId),
+            ((obj as Connection).fromId === toId &&
+              (obj as Connection).toId === fromId)),
       );
       if (exists) return state;
       const id = genId();

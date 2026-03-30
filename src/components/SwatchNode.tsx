@@ -708,7 +708,7 @@ export function SwatchNode({
         height: 48,
         backgroundColor: hex,
         cursor: "default",
-        outline: selected ? `1px solid ${outlineColor}` : "none",
+        outline: selected ? `0.5px solid ${outlineColor}` : "none",
         outlineOffset: 3,
         zIndex: selected ? 10 : "auto",
       }}
@@ -923,7 +923,7 @@ export function RampNode({
       <div
         style={{
           display: "flex",
-          outline: selected ? `1px solid ${outlineColor}` : "none",
+          outline: selected ? `0.5px solid ${outlineColor}` : "none",
           outlineOffset: 3,
         }}
       >
@@ -1036,7 +1036,7 @@ export function RefImageNode({
         width: image.size.width,
         height: image.size.height,
         cursor: "default",
-        outline: selected ? `1px solid ${outlineColor}` : "none",
+        outline: selected ? `0.5px solid ${outlineColor}` : "none",
         outlineOffset: 3,
         opacity: 1,
       }}

@@ -719,8 +719,8 @@ export function Canvas() {
             position: "absolute",
             left: 0,
             top: 0,
-            width: 0,
-            height: 0,
+            width: "200vw",
+            height: "200vh",
             overflow: "visible",
             pointerEvents: "none",
           }}
