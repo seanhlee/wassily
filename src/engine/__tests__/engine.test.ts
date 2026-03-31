@@ -400,3 +400,219 @@ describe("harmonization", () => {
     }
   });
 });
+
+// ---- Extraction ----
+
+import { extractFromPixels, _normalizeChroma, _cullForDistinctiveness } from "../extract";
+
+describe("extraction", () => {
+  /** Helper: generate N pixels at given hue with some L/C variation */
+  function makePixels(
+    hue: number,
+    count: number,
+    baseC = 0.15,
+    baseL = 0.5,
+  ): OklchColor[] {
+    return Array.from({ length: count }, (_, i) => ({
+      h: hue + (i % 5) * 0.5, // slight hue jitter
+      c: baseC + (i % 3) * 0.02,
+      l: baseL + (i % 4) * 0.05,
+    }));
+  }
+
+  it("extracts two distinct hues from a two-hue image", () => {
+    const pixels = [
+      ...makePixels(25, 50, 0.15), // red-orange
+      ...makePixels(200, 50, 0.15), // cyan-blue
+    ];
+    const result = extractFromPixels(pixels);
+    expect(result.isSingleColor).toBe(false);
+    expect(result.colors.length).toBeGreaterThanOrEqual(2);
+
+    // Should have one color near H~25 and one near H~200
+    const hues = result.colors.map((c) => c.h);
+    const hasRed = hues.some((h) => h > 15 && h < 40);
+    const hasBlue = hues.some((h) => h > 185 && h < 215);
+    expect(hasRed).toBe(true);
+    expect(hasBlue).toBe(true);
+  });
+
+  it("single-color image returns purified result", () => {
+    // All pixels at basically the same color
+    const pixels = Array.from({ length: 100 }, () => ({
+      l: 0.55,
+      c: 0.1,
+      h: 260,
+    }));
+    const result = extractFromPixels(pixels);
+    expect(result.isSingleColor).toBe(true);
+    expect(result.colors).toHaveLength(1);
+    // Should be purified (chroma maximized)
+    expect(result.colors[0].c).toBeGreaterThan(0.1);
+  });
+
+  it("peak-chroma representative is used (not averaged centroid)", () => {
+    // Mix of vivid and dull pixels at the same hue
+    const pixels = [
+      // Vivid pixels
+      { l: 0.5, c: 0.25, h: 260 },
+      { l: 0.5, c: 0.24, h: 261 },
+      { l: 0.5, c: 0.23, h: 259 },
+      // Dull pixels at same hue (would pull centroid down)
+      ...Array.from({ length: 30 }, () => ({
+        l: 0.5,
+        c: 0.05,
+        h: 260,
+      })),
+      // A second hue to ensure we get past single-color detection
+      ...makePixels(60, 30, 0.15),
+    ];
+    const result = extractFromPixels(pixels);
+    // The blue cluster's representative should be closer to 0.25 (peak)
+    // than to the average (~0.07 if all averaged together)
+    const blueColor = result.colors.find(
+      (c) => c.h > 245 && c.h < 275,
+    );
+    expect(blueColor).toBeDefined();
+    // After normalize-to-peak, it should be very vivid (the peak pixel was already high)
+    expect(blueColor!.c).toBeGreaterThan(0.1);
+  });
+
+  it("normalize-to-peak preserves relative chroma between colors", () => {
+    // Two hues: one vivid, one subdued
+    const vividOrange: OklchColor = { l: 0.6, c: 0.2, h: 50 };
+    const mutedBlue: OklchColor = { l: 0.5, c: 0.08, h: 260 };
+
+    const result = _normalizeChroma([vividOrange, mutedBlue]);
+
+    // Orange (more vivid) should have higher chroma than blue (more muted)
+    const orangeOut = result[0];
+    const blueOut = result[1];
+    expect(orangeOut.c).toBeGreaterThan(blueOut.c);
+
+    // Orange should be near 95% of its gamut max
+    const orangeMax = maxChroma(vividOrange.l, vividOrange.h);
+    expect(orangeOut.c / orangeMax).toBeGreaterThan(0.85);
+    expect(orangeOut.c / orangeMax).toBeLessThanOrEqual(1.0);
+
+    // Blue should be proportionally lower
+    const blueMax = maxChroma(mutedBlue.l, mutedBlue.h);
+    expect(blueOut.c / blueMax).toBeLessThan(orangeOut.c / orangeMax);
+  });
+
+  it("normalize-to-peak leaves neutrals unchanged", () => {
+    const neutral: OklchColor = { l: 0.5, c: 0.02, h: 0 };
+    const vivid: OklchColor = { l: 0.5, c: 0.2, h: 120 };
+
+    const result = _normalizeChroma([neutral, vivid]);
+
+    // Neutral should pass through untouched
+    expect(result[0].c).toBe(0.02);
+    expect(result[0].l).toBe(0.5);
+  });
+
+  it("all-neutral image returns at least one color", () => {
+    const pixels = Array.from({ length: 100 }, (_, i) => ({
+      l: 0.3 + (i % 10) * 0.05,
+      c: 0.01,
+      h: 0,
+    }));
+    const result = extractFromPixels(pixels);
+    expect(result.colors.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("gamut-relative scoring does not favor yellow over blue", () => {
+    // Equal numbers of yellow and blue pixels, both at ~80% of gamut potential
+    const yellowMaxC = maxChroma(0.8, 90); // high for yellow
+    const blueMaxC = maxChroma(0.45, 260); // lower absolute, but we match relative
+    const pixels = [
+      ...Array.from({ length: 50 }, () => ({
+        l: 0.8,
+        c: yellowMaxC * 0.8,
+        h: 90,
+      })),
+      ...Array.from({ length: 50 }, () => ({
+        l: 0.45,
+        c: blueMaxC * 0.8,
+        h: 260,
+      })),
+    ];
+    const result = extractFromPixels(pixels);
+    // Both hues should be present (neither should dominate)
+    expect(result.colors.length).toBeGreaterThanOrEqual(2);
+    const hues = result.colors.map((c) => c.h);
+    const hasYellow = hues.some((h) => h > 70 && h < 110);
+    const hasBlue = hues.some((h) => h > 240 && h < 280);
+    expect(hasYellow).toBe(true);
+    expect(hasBlue).toBe(true);
+  });
+
+  it("extracted colors are in gamut", () => {
+    const pixels = [
+      ...makePixels(0, 30, 0.2),
+      ...makePixels(120, 30, 0.15),
+      ...makePixels(240, 30, 0.18),
+    ];
+    const result = extractFromPixels(pixels);
+    for (const color of result.colors) {
+      expect(isInGamut(color)).toBe(true);
+    }
+  });
+
+  // ---- Distinctiveness culling ----
+
+  it("culls three similar blues down to fewer", () => {
+    // Three blues at nearly identical H/C, only slight L variation
+    const blues: OklchColor[] = [
+      { l: 0.45, c: 0.18, h: 255 },
+      { l: 0.48, c: 0.17, h: 260 },
+      { l: 0.43, c: 0.16, h: 265 },
+    ];
+    const result = _cullForDistinctiveness(blues);
+    // Should keep fewer than 3 — these are too similar
+    expect(result.length).toBeLessThan(3);
+    expect(result.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("keeps analogous hues that are sufficiently distinct", () => {
+    // Three colors 40° apart — clearly distinct
+    const colors: OklchColor[] = [
+      { l: 0.5, c: 0.2, h: 0 },
+      { l: 0.5, c: 0.2, h: 40 },
+      { l: 0.5, c: 0.2, h: 80 },
+    ];
+    const result = _cullForDistinctiveness(colors);
+    expect(result).toHaveLength(3);
+  });
+
+  it("removes neutrals when chromatic alternatives exist", () => {
+    const colors: OklchColor[] = [
+      { l: 0.5, c: 0.2, h: 260 }, // vivid blue
+      { l: 0.6, c: 0.15, h: 30 }, // vivid orange
+      { l: 0.5, c: 0.01, h: 0 }, // neutral gray
+    ];
+    const result = _cullForDistinctiveness(colors);
+    // Gray should be removed (2 chromatic alternatives exist)
+    expect(result.every((c) => c.c > 0.03)).toBe(true);
+    expect(result.length).toBe(2);
+  });
+
+  it("keeps neutrals when they are the only option", () => {
+    const colors: OklchColor[] = [
+      { l: 0.5, c: 0.01, h: 0 },
+      { l: 0.7, c: 0.02, h: 0 },
+    ];
+    const result = _cullForDistinctiveness(colors);
+    expect(result.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("returns at least one color even if all are similar", () => {
+    const colors: OklchColor[] = [
+      { l: 0.5, c: 0.2, h: 260 },
+      { l: 0.5, c: 0.2, h: 261 },
+      { l: 0.5, c: 0.2, h: 262 },
+    ];
+    const result = _cullForDistinctiveness(colors);
+    expect(result.length).toBeGreaterThanOrEqual(1);
+  });
+});

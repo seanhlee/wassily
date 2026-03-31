@@ -3,12 +3,14 @@
  *
  * Drops an image → extracts dominant colors via k-means in OKLCH space.
  * Adaptive k (3-7) based on chromatic variance.
- * Purifies each extracted color.
+ * Peak-chroma representatives (not averaged centroids) + normalize-to-peak
+ * chroma scaling preserves the image's relative intensity relationships.
  */
 
 import { oklch } from "culori";
 import type { OklchColor } from "../types";
 import { purifyColor } from "./purify";
+import { maxChroma } from "./gamut";
 
 interface ExtractionResult {
   colors: OklchColor[];
@@ -43,30 +45,22 @@ export function extractColors(imageData: ImageData): ExtractionResult {
   const sorted = clusters
     .filter((c) => c.count > 0)
     .sort((a, b) => {
-      const scoreA = a.center.c * Math.sqrt(a.count);
-      const scoreB = b.center.c * Math.sqrt(b.count);
+      const scoreA =
+        (a.peak.c / Math.max(0.01, maxChroma(a.peak.l, a.peak.h))) *
+        Math.sqrt(a.count);
+      const scoreB =
+        (b.peak.c / Math.max(0.01, maxChroma(b.peak.l, b.peak.h))) *
+        Math.sqrt(b.count);
       return scoreB - scoreA;
     });
 
-  // Merge near-duplicates
-  const merged = mergeNearDuplicates(
-    sorted.map((c) => c.center),
-    0.05,
-  );
+  // Cull near-duplicates and neutrals — keep only distinct palette entries
+  const distinct = cullForDistinctiveness(sorted.map((c) => c.peak));
 
-  // Filter near-neutrals if chromatic alternatives exist
-  const filtered = filterNeutrals(merged);
-
-  // Only purify colors that were already chromatic in the image.
-  // Grays stay gray — they're intentionally neutral, not detuned.
-  // Image extraction uses a stricter threshold (0.04 vs 0.05) because
-  // sampled colors have compression noise that inflates chroma slightly.
-  const colors = filtered.map((color) => {
-    if (color.c > 0.04) {
-      return purifyColor(color);
-    }
-    return color;
-  });
+  // Normalize chroma: the most vivid color hits near-max, quieter colors
+  // scale proportionally. Preserves the image's chroma relationships
+  // instead of flattening everything to gamut max.
+  const colors = normalizeChroma(distinct);
 
   return { colors, isSingleColor: false };
 }
@@ -119,6 +113,38 @@ export function fileToDataUrl(file: File): Promise<string> {
 }
 
 // ---- Internals ----
+
+/**
+ * Normalize extracted colors so the most vivid hits near-max chroma
+ * while preserving relative intensity relationships.
+ * Like audio mastering — peak normalization, not clipping.
+ */
+function normalizeChroma(colors: OklchColor[]): OklchColor[] {
+  // Compute gamut-relative intensity for each color
+  const intensities = colors.map((color) => {
+    if (color.c < 0.04) return 0; // neutral — no intensity to normalize
+    const maxC = maxChroma(color.l, color.h);
+    return maxC > 0 ? color.c / maxC : 0;
+  });
+
+  // Find the peak intensity
+  const peakIntensity = Math.max(...intensities, 0.01); // floor to avoid div/0
+
+  // Target: the peak color reaches 95% of gamut max (slight headroom)
+  const TARGET = 0.95;
+  const scale = TARGET / peakIntensity;
+
+  return colors.map((color, i) => {
+    if (color.c < 0.04) return color; // neutrals pass through unchanged
+
+    // Scale this color's chroma relative to the peak
+    const normalizedIntensity = Math.min(1, intensities[i] * scale);
+    const maxC = maxChroma(color.l, color.h);
+    const newC = normalizedIntensity * maxC;
+
+    return { l: color.l, c: newC, h: color.h };
+  });
+}
 
 /** Sample up to N pixels from image data, converting to OKLCH */
 function samplePixels(imageData: ImageData, maxSamples: number): OklchColor[] {
@@ -202,12 +228,13 @@ function oklchDistance(a: OklchColor, b: OklchColor): number {
   if (dh > 180) dh = 360 - dh;
   // Weight hue by chroma (low chroma = hue doesn't matter)
   const avgC = (a.c + b.c) / 2;
-  const hueWeight = avgC * 0.01;
+  const hueWeight = avgC * 0.025;
   return Math.sqrt(dl * dl + dc * dc + dh * dh * hueWeight * hueWeight);
 }
 
 interface Cluster {
-  center: OklchColor;
+  center: OklchColor; // averaged center (used for k-means convergence)
+  peak: OklchColor; // highest-chroma actual pixel in cluster
   count: number;
 }
 
@@ -269,40 +296,84 @@ function kMeans(pixels: OklchColor[], k: number, maxIter: number): Cluster[] {
     }
   }
 
-  // Build clusters
-  return centers.map((center, j) => ({
-    center,
-    count: assignments.filter((a) => a === j).length,
-  }));
+  // Build clusters with peak-chroma representatives
+  return centers.map((center, j) => {
+    const members = pixels.filter((_, i) => assignments[i] === j);
+    const peak =
+      members.length > 0
+        ? members.reduce((best, p) => (p.c > best.c ? p : best), members[0])
+        : center;
+    return { center, peak, count: members.length };
+  });
 }
 
-/** Merge colors that are too similar */
-function mergeNearDuplicates(
-  colors: OklchColor[],
-  threshold: number,
-): OklchColor[] {
-  const result: OklchColor[] = [];
-  const used = new Set<number>();
+/**
+ * Keep only colors that are meaningfully distinct from each other.
+ * Processes in prominence order (input must be pre-sorted).
+ * Replaces separate merge + neutral-filter passes.
+ */
+function cullForDistinctiveness(colors: OklchColor[]): OklchColor[] {
+  const MIN_DISTANCE = 0.08;
+  const accepted: OklchColor[] = [];
 
-  for (let i = 0; i < colors.length; i++) {
-    if (used.has(i)) continue;
-    result.push(colors[i]);
-    for (let j = i + 1; j < colors.length; j++) {
-      if (oklchDistance(colors[i], colors[j]) < threshold) {
-        used.add(j);
-      }
+  for (const color of colors) {
+    if (accepted.length === 0) {
+      accepted.push(color);
+      continue;
+    }
+    const tooClose = accepted.some(
+      (a) => oklchDistance(color, a) < MIN_DISTANCE,
+    );
+    if (!tooClose) {
+      accepted.push(color);
     }
   }
 
-  return result;
+  // Remove near-neutrals if chromatic alternatives exist
+  const chromatic = accepted.filter((c) => c.c > 0.03);
+  if (chromatic.length >= 2) return chromatic;
+
+  return accepted.length > 0 ? accepted : [colors[0]];
 }
 
-/** Remove near-neutral colors if there are chromatic alternatives */
-function filterNeutrals(colors: OklchColor[]): OklchColor[] {
-  const chromatic = colors.filter((c) => c.c > 0.03);
-  if (chromatic.length >= 2) {
-    return chromatic;
+// ---- Test helpers ----
+
+/**
+ * Extract colors from pre-sampled OKLCH pixels (no ImageData needed).
+ * Exposed for unit testing — same logic as extractColors minus the
+ * pixel sampling step.
+ */
+export function extractFromPixels(pixels: OklchColor[]): ExtractionResult {
+  if (pixels.length === 0) {
+    return { colors: [{ l: 0.5, c: 0, h: 0 }], isSingleColor: true };
   }
-  // Keep at least one neutral if image is mostly neutral
-  return colors;
+
+  const variance = chromaticVariance(pixels);
+  if (variance < 0.005) {
+    const avg = averageColor(pixels);
+    return { colors: [purifyColor(avg)], isSingleColor: true };
+  }
+
+  const k = Math.min(7, Math.max(3, Math.round(variance * 80)));
+  const clusters = kMeans(pixels, k, 20);
+
+  const sorted = clusters
+    .filter((c) => c.count > 0)
+    .sort((a, b) => {
+      const scoreA =
+        (a.peak.c / Math.max(0.01, maxChroma(a.peak.l, a.peak.h))) *
+        Math.sqrt(a.count);
+      const scoreB =
+        (b.peak.c / Math.max(0.01, maxChroma(b.peak.l, b.peak.h))) *
+        Math.sqrt(b.count);
+      return scoreB - scoreA;
+    });
+
+  const distinct = cullForDistinctiveness(sorted.map((c) => c.peak));
+  const colors = normalizeChroma(distinct);
+
+  return { colors, isSingleColor: false };
 }
+
+/** Exposed for direct unit testing */
+export { normalizeChroma as _normalizeChroma, cullForDistinctiveness as _cullForDistinctiveness };
