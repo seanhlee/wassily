@@ -22,36 +22,46 @@ type MenuContext =
   | null;
 
 // ---- Styles ----
+// darkMode=true → light canvas, so menu should be light
+// darkMode=false → dark canvas, so menu should be dark
 
-const popupStyle: React.CSSProperties = {
-  backgroundColor: "#000",
-  border: "1px solid rgba(255,255,255,0.15)",
-  padding: "3px 0",
-  fontFamily: "'IBM Plex Mono', monospace",
-  fontSize: 9,
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
-  outline: "none",
-};
+function getPopupStyle(darkMode: boolean): React.CSSProperties {
+  return {
+    backgroundColor: darkMode ? "#fff" : "#000",
+    border: darkMode
+      ? "1px solid rgba(0,0,0,0.12)"
+      : "1px solid rgba(255,255,255,0.15)",
+    padding: "3px 0",
+    fontFamily: "'IBM Plex Mono', monospace",
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    outline: "none",
+  };
+}
 
-function itemStyle(state: { highlighted: boolean }): React.CSSProperties {
+function getItemStyle(darkMode: boolean, state: { highlighted: boolean }): React.CSSProperties {
   return {
     padding: "3px 10px",
     cursor: "default",
-    color: state.highlighted ? "#fff" : "rgba(255,255,255,0.6)",
+    color: darkMode
+      ? (state.highlighted ? "#000" : "rgba(0,0,0,0.55)")
+      : (state.highlighted ? "#fff" : "rgba(255,255,255,0.6)"),
     backgroundColor: state.highlighted
-      ? "rgba(255,255,255,0.08)"
+      ? (darkMode ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)")
       : "transparent",
     whiteSpace: "nowrap",
     outline: "none",
   };
 }
 
-const separatorStyle: React.CSSProperties = {
-  height: 1,
-  backgroundColor: "rgba(255,255,255,0.1)",
-  margin: "2px 0",
-};
+function getSeparatorStyle(darkMode: boolean): React.CSSProperties {
+  return {
+    height: 1,
+    backgroundColor: darkMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)",
+    margin: "2px 0",
+  };
+}
 
 // ---- Props ----
 
@@ -158,17 +168,17 @@ export function CanvasContextMenu({
 
       <ContextMenu.Portal>
         <ContextMenu.Positioner sideOffset={0}>
-          <ContextMenu.Popup style={popupStyle}>
+          <ContextMenu.Popup style={getPopupStyle(darkMode)}>
             {ctx?.type === "canvas" && (
               <>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() => onCreateSwatch(ctx.canvasPos)}
                 >
                   New color
                 </ContextMenu.Item>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() =>
                     onCreateSwatch(ctx.canvasPos, { l: 0.55, c: 0.015, h: 60 })
                   }
@@ -176,7 +186,7 @@ export function CanvasContextMenu({
                   Warm neutral
                 </ContextMenu.Item>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() =>
                     onCreateSwatch(ctx.canvasPos, { l: 0.55, c: 0.015, h: 250 })
                   }
@@ -184,7 +194,7 @@ export function CanvasContextMenu({
                   Cool neutral
                 </ContextMenu.Item>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() =>
                     onCreateSwatch(ctx.canvasPos, { l: 0.55, c: 0, h: 0 })
                   }
@@ -196,15 +206,15 @@ export function CanvasContextMenu({
 
             {ctx?.type === "multi-selection" && (
               <>
-                <ContextMenu.Item style={itemStyle} onClick={onHarmonize}>
+                <ContextMenu.Item style={(state) => getItemStyle(darkMode, state)} onClick={onHarmonize}>
                   Harmonize
                 </ContextMenu.Item>
-                <ContextMenu.Separator style={separatorStyle} />
-                <ContextMenu.Item style={itemStyle} onClick={onToggleLock}>
+                <ContextMenu.Separator style={getSeparatorStyle(darkMode)} />
+                <ContextMenu.Item style={(state) => getItemStyle(darkMode, state)} onClick={onToggleLock}>
                   {ctx.anyUnlocked ? "Lock hue" : "Unlock hue"}
                 </ContextMenu.Item>
-                <ContextMenu.Separator style={separatorStyle} />
-                <ContextMenu.Item style={itemStyle} onClick={onDeleteSelected}>
+                <ContextMenu.Separator style={getSeparatorStyle(darkMode)} />
+                <ContextMenu.Item style={(state) => getItemStyle(darkMode, state)} onClick={onDeleteSelected}>
                   Delete
                 </ContextMenu.Item>
               </>
@@ -213,7 +223,7 @@ export function CanvasContextMenu({
             {ctx?.type === "swatch" && (
               <>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() =>
                     navigator.clipboard.writeText(toHex(ctx.swatch.color)).catch(() => {})
                   }
@@ -221,38 +231,38 @@ export function CanvasContextMenu({
                   {toHex(ctx.swatch.color)}
                 </ContextMenu.Item>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() =>
                     navigator.clipboard.writeText(toOklchString(ctx.swatch.color)).catch(() => {})
                   }
                 >
                   {toOklchString(ctx.swatch.color)}
                 </ContextMenu.Item>
-                <ContextMenu.Separator style={separatorStyle} />
+                <ContextMenu.Separator style={getSeparatorStyle(darkMode)} />
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() => onPromoteToRamp(ctx.objectId, 11)}
                 >
                   Ramp · 11
                 </ContextMenu.Item>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() => onPromoteToRamp(ctx.objectId, 7)}
                 >
                   Ramp · 7
                 </ContextMenu.Item>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() => onPromoteToRamp(ctx.objectId, 5)}
                 >
                   Ramp · 5
                 </ContextMenu.Item>
-                <ContextMenu.Separator style={separatorStyle} />
-                <ContextMenu.Item style={itemStyle} onClick={onToggleLock}>
+                <ContextMenu.Separator style={getSeparatorStyle(darkMode)} />
+                <ContextMenu.Item style={(state) => getItemStyle(darkMode, state)} onClick={onToggleLock}>
                   {ctx.swatch.locked ? "Unlock hue" : "Lock hue"}
                 </ContextMenu.Item>
-                <ContextMenu.Separator style={separatorStyle} />
-                <ContextMenu.Item style={itemStyle} onClick={onDeleteSelected}>
+                <ContextMenu.Separator style={getSeparatorStyle(darkMode)} />
+                <ContextMenu.Item style={(state) => getItemStyle(darkMode, state)} onClick={onDeleteSelected}>
                   Delete
                 </ContextMenu.Item>
               </>
@@ -261,7 +271,7 @@ export function CanvasContextMenu({
             {ctx?.type === "ramp" && (
               <>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() => {
                     const list = ctx.ramp.stops
                       .map((s) => toHex(darkMode ? s.darkColor : s.color))
@@ -272,7 +282,7 @@ export function CanvasContextMenu({
                   Hex list
                 </ContextMenu.Item>
                 <ContextMenu.Item
-                  style={itemStyle}
+                  style={(state) => getItemStyle(darkMode, state)}
                   onClick={() => {
                     const list = ctx.ramp.stops
                       .map((s) => toOklchString(darkMode ? s.darkColor : s.color))
@@ -282,19 +292,19 @@ export function CanvasContextMenu({
                 >
                   oklch list
                 </ContextMenu.Item>
-                <ContextMenu.Separator style={separatorStyle} />
-                <ContextMenu.Item style={itemStyle} onClick={onToggleLock}>
+                <ContextMenu.Separator style={getSeparatorStyle(darkMode)} />
+                <ContextMenu.Item style={(state) => getItemStyle(darkMode, state)} onClick={onToggleLock}>
                   {ctx.ramp.locked ? "Unlock hue" : "Lock hue"}
                 </ContextMenu.Item>
-                <ContextMenu.Separator style={separatorStyle} />
-                <ContextMenu.Item style={itemStyle} onClick={onDeleteSelected}>
+                <ContextMenu.Separator style={getSeparatorStyle(darkMode)} />
+                <ContextMenu.Item style={(state) => getItemStyle(darkMode, state)} onClick={onDeleteSelected}>
                   Delete
                 </ContextMenu.Item>
               </>
             )}
 
             {ctx?.type === "image" && (
-              <ContextMenu.Item style={itemStyle} onClick={onDeleteSelected}>
+              <ContextMenu.Item style={(state) => getItemStyle(darkMode, state)} onClick={onDeleteSelected}>
                 Delete
               </ContextMenu.Item>
             )}

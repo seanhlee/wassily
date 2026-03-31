@@ -71,7 +71,7 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 - Values: hex uppercase (#0059E9), CSS functions lowercase (oklch(...))
 - No rounded corners anywhere — all sharp edges
 - Canvas bg: #fff light default, #000 dark toggle
-- Context menu: #000 bg, 9px uppercase, edge-aware positioning
+- Context menu: adaptive bg (light on light canvas, dark on dark canvas), 9px uppercase, edge-aware positioning
 - The color is always the loudest thing on screen
 
 ## Selection Chrome
