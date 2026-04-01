@@ -37,9 +37,11 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 
 - `src/engine/` — color science (purification, ramp generation v2, harmonization, image extraction, gamut mapping)
 - `src/canvas/` — spatial canvas (camera, pan/zoom, coordinate system, object placement)
-- `src/components/` — React UI (swatches, ramp strips, reference images, context menus, harmonize feedback overlay)
-- `src/state/` — canvas state management (useReducer + undo history), localStorage persistence
-- `src/types/` — TypeScript types
+- `src/components/` — React UI (swatches, ramp strips, reference images, context menus, harmonize feedback overlay, board bar)
+- `src/state/` — canvas state management (useReducer + undo history), board persistence, MCP bridge hook
+- `src/types/` — TypeScript types (shared between browser and Node MCP process)
+- `mcp/` — MCP server (25 tools: 8 pure engine, 5 board management, 12 canvas writes)
+- `src/vite-plugin-mcp-bridge.ts` — Vite dev server middleware for MCP bridge
 
 ## Canvas Objects
 
@@ -62,7 +64,9 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 - **Image extraction** — drop/paste an image, get 3-7 adaptive dominant colors in OKLCH space. K-means in OKLCH with three key refinements: gamut-relative scoring (eliminates yellow/cyan bias), boosted hue weight in distance (2.5x, separates distinct hues), peak-chroma representatives (most vivid pixel per cluster, not averaged centroid). Normalize-to-peak chroma scaling preserves the image's relative intensity relationships — the loudest color hits 95% of gamut max, quieter colors scale proportionally. Distinctiveness culling ensures palette spread (threshold 0.08 in OKLCH distance). Neutrals (C < 0.04) pass through unchanged. Single-color images still get full purification.
 - **Hover-only labels** — ramp names/values hidden until hover. Swatch hex is only visible in edit mode (context menu for quick copy).
 - **Light mode default** — canvas starts white (#fff). D toggles between light and dark (#000).
-- **Persistence** — localStorage (auto-save, debounced). Reference images are session-only.
+- **Persistence** — localStorage (auto-save, debounced). Reference images are session-only (IndexedDB for blobs).
+- **Boards** — named, switchable documents. Each board has its own `CanvasState` stored at `localStorage('wassily-board-{id}')`. Board list at `wassily-boards`, active board at `wassily-active-board`. Legacy `wassily-canvas` key auto-migrated to an "Untitled" board on first load.
+- **MCP Bridge** — dev-only Vite middleware (`/__mcp__/*`) that enables the MCP tools to read/write the live canvas. The React hook (`useMcpBridge`) connects via SSE, receives dispatched actions, applies them via `applyExternalActions`, and posts results back. State is synced to the middleware cache on connect, after bridge operations (immediate), and on local changes (debounced 300ms).
 
 ## Design
 
@@ -118,6 +122,47 @@ Created via right-click context menu:
 - Warm neutral: H:60, C:0.015
 - Cool neutral: H:250, C:0.015
 - Pure neutral: C:0
+
+## Boards
+
+- **Board** = a named, persistent document. Each board holds an independent `CanvasState`.
+- Storage: `wassily-boards` (BoardMeta[]), `wassily-active-board` (ID), `wassily-board-{id}` (CanvasState per board).
+- `src/state/boardStore.ts` — pure persistence functions (no React). Handles migration from legacy `wassily-canvas`.
+- `src/state/useBoardManager.ts` — React hook for create/switch/delete/rename/duplicate.
+- `src/components/BoardBar.tsx` — minimal board switcher UI (top-left corner, dropdown).
+- Board switching dispatches `LOAD_BOARD` which replaces state and clears undo/redo history.
+- `cleanOrphanedBlobs` uses `collectAllImageIds()` across ALL boards to prevent cross-board image deletion.
+- Rooms, branches, and variants are deferred — boards are the document layer only.
+
+## MCP Bridge (Dev Only)
+
+The MCP server can read and write the live canvas via a Vite dev server middleware bridge.
+
+```
+Claude ←(stdio)→ MCP Server ──(HTTP fetch)──→ Vite Dev Server ←(SSE)→ Browser
+                  25 tools        /__mcp__/*       middleware       useMcpBridge
+```
+
+- `src/vite-plugin-mcp-bridge.ts` — Vite plugin adding `/__mcp__/*` endpoints. Sessions scoped by `clientId`. Dispatch holds HTTP response open, pushes action via SSE, waits for browser result (10s timeout). Client disambiguation: 1 tab = auto-resolve, 2+ tabs = error.
+- `src/state/mcpBridge.ts` — React hook connecting via `EventSource`. Handles `dispatch` (canvas actions) and `board-op` (board management) messages. Posts results back. Dev-only (`import.meta.env.DEV`).
+- `applyExternalActions` — simulates actions through the pure reducer to compute created/deleted diff, then dispatches for real with `SNAPSHOT` for undo. Saves/restores `nextId` to prevent genId divergence between simulation and dispatch.
+- MCP tools use `WASSILY_DEV_URL` env var (default `http://localhost:5173`) to reach the Vite server.
+- Selection-free actions (`DELETE_OBJECTS`, `CONNECT_OBJECTS`, `SET_LOCK`) prevent MCP tools from clobbering user selection.
+- External IDs (`id?` on `CREATE_SWATCH`, `CREATE_SWATCHES`, `newId?` on `HARMONIZE_SELECTED`) let MCP tools pre-generate UUIDs for reliable dispatch-to-result correlation.
+
+### MCP Tools (25 total)
+
+**Pure engine (8):** purify_color, parse_color, generate_ramp, check_contrast, harmonize, read_canvas, export_palette, audit_accessibility
+
+**Board management (5):** list_boards, create_board, switch_board, delete_board, rename_board
+
+**Canvas writes (12):** create_swatch, create_swatches, delete_objects, update_swatch_color, promote_to_ramp, set_stop_count, rename_ramp, harmonize_objects, create_connections, move_object, toggle_dark_mode, set_lock
+
+### Known Bridge Limitations
+
+- Double undo: each MCP tool call creates SNAPSHOT + action = 2 undo entries (one extra Cmd+Z per operation).
+- `WASSILY_DEV_URL` defaults to port 5173; if Vite starts on another port, tools fail.
+- JSON.parse errors in Vite middleware hang instead of returning 400.
 
 ## Known Tech Debt
 

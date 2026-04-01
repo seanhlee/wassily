@@ -115,6 +115,81 @@ export interface HarmonizationResult {
   totalDisplacement: number;
 }
 
+// ---- Boards ----
+
+export interface BoardMeta {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// ---- Canvas Actions ----
+
+export type Action =
+  // Object creation
+  | { type: "CREATE_SWATCH"; position: Point; color?: OklchColor; id?: string }
+  | {
+      type: "CREATE_SWATCHES";
+      swatches: { position: Point; color: OklchColor; id?: string }[];
+    }
+  | {
+      type: "ADD_REFERENCE_IMAGE";
+      id?: string;
+      dataUrl: string;
+      position: Point;
+      size: { width: number; height: number };
+    }
+
+  // Selection
+  | { type: "SELECT"; id: string; additive?: boolean }
+  | { type: "DESELECT_ALL" }
+
+  // Deletion
+  | { type: "DELETE_SELECTED" }
+  | { type: "DELETE_OBJECTS"; ids: string[] }
+
+  // Movement
+  | { type: "MOVE_OBJECT"; id: string; position: Point }
+  | { type: "MOVE_SELECTED"; dx: number; dy: number }
+
+  // Color modification
+  | { type: "UPDATE_SWATCH_COLOR"; id: string; color: OklchColor }
+  | { type: "ADJUST_SWATCH_COLOR"; id: string; dl: number; dc: number }
+  | { type: "ROTATE_HUE"; id: string; delta: number }
+
+  // Ramp operations
+  | { type: "PROMOTE_TO_RAMP"; id: string; stopCount: number }
+  | { type: "CHANGE_STOP_COUNT"; id: string; delta: number }
+  | { type: "RENAME_RAMP"; id: string; name: string }
+
+  // Harmonization
+  | {
+      type: "HARMONIZE_SELECTED";
+      adjustments: { id: string; newHue: number; newId?: string }[];
+      placement: Point;
+      replaceIds?: string[];
+    }
+
+  // Connections
+  | { type: "CREATE_CONNECTION" }
+  | { type: "CONNECT_OBJECTS"; ids: string[] }
+  | { type: "TOGGLE_CONNECTIONS" }
+
+  // Lock
+  | { type: "TOGGLE_LOCK_SELECTED" }
+  | { type: "SET_LOCK"; ids: string[]; locked: boolean }
+
+  // Camera & display
+  | { type: "SET_CAMERA"; camera: Camera }
+  | { type: "TOGGLE_DARK_MODE" }
+
+  // State management
+  | { type: "RESTORE_IMAGE_URLS"; urls: Record<string, string> }
+  | { type: "LOAD_STATE"; state: CanvasState }
+  | { type: "LOAD_BOARD"; state: CanvasState }
+  | { type: "SNAPSHOT" };
+
 // ---- Export ----
 
 export type ExportFormat = "css" | "css-dark" | "tailwind" | "hex" | "json";

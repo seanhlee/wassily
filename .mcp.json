@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "wassily": {
+      "command": "npx",
+      "args": ["tsx", "--tsconfig", "tsconfig.mcp.json", "mcp/server.ts"]
+    }
+  }
+}

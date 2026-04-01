@@ -1,5 +1,9 @@
 import { useCallback, useRef, useEffect, useState } from "react";
 import { useCanvasState } from "../state/canvas";
+import { useBoardManager } from "../state/useBoardManager";
+import type { BoardState } from "../state/useBoardManager";
+import { useMcpBridge } from "../state/mcpBridge";
+import { migrateFromLegacy } from "../state/boardStore";
 import { SwatchNode, RampNode, RefImageNode } from "../components/SwatchNode";
 import {
   extractColors,
@@ -18,6 +22,7 @@ import {
 import { ConnectionLine } from "../components/ConnectionLine";
 import { HelpOverlay } from "../components/HelpOverlay";
 import { HarmonizeOverlay, showHarmonizeFeedback } from "../components/HarmonizeLabel";
+import { BoardBar } from "../components/BoardBar";
 import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, CanvasObject, ReferenceImage } from "../types";
 import { oklch } from "culori";
 
@@ -164,6 +169,10 @@ function samplePixelAt(
 }
 
 export function Canvas() {
+  // Board state initialized from localStorage (migration happens on first load)
+  const [boardState, setBoardState] = useState<BoardState>(() => migrateFromLegacy());
+
+  // Canvas state scoped to the active board
   const {
     state,
     createSwatch,
@@ -185,9 +194,15 @@ export function Canvas() {
     setCamera,
     toggleDarkMode,
     snapshot,
+    loadBoard,
     undo,
     redo,
-  } = useCanvasState();
+    applyExternalActions,
+  } = useCanvasState(boardState.activeBoardId);
+
+  // Board manager for create/switch/delete/rename
+  const boardManager = useBoardManager(boardState, setBoardState, state, loadBoard);
+  useMcpBridge(state, boardManager, applyExternalActions);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [spaceHeld, setSpaceHeld] = useState(false);
@@ -895,6 +910,8 @@ export function Canvas() {
   const objects = Object.values(state.objects);
 
   return (
+    <>
+    <BoardBar boardManager={boardManager} darkMode={state.darkMode} />
     <CanvasContextMenu
       objects={state.objects}
       selectedIds={state.selectedIds}
@@ -1040,5 +1057,6 @@ export function Canvas() {
       )}
       <HarmonizeOverlay />
     </CanvasContextMenu>
+    </>
   );
 }

@@ -4,6 +4,7 @@
 
 import { useReducer, useCallback, useEffect, useRef } from "react";
 import type {
+  Action,
   CanvasState,
   Swatch,
   Ramp,
@@ -20,6 +21,11 @@ import {
   loadAllImageBlobs,
   cleanOrphanedBlobs,
 } from "./imageStore";
+import {
+  loadBoardState,
+  saveBoardState,
+  collectAllImageIds,
+} from "./boardStore";
 
 // ---- Initial State ----
 
@@ -33,50 +39,6 @@ export const initialState: CanvasState = {
   showConnections: true,
 };
 
-// ---- Actions ----
-
-type Action =
-  | { type: "CREATE_SWATCH"; position: Point; color?: OklchColor }
-  | { type: "SELECT"; id: string; additive?: boolean }
-  | { type: "DESELECT_ALL" }
-  | { type: "DELETE_SELECTED" }
-  | { type: "MOVE_OBJECT"; id: string; position: Point }
-  | { type: "MOVE_SELECTED"; dx: number; dy: number }
-  | { type: "UPDATE_SWATCH_COLOR"; id: string; color: OklchColor }
-  | { type: "ADJUST_SWATCH_COLOR"; id: string; dl: number; dc: number }
-  | { type: "ROTATE_HUE"; id: string; delta: number }
-  | {
-      type: "CREATE_SWATCHES";
-      swatches: { position: Point; color: OklchColor }[];
-    }
-  | {
-      type: "ADD_REFERENCE_IMAGE";
-      id?: string;
-      dataUrl: string;
-      position: Point;
-      size: { width: number; height: number };
-    }
-  | { type: "RESTORE_IMAGE_URLS"; urls: Record<string, string> }
-  | { type: "PROMOTE_TO_RAMP"; id: string; stopCount: number }
-  | { type: "CHANGE_STOP_COUNT"; id: string; delta: number }
-  | {
-      type: "HARMONIZE_SELECTED";
-      /** Pre-computed hue adjustments from harmonizeMultiple */
-      adjustments: { id: string; newHue: number }[];
-      /** Canvas-space position for the top-left of the new vertical strip */
-      placement: Point;
-      /** For cycling: IDs of previous strip to delete before creating new */
-      replaceIds?: string[];
-    }
-  | { type: "TOGGLE_LOCK_SELECTED" }
-  | { type: "CREATE_CONNECTION" }
-  | { type: "TOGGLE_CONNECTIONS" }
-  | { type: "SET_CAMERA"; camera: Camera }
-  | { type: "TOGGLE_DARK_MODE" }
-  | { type: "RENAME_RAMP"; id: string; name: string }
-  | { type: "LOAD_STATE"; state: CanvasState }
-  | { type: "SNAPSHOT" };
-
 // ---- Reducer ----
 
 let nextId = 1;
@@ -87,7 +49,7 @@ function genId(): string {
 function reducer(state: CanvasState, action: Action): CanvasState {
   switch (action.type) {
     case "CREATE_SWATCH": {
-      const id = genId();
+      const id = action.id ?? genId();
       // Don't purify intentionally neutral colors
       const color = action.color
         ? action.color.c < NEUTRAL_CHROMA
@@ -110,12 +72,16 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       const newObjects = { ...state.objects };
       const newIds: string[] = [];
       for (const s of action.swatches) {
-        const id = genId();
+        const id = s.id ?? genId();
         newIds.push(id);
+        // Purify unless intentionally neutral (match CREATE_SWATCH behavior)
+        const color = s.color.c < NEUTRAL_CHROMA
+          ? s.color
+          : purifyColor(s.color);
         newObjects[id] = {
           id,
           type: "swatch",
-          color: s.color,
+          color,
           position: s.position,
         };
       }
@@ -468,7 +434,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         const sourceObj = state.objects[adj.id];
         if (!sourceObj) continue;
 
-        const newId = genId();
+        const newId = adj.newId ?? genId();
         newIds.push(newId);
 
         const pos: Point = {
@@ -539,6 +505,71 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       };
     }
 
+    case "DELETE_OBJECTS": {
+      const objects = { ...state.objects };
+      const removing = new Set(action.ids);
+      for (const id of action.ids) {
+        delete objects[id];
+      }
+      // Clean up orphaned connections
+      for (const [connId, obj] of Object.entries(objects)) {
+        if (
+          obj.type === "connection" &&
+          (removing.has((obj as Connection).fromId) ||
+            removing.has((obj as Connection).toId))
+        ) {
+          delete objects[connId];
+        }
+      }
+      // Remove deleted IDs from selection
+      const selectedIds = state.selectedIds.filter(id => !removing.has(id));
+      return { ...state, objects, selectedIds };
+    }
+
+    case "CONNECT_OBJECTS": {
+      // Chain-connect adjacent pairs in the provided ID list
+      const endpoints = action.ids.filter((id) => {
+        const obj = state.objects[id];
+        return obj && (obj.type === "swatch" || obj.type === "ramp");
+      });
+      if (endpoints.length < 2) return state;
+      const newObjects = { ...state.objects };
+      let added = false;
+      for (let i = 0; i < endpoints.length - 1; i++) {
+        const fromId = endpoints[i];
+        const toId = endpoints[i + 1];
+        // Skip if connection already exists between this pair
+        const exists = Object.values(newObjects).some(
+          (obj) =>
+            obj.type === "connection" &&
+            (((obj as Connection).fromId === fromId &&
+              (obj as Connection).toId === toId) ||
+              ((obj as Connection).fromId === toId &&
+                (obj as Connection).toId === fromId)),
+        );
+        if (exists) continue;
+        const id = genId();
+        newObjects[id] = { id, type: "connection", fromId, toId } as Connection;
+        added = true;
+      }
+      if (!added) return state;
+      return { ...state, objects: newObjects, showConnections: true };
+    }
+
+    case "SET_LOCK": {
+      const objects = { ...state.objects };
+      for (const id of action.ids) {
+        const obj = objects[id];
+        if (obj && (obj.type === "swatch" || obj.type === "ramp")) {
+          objects[id] = { ...obj, locked: action.locked } as typeof obj;
+        }
+      }
+      return { ...state, objects };
+    }
+
+    case "LOAD_BOARD":
+      return action.state;
+
     case "LOAD_STATE": {
       // Restore nextId from loaded state
       const maxId = Object.keys(action.state.objects).reduce((max, key) => {
@@ -558,59 +589,6 @@ function reducer(state: CanvasState, action: Action): CanvasState {
   }
 }
 
-// ---- localStorage persistence ----
-
-const STORAGE_KEY = "wassily-canvas";
-
-function saveToStorage(state: CanvasState) {
-  try {
-    // Include reference images but strip dataUrl (blob lives in IndexedDB)
-    const serializedObjects: Record<string, any> = {};
-    const activeImageIds = new Set<string>();
-    for (const [id, obj] of Object.entries(state.objects)) {
-      if (obj.type === "reference-image") {
-        serializedObjects[id] = { ...obj, dataUrl: "" };
-        activeImageIds.add(id);
-      } else {
-        serializedObjects[id] = obj;
-      }
-    }
-    const serializable = {
-      objects: serializedObjects,
-      selectedIds: [],
-      camera: state.camera,
-      darkMode: state.darkMode,
-      showConnections: state.showConnections,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
-
-    // Clean up orphaned blobs in IndexedDB (deleted images)
-    cleanOrphanedBlobs(activeImageIds);
-  } catch {
-    // localStorage full or unavailable — silently ignore
-  }
-}
-
-function loadFromStorage(): CanvasState | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && parsed.objects && parsed.camera) {
-      return {
-        objects: parsed.objects,
-        selectedIds: [],
-        camera: parsed.camera,
-        darkMode: parsed.darkMode ?? false,
-        showConnections: parsed.showConnections ?? true,
-      };
-    }
-  } catch {
-    // Corrupt data — ignore
-  }
-  return null;
-}
-
 // ---- Undo/Redo History ----
 
 /** Actions that should NOT create undo history (too granular) */
@@ -624,6 +602,7 @@ const SKIP_HISTORY: Set<string> = new Set([
   "UPDATE_SWATCH_COLOR",
   "ADJUST_SWATCH_COLOR",
   "LOAD_STATE",
+  "LOAD_BOARD",
   "RESTORE_IMAGE_URLS",
 ]);
 
@@ -637,6 +616,23 @@ function historyReducer(
   history: HistoryState,
   action: Action | { type: "UNDO" } | { type: "REDO" },
 ): HistoryState {
+  if (action.type === "SNAPSHOT") {
+    return {
+      current: history.current,
+      past: [...history.past, history.current].slice(-50),
+      future: [],
+    };
+  }
+
+  if (action.type === "LOAD_BOARD") {
+    const maxId = Object.keys(action.state.objects).reduce((max, key) => {
+      const num = parseInt(key.replace("obj_", ""), 10);
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    nextId = maxId + 1;
+    return { current: action.state, past: [], future: [] };
+  }
+
   if (action.type === "UNDO") {
     if (history.past.length === 0) return history;
     const prev = history.past[history.past.length - 1];
@@ -680,14 +676,51 @@ function historyReducer(
   };
 }
 
+// ---- External action application ----
+
+/**
+ * Apply actions from an external source (MCP bridge).
+ * Simulates the result using the pure reducer for deterministic diffing,
+ * then dispatches for real (with SNAPSHOT for undo support).
+ */
+function applyExternalActionsImpl(
+  actions: Action[],
+  currentState: CanvasState,
+  dispatch: (action: Action) => void,
+): { created: string[]; deleted: string[] } {
+  // 1. Simulate: run actions through the pure reducer.
+  //    Save/restore nextId so genId() doesn't diverge between
+  //    simulation and real dispatch.
+  const savedNextId = nextId;
+  let simState = currentState;
+  for (const action of actions) {
+    simState = reducer(simState, action);
+  }
+  nextId = savedNextId; // restore — real dispatch will produce the same IDs
+
+  // 2. Diff: compare objects before and after
+  const prevKeys = new Set(Object.keys(currentState.objects));
+  const nextKeys = new Set(Object.keys(simState.objects));
+  const created = [...nextKeys].filter(k => !prevKeys.has(k));
+  const deleted = [...prevKeys].filter(k => !nextKeys.has(k));
+
+  // 3. Dispatch for real: SNAPSHOT (undo boundary) then all actions
+  dispatch({ type: "SNAPSHOT" });
+  for (const action of actions) {
+    dispatch(action);
+  }
+
+  return { created, deleted };
+}
+
 // ---- Hook ----
 
-export function useCanvasState() {
+export function useCanvasState(activeBoardId: string) {
   const [history, dispatchHistory] = useReducer(
     historyReducer,
     { current: initialState, past: [], future: [] },
     (init) => {
-      const loaded = loadFromStorage();
+      const loaded = loadBoardState(activeBoardId);
       if (loaded) {
         // Seed nextId from persisted objects to prevent ID collisions
         const maxId = Object.keys(loaded.objects).reduce((max, key) => {
@@ -729,9 +762,11 @@ export function useCanvasState() {
   useEffect(() => {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveToStorage(state);
+      saveBoardState(activeBoardId, state);
+      // Clean up orphaned blobs across all boards
+      cleanOrphanedBlobs(collectAllImageIds());
     }, 300);
-  }, [state]);
+  }, [state, activeBoardId]);
 
   const undo = useCallback(() => dispatch({ type: "UNDO" }), [dispatch]);
   const redo = useCallback(() => dispatch({ type: "REDO" }), [dispatch]);
@@ -856,6 +891,16 @@ export function useCanvasState() {
     [],
   );
 
+  const loadBoard = useCallback(
+    (boardState: CanvasState) => dispatch({ type: "LOAD_BOARD", state: boardState }),
+    [dispatch],
+  );
+
+  const applyExternalActions = useCallback(
+    (actions: Action[]) => applyExternalActionsImpl(actions, state, dispatch),
+    [state, dispatch],
+  );
+
   return {
     state,
     undo,
@@ -882,5 +927,11 @@ export function useCanvasState() {
     setCamera,
     toggleDarkMode,
     snapshot,
+    dispatch,
+    loadBoard,
+    applyExternalActions,
   };
 }
+
+// Test exports — not part of the public API
+export const __test__ = { reducer, historyReducer, applyExternalActionsImpl, genId, setNextId: (n: number) => { nextId = n; }, getNextId: () => nextId };
