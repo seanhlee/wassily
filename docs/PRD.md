@@ -28,8 +28,6 @@ A linked strip of colors generated from a swatch. Select a swatch, press **R**, 
 
 ### 3. Connection
 
-> **NOT YET BUILT.** Planned feature — not implemented in the current version.
-
 A thin line between any two swatches (loose or inside ramps). Shows their contrast ratio, hue distance, or perceptual delta. Connections update live as you adjust colors. They're the tool's way of making relationships visible.
 
 ### 4. Reference Image

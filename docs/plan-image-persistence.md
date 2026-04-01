@@ -1,5 +1,7 @@
 # Plan: Reference Image Persistence
 
+> **Status:** Shipped. Implemented in `src/state/imageStore.ts`. Blobs stored in IndexedDB, metadata in localStorage. Orphan cleanup via `cleanOrphanedBlobs` is now cross-board-aware via `collectAllImageIds()`.
+
 ## Problem
 
 Reference images dropped/pasted onto the canvas are session-only. Reload the page and they're gone — only the extracted color swatches survive. The `dataUrl` (base64) is too large for localStorage's 5MB cap, so `saveToStorage` explicitly filters them out.

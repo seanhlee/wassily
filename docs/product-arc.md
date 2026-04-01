@@ -1,5 +1,7 @@
 # Wassily Product Arc
 
+> **Status:** Boards + MCP write bridge shipped (Phase 1). The agent can create/switch boards and mutate canvas state via 25 MCP tools through a Vite dev server middleware bridge. Rooms, branches, and multiplayer are deferred.
+
 ## Core Idea
 
 Wassily is the bridge from visual taste to production UI color.
