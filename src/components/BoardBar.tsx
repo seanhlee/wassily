@@ -61,7 +61,7 @@ export function BoardBar({
 
   const baseFont: React.CSSProperties = {
     fontFamily: "'IBM Plex Mono', monospace",
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 400,
     textTransform: "uppercase",
     letterSpacing: "0.5px",

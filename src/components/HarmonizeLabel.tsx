@@ -86,7 +86,7 @@ export function HarmonizeOverlay() {
       style={{
         ...positionStyle,
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 9,
+        fontSize: 11,
         textTransform: "uppercase",
         letterSpacing: "0.5px",
         color: "oklch(0.55 0 0)",

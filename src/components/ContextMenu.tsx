@@ -33,7 +33,7 @@ function getPopupStyle(darkMode: boolean): React.CSSProperties {
       : "1px solid rgba(255,255,255,0.15)",
     padding: "3px 0",
     fontFamily: "'IBM Plex Mono', monospace",
-    fontSize: 9,
+    fontSize: 11,
     textTransform: "uppercase",
     letterSpacing: "0.5px",
     outline: "none",

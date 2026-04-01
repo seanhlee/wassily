@@ -150,7 +150,7 @@ export const ConnectionLine = memo(
                 background: labelBg,
                 padding: "4px 6px",
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 9,
+                fontSize: 11,
                 color: labelColor,
                 textTransform: "uppercase",
                 letterSpacing: "0.3px",

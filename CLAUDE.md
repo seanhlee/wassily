@@ -14,7 +14,7 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 
 - Vite + React 19 + TypeScript
 - `culori` for color science (OKLCH conversions, gamut mapping via `clampChroma`/`displayable`)
-- `@fontsource/ibm-plex-mono` (400 weight, 9px)
+- `@fontsource/ibm-plex-mono` (400 weight, 11px)
 - CSS transforms for spatial canvas camera
 - DOM rendering for all objects
 - localStorage for persistence (reference images excluded — too large)
@@ -70,12 +70,12 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 
 ## Design
 
-- IBM Plex Mono 400, 9px everywhere
+- IBM Plex Mono 400, 11px everywhere
 - Labels: uppercase, letter-spacing -0.55px (ramp names) or 0.5px (context menu, LCH labels)
 - Values: hex uppercase (#0059E9), CSS functions lowercase (oklch(...))
 - No rounded corners anywhere — all sharp edges
 - Canvas bg: #fff light default, #000 dark toggle
-- Context menu: adaptive bg (light on light canvas, dark on dark canvas), 9px uppercase, edge-aware positioning
+- Context menu: adaptive bg (light on light canvas, dark on dark canvas), 11px uppercase, edge-aware positioning
 - The color is always the loudest thing on screen
 
 ## Selection Chrome
