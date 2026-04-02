@@ -39,6 +39,7 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 - `src/canvas/` — spatial canvas (camera, pan/zoom, coordinate system, object placement)
 - `src/components/` — React UI (swatches, ramp strips, reference images, context menus, harmonize feedback overlay, board bar)
 - `src/state/` — canvas state management (useReducer + undo history), board persistence, MCP bridge hook
+- `src/hooks/` — shared React hooks (useDrag, usePasteAndDrop) and canvas utilities (eyedropper sampling)
 - `src/types/` — TypeScript types (shared between browser and Node MCP process)
 - `mcp/` — MCP server (25 tools: 8 pure engine, 5 board management, 12 canvas writes)
 - `src/vite-plugin-mcp-bridge.ts` — Vite dev server middleware for MCP bridge
