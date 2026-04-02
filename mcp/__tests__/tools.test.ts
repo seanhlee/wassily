@@ -166,7 +166,7 @@ describe("nameForHue", () => {
 
 describe("state parsing (duck-type)", () => {
   it("handles minimal valid state", () => {
-    const state = JSON.parse('{"objects":{},"selectedIds":[],"camera":{"x":0,"y":0,"zoom":1},"darkMode":true,"showConnections":true}');
+    const state = JSON.parse('{"objects":{},"selectedIds":[],"camera":{"x":0,"y":0,"zoom":1},"lightMode":true,"showConnections":true}');
     expect(state.objects).toBeDefined();
     expect(typeof state.objects).toBe("object");
   });

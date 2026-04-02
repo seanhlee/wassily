@@ -81,7 +81,7 @@ export interface CanvasState {
   objects: Record<string, CanvasObject>;
   selectedIds: string[];
   camera: Camera;
-  darkMode: boolean;
+  lightMode: boolean;
   showConnections: boolean;
 }
 
@@ -143,6 +143,7 @@ export type Action =
 
   // Selection
   | { type: "SELECT"; id: string; additive?: boolean }
+  | { type: "SELECT_ALL" }
   | { type: "DESELECT_ALL" }
 
   // Deletion
@@ -182,7 +183,7 @@ export type Action =
 
   // Camera & display
   | { type: "SET_CAMERA"; camera: Camera }
-  | { type: "TOGGLE_DARK_MODE" }
+  | { type: "TOGGLE_LIGHT_MODE" }
 
   // State management
   | { type: "RESTORE_IMAGE_URLS"; urls: Record<string, string> }

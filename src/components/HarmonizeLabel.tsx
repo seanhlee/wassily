@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { HarmonicRelationship, Camera, Point } from "../types";
+import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
 
 interface HarmonizeFeedback {
   relationship: HarmonicRelationship;
@@ -35,7 +36,7 @@ function formatFeedback(fb: HarmonizeFeedback): string {
 
 // ---- Overlay component ----
 
-const SWATCH_SIZE = 48;
+// SWATCH_SIZE imported from constants
 const LABEL_OFFSET_Y = 24; // px above the strip (clears selection brackets)
 
 export function HarmonizeOverlay() {
@@ -85,8 +86,8 @@ export function HarmonizeOverlay() {
     <div
       style={{
         ...positionStyle,
-        fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 11,
+        fontFamily: FONT,
+        fontSize: FONT_SIZE,
         textTransform: "uppercase",
         letterSpacing: "0.5px",
         color: "oklch(0.55 0 0)",

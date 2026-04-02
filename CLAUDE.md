@@ -39,6 +39,7 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 - `src/canvas/` — spatial canvas (camera, pan/zoom, coordinate system, object placement)
 - `src/components/` — React UI (swatches, ramp strips, reference images, context menus, harmonize feedback overlay, board bar)
 - `src/state/` — canvas state management (useReducer + undo history), board persistence, MCP bridge hook
+- `src/hooks/` — shared React hooks (useDrag, usePasteAndDrop) and canvas utilities (eyedropper sampling)
 - `src/types/` — TypeScript types (shared between browser and Node MCP process)
 - `mcp/` — MCP server (25 tools: 8 pure engine, 5 board management, 12 canvas writes)
 - `src/vite-plugin-mcp-bridge.ts` — Vite dev server middleware for MCP bridge
@@ -166,6 +167,6 @@ Claude ←(stdio)→ MCP Server ──(HTTP fetch)──→ Vite Dev Server ←(
 
 ## Known Tech Debt
 
-- **darkMode naming is backwards**: `darkMode: true` in state means the canvas is LIGHT (white background, the default). `darkMode: false` means DARK (black). The flag should be renamed to something like `lightCanvas` or the logic inverted.
+- ~~**darkMode naming is backwards**~~: Fixed — renamed to `lightMode` (`true` = light canvas). Old persisted `darkMode` key auto-migrated on load.
 - ~~**Hue rotation removed**~~: Scroll-on-swatch hue rotation code removed. Will return with spectral ghost controls (JIT UI — faint arc during gesture).
 - ~~**genId counter resets on reload**~~: Fixed — `nextId` is now seeded from persisted objects in the `useReducer` initializer.

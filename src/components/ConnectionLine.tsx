@@ -9,6 +9,7 @@
 
 import { useState, useMemo, memo } from "react";
 import type { Swatch, Ramp, Connection, OklchColor } from "../types";
+import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
 import { contrastRatio } from "../engine/contrast";
 import { angularDistance } from "../engine/harmonize";
 import { differenceEuclidean } from "culori";
@@ -30,12 +31,12 @@ function getObjColor(obj: Swatch | Ramp, stopIndex?: number): OklchColor {
 /** Get the center position of an object in canvas space */
 function getObjCenter(obj: Swatch | Ramp): { x: number; y: number } {
   if (obj.type === "swatch") {
-    return { x: obj.position.x + 24, y: obj.position.y + 24 };
+    return { x: obj.position.x + SWATCH_SIZE / 2, y: obj.position.y + SWATCH_SIZE / 2 };
   }
   const ramp = obj as Ramp;
   return {
-    x: ramp.position.x + (ramp.stops.length * 48) / 2,
-    y: ramp.position.y + 24,
+    x: ramp.position.x + (ramp.stops.length * SWATCH_SIZE) / 2,
+    y: ramp.position.y + SWATCH_SIZE / 2,
   };
 }
 
@@ -46,7 +47,7 @@ interface ConnectionLineProps {
   connection: Connection;
   fromObj: Swatch | Ramp;
   toObj: Swatch | Ramp;
-  darkMode: boolean;
+  lightMode: boolean;
   selected: boolean;
   onSelect: (id: string, additive: boolean) => void;
 }
@@ -56,7 +57,7 @@ export const ConnectionLine = memo(
     connection,
     fromObj,
     toObj,
-    darkMode,
+    lightMode,
     selected,
     onSelect,
   }: ConnectionLineProps) {
@@ -80,15 +81,14 @@ export const ConnectionLine = memo(
       };
     }, [colorA.l, colorA.c, colorA.h, colorB.l, colorB.c, colorB.h]);
 
-    // darkMode=true means light canvas
-    const lineColor = darkMode ? "rgba(0,0,0," : "rgba(255,255,255,";
+    const lineColor = lightMode ? "rgba(0,0,0," : "rgba(255,255,255,";
     const lineOpacity = 1;
     const lineWidth = selected ? 1.5 : 1;
     const stroke = `${lineColor}${lineOpacity})`;
 
     // Label bg and text color
-    const labelBg = darkMode ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.85)";
-    const labelColor = darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)";
+    const labelBg = lightMode ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.85)";
+    const labelColor = lightMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)";
 
     // Cubic bezier curve: offset control points perpendicular to the line
     const dx = to.x - from.x;
@@ -149,8 +149,8 @@ export const ConnectionLine = memo(
               style={{
                 background: labelBg,
                 padding: "4px 6px",
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 11,
+                fontFamily: FONT,
+                fontSize: FONT_SIZE,
                 color: labelColor,
                 textTransform: "uppercase",
                 letterSpacing: "0.3px",
@@ -172,6 +172,6 @@ export const ConnectionLine = memo(
     prev.connection === next.connection &&
     prev.fromObj === next.fromObj &&
     prev.toObj === next.toObj &&
-    prev.darkMode === next.darkMode &&
+    prev.lightMode === next.lightMode &&
     prev.selected === next.selected,
 );

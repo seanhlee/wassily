@@ -361,7 +361,7 @@ Dark mode generates a second, parallel set of values for each ramp — not a rem
 | **Mid stops** (t 0.3-0.6) | Lightness +0.06. Chroma x0.85. |
 | **Dark stops** (t > 0.6) | Lightness +0.01. Chroma x1.05. |
 
-**Known issue:** The `darkMode` flag in state is confusingly named. `darkMode: true` means the canvas is LIGHT (white background) — because D was pressed to toggle away from the dark default. `darkMode: false` means the canvas is DARK (black background, the default). This naming is backwards and needs rethinking.
+The state flag is `lightMode` — `true` means light canvas (white), `false` means dark canvas (black, the default).
 
 ### In the UI
 

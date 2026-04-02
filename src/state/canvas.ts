@@ -16,6 +16,7 @@ import { randomPurifiedColor, purifyColor } from "../engine/purify";
 import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "../engine/gamut";
 import { generateRamp, uniqueRampName } from "../engine/ramp";
 import type { OklchColor, ReferenceImage } from "../types";
+import { RAMP_STOP_PRESETS } from "../constants";
 import {
   storeImageBlob,
   loadAllImageBlobs,
@@ -35,7 +36,7 @@ export const initialState: CanvasState = {
   objects: {},
   selectedIds: [],
   camera: initialCamera,
-  darkMode: true,
+  lightMode: true,
   showConnections: true,
 };
 
@@ -126,6 +127,14 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       }
       return { ...state, selectedIds: [action.id] };
     }
+
+    case "SELECT_ALL":
+      return {
+        ...state,
+        selectedIds: Object.keys(state.objects).filter(
+          (id) => state.objects[id].type !== "connection",
+        ),
+      };
 
     case "DESELECT_ALL":
       return { ...state, selectedIds: [] };
@@ -322,7 +331,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       const ramp = obj as Ramp;
 
       // Step through presets: 3 → 5 → 7 → 9 → 11
-      const presets = [3, 5, 7, 9, 11];
+      const presets: readonly number[] = RAMP_STOP_PRESETS;
       const currentIdx = presets.indexOf(ramp.stopCount);
       const newIdx = Math.max(
         0,
@@ -490,8 +499,8 @@ function reducer(state: CanvasState, action: Action): CanvasState {
     case "SET_CAMERA":
       return { ...state, camera: action.camera };
 
-    case "TOGGLE_DARK_MODE":
-      return { ...state, darkMode: !state.darkMode };
+    case "TOGGLE_LIGHT_MODE":
+      return { ...state, lightMode: !state.lightMode };
 
     case "RENAME_RAMP": {
       const obj = state.objects[action.id];
@@ -594,6 +603,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
 /** Actions that should NOT create undo history (too granular) */
 const SKIP_HISTORY: Set<string> = new Set([
   "SELECT",
+  "SELECT_ALL",
   "DESELECT_ALL",
   "SET_CAMERA",
   "MOVE_OBJECT",
@@ -881,8 +891,8 @@ export function useCanvasState(activeBoardId: string) {
     [],
   );
 
-  const toggleDarkMode = useCallback(
-    () => dispatch({ type: "TOGGLE_DARK_MODE" }),
+  const toggleLightMode = useCallback(
+    () => dispatch({ type: "TOGGLE_LIGHT_MODE" }),
     [],
   );
 
@@ -925,7 +935,7 @@ export function useCanvasState(activeBoardId: string) {
     createConnection,
     toggleConnections,
     setCamera,
-    toggleDarkMode,
+    toggleLightMode,
     snapshot,
     dispatch,
     loadBoard,

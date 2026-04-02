@@ -541,7 +541,7 @@ export function registerTools(server: McpServer): void {
           swatches: swatches.length,
           ramps: ramps.length,
           connections: connections.length,
-          darkMode: state.darkMode,
+          lightMode: state.lightMode,
         },
         swatches: swatches.map((s) => ({
           id: s.id,
@@ -1072,14 +1072,13 @@ export function registerTools(server: McpServer): void {
     "Toggle the canvas between light and dark mode.",
     {},
     async () => {
-      const action: Action = { type: "TOGGLE_DARK_MODE" };
+      const action: Action = { type: "TOGGLE_LIGHT_MODE" };
       const result = await dispatchActions([action]);
       if (!result.success) return error(result.error ?? "Failed to toggle dark mode");
 
       // Fetch state after toggle to report current mode
       const state = await fetchLiveState();
-      // Note: darkMode:true means LIGHT canvas (tech debt)
-      const mode = state ? (state.darkMode ? "light" : "dark") : "toggled";
+      const mode = state ? (state.lightMode ? "light" : "dark") : "toggled";
       return json({ mode });
     },
   );

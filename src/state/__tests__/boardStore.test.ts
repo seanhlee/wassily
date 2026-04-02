@@ -47,7 +47,7 @@ const testState: CanvasState = {
   },
   selectedIds: ["obj_1"],
   camera: { x: 10, y: 20, zoom: 1.5 },
-  darkMode: true,
+  lightMode: true,
   showConnections: true,
 };
 
@@ -63,7 +63,7 @@ const stateWithImage: CanvasState = {
   },
   selectedIds: [],
   camera: { x: 0, y: 0, zoom: 1 },
-  darkMode: true,
+  lightMode: true,
   showConnections: true,
 };
 
@@ -158,29 +158,29 @@ describe("loadBoardState / saveBoardState", () => {
     expect(loaded!.selectedIds).toEqual([]);
   });
 
-  it("preserves darkMode and showConnections", () => {
+  it("preserves lightMode and showConnections", () => {
     const state: CanvasState = {
       ...testState,
-      darkMode: false,
+      lightMode: false,
       showConnections: false,
     };
     saveBoardState("b2", state);
     const loaded = loadBoardState("b2");
-    expect(loaded!.darkMode).toBe(false);
+    expect(loaded!.lightMode).toBe(false);
     expect(loaded!.showConnections).toBe(false);
   });
 
-  it("defaults darkMode and showConnections to true when missing", () => {
+  it("defaults lightMode and showConnections to true when missing", () => {
     store.set(
       "wassily-board-old",
       JSON.stringify({
         objects: { x: { id: "x", type: "swatch" } },
         camera: { x: 0, y: 0, zoom: 1 },
-        // no darkMode, no showConnections
+        // no lightMode, no showConnections
       }),
     );
     const loaded = loadBoardState("old");
-    expect(loaded!.darkMode).toBe(true);
+    expect(loaded!.lightMode).toBe(true);
     expect(loaded!.showConnections).toBe(true);
   });
 
@@ -241,6 +241,7 @@ describe("migrateFromLegacy", () => {
   });
 
   it("when legacy wassily-canvas exists: creates Untitled board and migrates state", () => {
+    // Legacy data uses the old "darkMode" key — migration should handle it
     const legacyState = {
       objects: {
         s1: { id: "s1", type: "swatch", color: { l: 0.5, c: 0.1, h: 100 }, position: { x: 5, y: 5 } },
@@ -265,7 +266,7 @@ describe("migrateFromLegacy", () => {
     const loaded = loadBoardState(result.activeBoardId);
     expect(loaded).not.toBeNull();
     expect(loaded!.camera).toEqual({ x: 50, y: 50, zoom: 2 });
-    expect(loaded!.darkMode).toBe(false);
+    expect(loaded!.lightMode).toBe(false);
     expect(loaded!.showConnections).toBe(false);
   });
 
@@ -291,7 +292,7 @@ describe("migrateFromLegacy", () => {
     const loaded = loadBoardState(result.activeBoardId);
     expect(loaded).not.toBeNull();
     expect(loaded!.camera).toEqual({ x: 0, y: 0, zoom: 1 });
-    expect(loaded!.darkMode).toBe(true);
+    expect(loaded!.lightMode).toBe(true);
     expect(loaded!.showConnections).toBe(true);
     expect(Object.keys(loaded!.objects)).toHaveLength(0);
   });
@@ -352,7 +353,7 @@ describe("collectAllImageIds", () => {
       },
       selectedIds: [],
       camera: { x: 0, y: 0, zoom: 1 },
-      darkMode: true,
+      lightMode: true,
       showConnections: true,
     };
     saveBoardState("b", stateB);

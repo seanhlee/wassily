@@ -5,17 +5,11 @@ import type { BoardState } from "../state/useBoardManager";
 import { useMcpBridge } from "../state/mcpBridge";
 import { migrateFromLegacy } from "../state/boardStore";
 import { SwatchNode, RampNode, RefImageNode } from "../components/SwatchNode";
-import {
-  extractColors,
-  imageFileToImageData,
-  fileToDataUrl,
-} from "../engine/extract";
 import { CanvasContextMenu } from "../components/ContextMenu";
 import { harmonizeMultiple } from "../engine/harmonize";
 import {
   toHex,
   toOklchString,
-  parseColor,
   clampToGamut,
   maxChroma,
 } from "../engine/gamut";
@@ -23,105 +17,18 @@ import { ConnectionLine } from "../components/ConnectionLine";
 import { HelpOverlay } from "../components/HelpOverlay";
 import { HarmonizeOverlay, showHarmonizeFeedback } from "../components/HarmonizeLabel";
 import { BoardBar } from "../components/BoardBar";
-import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, CanvasObject, ReferenceImage } from "../types";
-import { oklch } from "culori";
-
-/** Bounding box of a canvas object (canvas space) */
-function getObjectBounds(obj: CanvasObject): { x: number; y: number; w: number; h: number } | null {
-  if (obj.type === "swatch") return { x: obj.position.x, y: obj.position.y, w: 48, h: 48 };
-  if (obj.type === "ramp") return { x: obj.position.x, y: obj.position.y, w: (obj as Ramp).stops.length * 48, h: 48 };
-  if (obj.type === "reference-image") {
-    const img = obj as import("../types").ReferenceImage;
-    return { x: img.position.x, y: img.position.y, w: img.size.width, h: img.size.height };
-  }
-  return null; // connections have no bounds
-}
-
-/** Check if two rectangles overlap (with padding) */
-function rectsOverlap(
-  a: { x: number; y: number; w: number; h: number },
-  b: { x: number; y: number; w: number; h: number },
-  pad: number,
-): boolean {
-  return !(
-    a.x + a.w + pad <= b.x ||
-    b.x + b.w + pad <= a.x ||
-    a.y + a.h + pad <= b.y ||
-    b.y + b.h + pad <= a.y
-  );
-}
-
-/**
- * Find a clear position for a new vertical strip of swatches.
- * Starts to the right of the selected objects, scans rightward until no collisions.
- */
-function findStripPlacement(
-  objects: Record<string, CanvasObject>,
-  selectedIds: string[],
-  stripCount: number,
-): Point {
-  const stripW = 48;
-  const stripH = stripCount * 48 + (stripCount - 1) * 8;
-  const padding = 40; // gap between strip and nearest object
-
-  // Get bounding box of selected objects
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const id of selectedIds) {
-    const b = getObjectBounds(objects[id]);
-    if (!b) continue;
-    minX = Math.min(minX, b.x);
-    minY = Math.min(minY, b.y);
-    maxX = Math.max(maxX, b.x + b.w);
-    maxY = Math.max(maxY, b.y + b.h);
-  }
-
-  // Vertical center of the selection
-  const selCenterY = (minY + maxY) / 2;
-  const startY = selCenterY - stripH / 2;
-
-  // Collect all existing object bounds
-  const allBounds = Object.values(objects)
-    .map(getObjectBounds)
-    .filter((b): b is NonNullable<typeof b> => b !== null);
-
-  // Start to the right of selection, scan rightward
-  let x = maxX + padding;
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const candidate = { x, y: startY, w: stripW, h: stripH };
-    const collision = allBounds.some((b) => rectsOverlap(candidate, b, padding / 2));
-    if (!collision) return { x, y: startY };
-    x += 80; // step rightward
-  }
-
-  // Fallback: just place it far right
-  return { x, y: startY };
-}
+import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, ReferenceImage } from "../types";
+import { getObjectBounds, findStripPlacement, extractHues } from "./canvasHelpers";
+import { samplePixelAt } from "../hooks/useEyedropper";
+import { usePasteAndDrop } from "../hooks/usePasteAndDrop";
 
 /** Prime an offscreen canvas for pixel sampling from a reference image */
-/** Extract hues with locked flag from selected objects */
-function extractHues(
-  objects: Record<string, CanvasObject>,
-  ids: string[],
-): { id: string; hue: number; locked?: boolean }[] {
-  return ids
-    .map((id) => {
-      const o = objects[id];
-      if (!o || (o.type !== "swatch" && o.type !== "ramp")) return null;
-      return {
-        id,
-        hue: o.type === "swatch" ? (o as Swatch).color.h : (o as Ramp).seedHue,
-        locked: (o as Swatch | Ramp).locked,
-      };
-    })
-    .filter((h): h is NonNullable<typeof h> => h !== null);
-}
-
 function primeImageCanvas(
   image: ReferenceImage,
   cache: Map<string, CanvasRenderingContext2D>,
 ) {
   if (cache.has(image.id)) return;
-  if (!image.dataUrl) return; // skip images with expired/empty URLs
+  if (!image.dataUrl) return;
   const img = new Image();
   img.src = image.dataUrl;
   const draw = () => {
@@ -136,36 +43,6 @@ function primeImageCanvas(
   };
   if (img.complete && img.naturalWidth > 0) draw();
   else img.onload = draw;
-}
-
-/** Sample the pixel color at a viewport position from reference images */
-function samplePixelAt(
-  clientX: number,
-  clientY: number,
-  containerRect: DOMRect,
-  camera: { x: number; y: number; zoom: number },
-  objects: Record<string, CanvasObject>,
-  cache: Map<string, CanvasRenderingContext2D>,
-): OklchColor | null {
-  const canvasX = (clientX - containerRect.left - camera.x) / camera.zoom;
-  const canvasY = (clientY - containerRect.top - camera.y) / camera.zoom;
-
-  for (const obj of Object.values(objects)) {
-    if (obj.type !== "reference-image") continue;
-    const img = obj as ReferenceImage;
-    const localX = canvasX - img.position.x;
-    const localY = canvasY - img.position.y;
-    if (localX < 0 || localY < 0 || localX >= img.size.width || localY >= img.size.height) continue;
-
-    const ctx = cache.get(img.id);
-    if (!ctx) continue;
-
-    const pixel = ctx.getImageData(Math.floor(localX), Math.floor(localY), 1, 1).data;
-    const result = oklch({ mode: "rgb", r: pixel[0] / 255, g: pixel[1] / 255, b: pixel[2] / 255 });
-    if (!result) continue;
-    return { l: result.l ?? 0, c: result.c ?? 0, h: result.h ?? 0 };
-  }
-  return null;
 }
 
 export function Canvas() {
@@ -192,8 +69,9 @@ export function Canvas() {
     createConnection,
     toggleConnections,
     setCamera,
-    toggleDarkMode,
+    toggleLightMode,
     snapshot,
+    dispatch,
     loadBoard,
     undo,
     redo,
@@ -205,6 +83,8 @@ export function Canvas() {
   useMcpBridge(state, boardManager, applyExternalActions);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const cameraRef = useRef(state.camera);
+  cameraRef.current = state.camera;
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [peekPureMode, setPeekPureMode] = useState(false);
   const [eKeyHeld, setEKeyHeld] = useState(false);
@@ -219,9 +99,6 @@ export function Canvas() {
   const eyedropperCommitted = useRef(false);
   const eyedropperTargetId = useRef<string | null>(null);
   const eyedropperCanvasCache = useRef<Map<string, CanvasRenderingContext2D>>(new Map());
-
-  const cameraRef = useRef(state.camera);
-  cameraRef.current = state.camera;
 
   const selectedIdsRef = useRef(state.selectedIds);
   selectedIdsRef.current = state.selectedIds;
@@ -433,14 +310,14 @@ export function Canvas() {
           const anchor =
             ramp.stops.find((s) => s.label === "500") ||
             ramp.stops[Math.floor(ramp.stops.length / 2)];
-          return state.darkMode ? anchor.darkColor : anchor.color;
+          return state.lightMode ? anchor.darkColor : anchor.color;
         }
         return null;
       };
 
       switch (e.key) {
         case "d":
-          if (!e.metaKey && !e.ctrlKey && !e.repeat) toggleDarkMode();
+          if (!e.metaKey && !e.ctrlKey && !e.repeat) toggleLightMode();
           break;
 
         case "r":
@@ -616,14 +493,7 @@ export function Canvas() {
         case "a":
           if (e.metaKey || e.ctrlKey) {
             e.preventDefault();
-            const allIds = Object.keys(state.objects).filter(
-              (id) => state.objects[id].type !== "connection",
-            );
-            // Select all by dispatching multiple selects is awkward,
-            // so we'll just select all non-connection objects
-            for (let i = 0; i < allIds.length; i++) {
-              select(allIds[i], i > 0);
-            }
+            dispatch({ type: "SELECT_ALL" });
           }
           break;
 
@@ -728,8 +598,8 @@ export function Canvas() {
   }, [
     state.selectedIds,
     state.objects,
-    state.darkMode,
-    toggleDarkMode,
+    state.lightMode,
+    toggleLightMode,
     promoteToRamp,
     changeStopCount,
     deleteSelected,
@@ -766,130 +636,14 @@ export function Canvas() {
     return () => window.removeEventListener("blur", handleBlur);
   }, []);
 
-  // ---- Drop handler (images) ----
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
-  }, []);
-
-  const handleDrop = useCallback(
-    async (e: React.DragEvent) => {
-      e.preventDefault();
-
-      const file = e.dataTransfer.files[0];
-      if (!file || !file.type.startsWith("image/")) return;
-
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const cam = cameraRef.current;
-      const dropX = (e.clientX - rect.left - cam.x) / cam.zoom;
-      const dropY = (e.clientY - rect.top - cam.y) / cam.zoom;
-
-      // Load image and extract colors
-      const [imageData, dataUrl] = await Promise.all([
-        imageFileToImageData(file),
-        fileToDataUrl(file),
-      ]);
-
-      // Add reference image to canvas (display at reasonable size)
-      const displayWidth = 200;
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise((r) => {
-        img.onload = r;
-      });
-      const aspectRatio = img.naturalHeight / img.naturalWidth;
-      const displayHeight = Math.round(displayWidth * aspectRatio);
-
-      addReferenceImage(
-        file,
-        dataUrl,
-        { x: dropX, y: dropY },
-        { width: displayWidth, height: displayHeight },
-      );
-
-      // Extract colors and place swatches beside the image
-      const result = extractColors(imageData);
-      const swatches = result.colors.map((color, i) => ({
-        position: { x: dropX + displayWidth + 16, y: dropY + i * 56 },
-        color,
-      }));
-
-      createSwatches(swatches);
-    },
-    [addReferenceImage, createSwatches],
-  );
-
-  // ---- Paste handler (text colors + images) ----
-  useEffect(() => {
-    const handler = async (e: ClipboardEvent) => {
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      )
-        return;
-
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const cam = cameraRef.current;
-      const cx = (rect.width / 2 - cam.x) / cam.zoom;
-      const cy = (rect.height / 2 - cam.y) / cam.zoom;
-
-      // Check for image in clipboard (e.g., copied from a website)
-      const items = e.clipboardData?.items;
-      if (items) {
-        for (const item of Array.from(items)) {
-          if (item.type.startsWith("image/")) {
-            e.preventDefault();
-            const file = item.getAsFile();
-            if (!file) return;
-
-            const [imageData, dataUrl] = await Promise.all([
-              imageFileToImageData(file),
-              fileToDataUrl(file),
-            ]);
-
-            const img = new Image();
-            img.src = dataUrl;
-            await new Promise((r) => {
-              img.onload = r;
-            });
-            const displayWidth = Math.min(300, img.naturalWidth);
-            const aspectRatio = img.naturalHeight / img.naturalWidth;
-            const displayHeight = Math.round(displayWidth * aspectRatio);
-
-            addReferenceImage(
-              file,
-              dataUrl,
-              { x: cx, y: cy },
-              { width: displayWidth, height: displayHeight },
-            );
-
-            const result = extractColors(imageData);
-            const swatches = result.colors.map((color, i) => ({
-              position: { x: cx + displayWidth + 16, y: cy + i * 56 },
-              color,
-            }));
-            createSwatches(swatches);
-            return;
-          }
-        }
-      }
-
-      // Fall back to text color
-      const text = e.clipboardData?.getData("text");
-      if (!text) return;
-
-      const color = parseColor(text.trim());
-      if (color) {
-        e.preventDefault();
-        createSwatch({ x: cx, y: cy }, color);
-      }
-    };
-
-    window.addEventListener("paste", handler);
-    return () => window.removeEventListener("paste", handler);
-  }, [createSwatch, createSwatches, addReferenceImage]);
+  // ---- Paste & Drop ----
+  const { handleDragOver, handleDrop } = usePasteAndDrop({
+    containerRef,
+    cameraRef,
+    createSwatch,
+    createSwatches,
+    addReferenceImage,
+  });
 
   // ---- Context menu harmonize handler ----
   const handleHarmonize = useCallback(() => {
@@ -906,16 +660,16 @@ export function Canvas() {
   }, [state.selectedIds, state.objects, harmonizeSelected]);
 
   // ---- Render ----
-  const canvasBg = state.darkMode ? "#fff" : "#000";
+  const canvasBg = state.lightMode ? "#fff" : "#000";
   const objects = Object.values(state.objects);
 
   return (
     <>
-    <BoardBar boardManager={boardManager} darkMode={state.darkMode} />
+    <BoardBar boardManager={boardManager} lightMode={state.lightMode} />
     <CanvasContextMenu
       objects={state.objects}
       selectedIds={state.selectedIds}
-      darkMode={state.darkMode}
+      lightMode={state.lightMode}
       camera={state.camera}
       containerRef={containerRef}
       onCreateSwatch={createSwatch}
@@ -987,7 +741,7 @@ export function Canvas() {
                   connection={conn}
                   fromObj={fromObj as Swatch | Ramp}
                   toObj={toObj as Swatch | Ramp}
-                  darkMode={state.darkMode}
+                  lightMode={state.lightMode}
                   selected={state.selectedIds.includes(conn.id)}
                   onSelect={select}
                 />
@@ -1003,7 +757,7 @@ export function Canvas() {
                 swatch={obj as Swatch}
                 selected={state.selectedIds.includes(obj.id)}
                 zoom={state.camera.zoom}
-                darkMode={state.darkMode}
+                lightMode={state.lightMode}
                 eKeyHeld={eKeyHeld}
                 onSelect={select}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
@@ -1021,11 +775,12 @@ export function Canvas() {
                 ramp={obj as Ramp}
                 selected={state.selectedIds.includes(obj.id)}
                 zoom={state.camera.zoom}
-                darkMode={state.darkMode}
+                lightMode={state.lightMode}
                 peekPureMode={peekPureMode}
                 onSelect={select}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
+                onSnapshot={snapshot}
               />
             );
           }
@@ -1036,11 +791,12 @@ export function Canvas() {
                 image={obj as ReferenceImage}
                 selected={state.selectedIds.includes(obj.id)}
                 zoom={state.camera.zoom}
-                darkMode={state.darkMode}
+                lightMode={state.lightMode}
                 eyedropperActive={iKeyHeld && !!eyedropperTargetId.current}
                 onSelect={select}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
+                onSnapshot={snapshot}
               />
             );
           }
@@ -1051,7 +807,7 @@ export function Canvas() {
       </div>
       {showHelp && (
         <HelpOverlay
-          darkMode={state.darkMode}
+          lightMode={state.lightMode}
           onDismiss={() => setShowHelp(false)}
         />
       )}

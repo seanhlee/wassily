@@ -1,3 +1,5 @@
+import { FONT, FONT_SIZE } from "../constants";
+
 interface Shortcut {
   key: string;
   action: string;
@@ -86,24 +88,24 @@ const COL2: Section[] = [
 ];
 
 interface HelpOverlayProps {
-  darkMode: boolean;
+  lightMode: boolean;
   onDismiss: () => void;
 }
 
-export function HelpOverlay({ darkMode, onDismiss }: HelpOverlayProps) {
-  const bg = darkMode ? "#fff" : "#000";
-  const text = darkMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)";
-  const muted = darkMode ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)";
-  const desc = darkMode ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)";
-  const hint = darkMode ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)";
+export function HelpOverlay({ lightMode, onDismiss }: HelpOverlayProps) {
+  const bg = lightMode ? "#fff" : "#000";
+  const text = lightMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)";
+  const muted = lightMode ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)";
+  const desc = lightMode ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)";
+  const hint = lightMode ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)";
 
   const renderSection = (section: Section) => (
     <div key={section.title} style={{ marginBottom: 20 }}>
       <div
         style={{
           color: text,
-          fontSize: 11,
-          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: FONT_SIZE,
+          fontFamily: FONT,
           textTransform: "uppercase",
           letterSpacing: "0.5px",
           marginBottom: section.description ? 4 : 6,
@@ -115,8 +117,8 @@ export function HelpOverlay({ darkMode, onDismiss }: HelpOverlayProps) {
         <div
           style={{
             color: desc,
-            fontSize: 11,
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: FONT_SIZE,
+            fontFamily: FONT,
             textTransform: "uppercase",
             letterSpacing: "-0.2px",
             marginBottom: 6,
@@ -134,8 +136,8 @@ export function HelpOverlay({ darkMode, onDismiss }: HelpOverlayProps) {
               display: "flex",
               justifyContent: "space-between",
               gap: 16,
-              fontSize: 11,
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: FONT_SIZE,
+              fontFamily: FONT,
               textTransform: "uppercase",
               letterSpacing: "0.5px",
               lineHeight: "1.6",
@@ -185,8 +187,8 @@ export function HelpOverlay({ darkMode, onDismiss }: HelpOverlayProps) {
           left: "50%",
           transform: "translateX(-50%)",
           color: hint,
-          fontSize: 11,
-          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: FONT_SIZE,
+          fontFamily: FONT,
           textTransform: "uppercase",
           letterSpacing: "0.5px",
         }}
