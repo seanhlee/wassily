@@ -166,6 +166,6 @@ Claude ←(stdio)→ MCP Server ──(HTTP fetch)──→ Vite Dev Server ←(
 
 ## Known Tech Debt
 
-- **darkMode naming is backwards**: `darkMode: true` in state means the canvas is LIGHT (white background, the default). `darkMode: false` means DARK (black). The flag should be renamed to something like `lightCanvas` or the logic inverted.
+- ~~**darkMode naming is backwards**~~: Fixed — renamed to `lightMode` (`true` = light canvas). Old persisted `darkMode` key auto-migrated on load.
 - ~~**Hue rotation removed**~~: Scroll-on-swatch hue rotation code removed. Will return with spectral ghost controls (JIT UI — faint arc during gesture).
 - ~~**genId counter resets on reload**~~: Fixed — `nextId` is now seeded from persisted objects in the `useReducer` initializer.

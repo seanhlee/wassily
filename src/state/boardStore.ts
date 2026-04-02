@@ -19,12 +19,11 @@ const ACTIVE_KEY = "wassily-active-board";
 const LEGACY_KEY = "wassily-canvas";
 const boardKey = (id: string) => `wassily-board-${id}`;
 
-/** Default state for a brand-new board. darkMode: true = light canvas (known tech debt). */
 const emptyState: CanvasState = {
   objects: {},
   selectedIds: [],
   camera: { x: 0, y: 0, zoom: 1 },
-  darkMode: true,
+  lightMode: true,
   showConnections: true,
 };
 
@@ -80,11 +79,13 @@ export function loadBoardState(id: string): CanvasState | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed && parsed.objects && parsed.camera) {
+      // Migration: accept old "darkMode" key from persisted state
+      const lightMode = parsed.lightMode ?? parsed.darkMode ?? true;
       return {
         objects: parsed.objects,
         selectedIds: [],
         camera: parsed.camera,
-        darkMode: parsed.darkMode ?? true,
+        lightMode,
         showConnections: parsed.showConnections ?? true,
       };
     }
@@ -113,7 +114,7 @@ export function saveBoardState(id: string, state: CanvasState): void {
       objects: serializedObjects,
       selectedIds: [],
       camera: state.camera,
-      darkMode: state.darkMode,
+      lightMode: state.lightMode,
       showConnections: state.showConnections,
     };
     localStorage.setItem(boardKey(id), JSON.stringify(serializable));
@@ -168,7 +169,7 @@ export function migrateFromLegacy(): {
           objects: parsed.objects,
           selectedIds: [],
           camera: parsed.camera,
-          darkMode: parsed.darkMode ?? true,
+          lightMode: parsed.darkMode ?? true,
           showConnections: parsed.showConnections ?? true,
         };
       }

@@ -36,7 +36,7 @@ function makeBaseState(): CanvasState {
     },
     selectedIds: ["obj_1"],
     camera: { x: 0, y: 0, zoom: 1 },
-    darkMode: true,
+    lightMode: true,
     showConnections: true,
   };
 }
@@ -64,7 +64,7 @@ describe("initialState", () => {
     expect(initialState.objects).toEqual({});
     expect(initialState.selectedIds).toEqual([]);
     expect(initialState.camera).toEqual({ x: 0, y: 0, zoom: 1 });
-    expect(initialState.darkMode).toBe(true);
+    expect(initialState.lightMode).toBe(true);
     expect(initialState.showConnections).toBe(true);
   });
 });
@@ -246,7 +246,7 @@ describe("LOAD_BOARD", () => {
       },
       selectedIds: [],
       camera: { x: 10, y: 20, zoom: 2 },
-      darkMode: false,
+      lightMode: false,
       showConnections: false,
     };
     const result = reducer(state, { type: "LOAD_BOARD", state: newState });
@@ -417,7 +417,7 @@ describe("SNAPSHOT in historyReducer", () => {
 
   it("clears future", () => {
     const state = makeBaseState();
-    const altState = { ...state, darkMode: false };
+    const altState = { ...state, lightMode: false };
     const history = { current: state, past: [], future: [altState] };
     const result = historyReducer(history, { type: "SNAPSHOT" });
     expect(result.future).toEqual([]);
@@ -494,11 +494,11 @@ describe("historyReducer LOAD_BOARD", () => {
 describe("historyReducer UNDO/REDO", () => {
   it("UNDO restores previous state from past", () => {
     const prev = makeBaseState();
-    const current = { ...prev, darkMode: false };
+    const current = { ...prev, lightMode: false };
     const history = { current, past: [prev], future: [] };
     const result = historyReducer(history, { type: "UNDO" });
     // Should restore objects from past but keep selection/camera from current
-    expect(result.current.darkMode).toBe(true);
+    expect(result.current.lightMode).toBe(true);
     expect(result.current.selectedIds).toEqual(current.selectedIds);
     expect(result.past.length).toBe(0);
     expect(result.future.length).toBe(1);
@@ -513,10 +513,10 @@ describe("historyReducer UNDO/REDO", () => {
 
   it("REDO restores next state from future", () => {
     const current = makeBaseState();
-    const next = { ...current, darkMode: false };
+    const next = { ...current, lightMode: false };
     const history = { current, past: [], future: [next] };
     const result = historyReducer(history, { type: "REDO" });
-    expect(result.current.darkMode).toBe(false);
+    expect(result.current.lightMode).toBe(false);
     expect(result.past.length).toBe(1);
     expect(result.future.length).toBe(0);
   });
