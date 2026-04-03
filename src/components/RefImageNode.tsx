@@ -12,6 +12,7 @@ interface RefImageNodeProps {
   selected: boolean;
   zoom: number;
   onSnapshot?: () => void;
+  onDuplicateDrag?: () => void;
 }
 
 export function RefImageNode({
@@ -24,6 +25,7 @@ export function RefImageNode({
   selected,
   zoom,
   onSnapshot,
+  onDuplicateDrag,
 }: RefImageNodeProps) {
   const handleMouseDown = useDrag(
     image.id,
@@ -34,6 +36,7 @@ export function RefImageNode({
     onMove,
     onMoveSelected,
     onSnapshot,
+    onDuplicateDrag,
   );
 
   const outlineColor = lightMode ? "#000" : "#fff";

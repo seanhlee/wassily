@@ -15,6 +15,7 @@ export function useDrag(
   onMove: (id: string, x: number, y: number) => void,
   onMoveSelected: (dx: number, dy: number) => void,
   onDragSnapshot?: () => void,
+  onDuplicateDrag?: () => void,
 ) {
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
@@ -27,8 +28,10 @@ export function useDrag(
       isDragging.current = false;
       dragStart.current = { x: e.clientX, y: e.clientY };
       lastDelta.current = { x: 0, y: 0 };
-      // Capture shiftKey now — React's SyntheticEvent gets nullified after this handler returns
+      // Capture keys now — React's SyntheticEvent gets nullified after this handler returns
       const shiftKey = e.shiftKey;
+      const altKey = e.altKey;
+      let duplicated = false;
 
       const handleMove = (me: MouseEvent) => {
         const dx = (me.clientX - dragStart.current.x) / zoom;
@@ -36,13 +39,21 @@ export function useDrag(
         if (!isDragging.current && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
           isDragging.current = true;
           onDragSnapshot?.(); // undo checkpoint before drag
+          // Option+drag: select this object if needed, then duplicate
+          if (altKey && onDuplicateDrag && !duplicated) {
+            if (!selected) {
+              onSelect(id, false); // ensure the clicked object is selected
+            }
+            duplicated = true;
+            onDuplicateDrag();
+          }
         }
         if (isDragging.current) {
           const incDx = dx - lastDelta.current.x;
           const incDy = dy - lastDelta.current.y;
           lastDelta.current = { x: dx, y: dy };
 
-          if (selected) {
+          if (selected || duplicated) {
             onMoveSelected(incDx, incDy);
           } else {
             onMove(id, position.x + dx, position.y + dy);
@@ -64,7 +75,7 @@ export function useDrag(
       window.addEventListener("mousemove", handleMove);
       window.addEventListener("mouseup", handleUp);
     },
-    [id, position, zoom, selected, onSelect, onMove, onMoveSelected, onDragSnapshot],
+    [id, position, zoom, selected, onSelect, onMove, onMoveSelected, onDragSnapshot, onDuplicateDrag],
   );
 
   return handleMouseDown;

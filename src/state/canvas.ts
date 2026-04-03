@@ -331,18 +331,26 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       const ramp = obj as Ramp;
 
       // Step through presets: 3 → 5 → 7 → 9 → 11
+      // If current count is non-preset (e.g. after stop deletion), snap to
+      // the nearest preset in the requested direction.
       const presets: readonly number[] = RAMP_STOP_PRESETS;
-      const currentIdx = presets.indexOf(ramp.stopCount);
+      let currentIdx = presets.indexOf(ramp.stopCount);
+      if (currentIdx === -1) {
+        // Non-preset count: find the nearest preset in the delta direction
+        if (action.delta > 0) {
+          currentIdx = presets.findIndex((p) => p > ramp.stopCount);
+          if (currentIdx === -1) currentIdx = presets.length - 1;
+          else currentIdx -= 1; // so +delta lands on that next preset
+        } else {
+          for (let i = presets.length - 1; i >= 0; i--) {
+            if (presets[i] < ramp.stopCount) { currentIdx = i + 1; break; }
+          }
+          if (currentIdx === -1) currentIdx = 0;
+        }
+      }
       const newIdx = Math.max(
         0,
-        Math.min(
-          presets.length - 1,
-          currentIdx === -1
-            ? action.delta > 0
-              ? 2
-              : 0 // default to 7 or 3
-            : currentIdx + action.delta,
-        ),
+        Math.min(presets.length - 1, currentIdx + action.delta),
       );
       const newCount = presets[newIdx];
       if (newCount === ramp.stopCount) return state;
@@ -360,6 +368,43 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         objects: {
           ...state.objects,
           [action.id]: { ...ramp, stops, stopCount: newCount },
+        },
+      };
+    }
+
+    case "REMOVE_RAMP_STOP": {
+      const obj = state.objects[action.id];
+      if (!obj || obj.type !== "ramp") return state;
+      const ramp = obj as Ramp;
+      const newStops = ramp.stops.filter((_, i) => i !== action.stopIndex);
+      // Re-index stops
+      const reindexed = newStops.map((s, i) => ({ ...s, index: i }));
+
+      if (reindexed.length === 0) {
+        // Delete ramp if no stops remain
+        const objects = { ...state.objects };
+        delete objects[action.id];
+        return { ...state, objects, selectedIds: state.selectedIds.filter(id => id !== action.id) };
+      }
+
+      if (reindexed.length === 1) {
+        // Convert back to swatch
+        const stop = reindexed[0];
+        const swatch: Swatch = {
+          id: ramp.id,
+          type: "swatch",
+          color: stop.color,
+          position: ramp.position,
+          locked: ramp.locked,
+        };
+        return { ...state, objects: { ...state.objects, [ramp.id]: swatch } };
+      }
+
+      return {
+        ...state,
+        objects: {
+          ...state.objects,
+          [action.id]: { ...ramp, stops: reindexed, stopCount: reindexed.length },
         },
       };
     }
@@ -565,6 +610,19 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       return { ...state, objects: newObjects, showConnections: true };
     }
 
+    case "DUPLICATE_SELECTED": {
+      const objects = { ...state.objects };
+      const newIds: string[] = [];
+      for (const id of state.selectedIds) {
+        const obj = objects[id];
+        if (!obj || obj.type === "connection") continue;
+        const newId = genId();
+        newIds.push(newId);
+        objects[newId] = { ...obj, id: newId } as typeof obj;
+      }
+      return { ...state, objects, selectedIds: newIds };
+    }
+
     case "SET_LOCK": {
       const objects = { ...state.objects };
       for (const id of action.ids) {
@@ -614,6 +672,7 @@ const SKIP_HISTORY: Set<string> = new Set([
   "LOAD_STATE",
   "LOAD_BOARD",
   "RESTORE_IMAGE_URLS",
+  "DUPLICATE_SELECTED",
 ]);
 
 interface HistoryState {
@@ -901,6 +960,14 @@ export function useCanvasState(activeBoardId: string) {
     [],
   );
 
+  const duplicateSelected = useCallback(
+    () => {
+      dispatch({ type: "SNAPSHOT" });
+      dispatch({ type: "DUPLICATE_SELECTED" });
+    },
+    [dispatch],
+  );
+
   const loadBoard = useCallback(
     (boardState: CanvasState) => dispatch({ type: "LOAD_BOARD", state: boardState }),
     [dispatch],
@@ -938,6 +1005,7 @@ export function useCanvasState(activeBoardId: string) {
     toggleLightMode,
     snapshot,
     dispatch,
+    duplicateSelected,
     loadBoard,
     applyExternalActions,
   };

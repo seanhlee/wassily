@@ -8,9 +8,25 @@
 
 import { useState, useCallback, useRef } from "react";
 import { ContextMenu } from "@base-ui/react/context-menu";
-import type { CanvasObject, Swatch, Ramp, Camera, Point } from "../types";
+import type { CanvasObject, Swatch, Ramp, RampStop, Camera, Point } from "../types";
 import { FONT, FONT_SIZE } from "../constants";
 import { toHex, toOklchString } from "../engine/gamut";
+
+// ---- Clipboard helper ----
+// navigator.clipboard.writeText can fail in custom context menus (user gesture
+// chain breaks through portals). Fall back to execCommand.
+function copyText(text: string) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const el = document.createElement("textarea");
+    el.value = text;
+    el.style.position = "fixed";
+    el.style.opacity = "0";
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    document.body.removeChild(el);
+  });
+}
 
 // ---- Menu context types ----
 
@@ -19,6 +35,7 @@ type MenuContext =
   | { type: "multi-selection"; anyUnlocked: boolean }
   | { type: "swatch"; objectId: string; swatch: Swatch }
   | { type: "ramp"; objectId: string; ramp: Ramp }
+  | { type: "ramp-stop"; objectId: string; ramp: Ramp; stop: RampStop }
   | { type: "image"; objectId: string }
   | null;
 
@@ -76,6 +93,8 @@ export interface CanvasContextMenuProps {
   onPromoteToRamp: (id: string, stopCount: number) => void;
   onHarmonize: () => void;
   onToggleLock: () => void;
+  onExtractColors?: (imageId: string) => void;
+  onRemoveRampStop?: (rampId: string, stopIndex: number) => void;
   children: React.ReactNode;
 }
 
@@ -93,6 +112,8 @@ export function CanvasContextMenu({
   onPromoteToRamp,
   onHarmonize,
   onToggleLock,
+  onExtractColors,
+  onRemoveRampStop,
   children,
 }: CanvasContextMenuProps) {
   const [ctx, setCtx] = useState<MenuContext>(null);
@@ -119,6 +140,10 @@ export function CanvasContextMenu({
       const objectEl = swatchEl || rampEl || imageEl;
       const objectId = objectEl?.getAttribute("data-object-id") ?? null;
       const obj = objectId ? objectsRef.current[objectId] : null;
+
+      // Detect stop-level right-click on ramp
+      const stopEl = target.closest("[data-stop-index]");
+      const stopIndex = stopEl?.getAttribute("data-stop-index");
 
       // Selection logic: if right-clicked object isn't selected, replace selection
       let effectiveSelectedIds = selectedIdsRef.current;
@@ -149,6 +174,15 @@ export function CanvasContextMenu({
           setCtx({ type: "multi-selection", anyUnlocked });
         } else if (obj.type === "swatch") {
           setCtx({ type: "swatch", objectId: objectId!, swatch: obj as Swatch });
+        } else if (obj.type === "ramp" && stopIndex != null) {
+          const ramp = obj as Ramp;
+          const idx = parseInt(stopIndex, 10);
+          const stop = ramp.stops[idx];
+          if (stop) {
+            setCtx({ type: "ramp-stop", objectId: objectId!, ramp, stop });
+          } else {
+            setCtx({ type: "ramp", objectId: objectId!, ramp });
+          }
         } else if (obj.type === "ramp") {
           setCtx({ type: "ramp", objectId: objectId!, ramp: obj as Ramp });
         } else if (obj.type === "reference-image") {
@@ -224,7 +258,7 @@ export function CanvasContextMenu({
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
                   onClick={() =>
-                    navigator.clipboard.writeText(toHex(ctx.swatch.color)).catch(() => {})
+                    copyText(toHex(ctx.swatch.color))
                   }
                 >
                   {toHex(ctx.swatch.color)}
@@ -232,7 +266,7 @@ export function CanvasContextMenu({
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
                   onClick={() =>
-                    navigator.clipboard.writeText(toOklchString(ctx.swatch.color)).catch(() => {})
+                    copyText(toOklchString(ctx.swatch.color))
                   }
                 >
                   {toOklchString(ctx.swatch.color)}
@@ -275,7 +309,7 @@ export function CanvasContextMenu({
                     const list = ctx.ramp.stops
                       .map((s) => toHex(lightMode ? s.darkColor : s.color))
                       .join("\n");
-                    navigator.clipboard.writeText(list).catch(() => {});
+                    copyText(list);
                   }}
                 >
                   Hex list
@@ -286,7 +320,7 @@ export function CanvasContextMenu({
                     const list = ctx.ramp.stops
                       .map((s) => toOklchString(lightMode ? s.darkColor : s.color))
                       .join("\n");
-                    navigator.clipboard.writeText(list).catch(() => {});
+                    copyText(list);
                   }}
                 >
                   oklch list
@@ -302,10 +336,47 @@ export function CanvasContextMenu({
               </>
             )}
 
+            {ctx?.type === "ramp-stop" && (
+              <>
+                <ContextMenu.Item
+                  style={(state) => getItemStyle(lightMode, state)}
+                  onClick={() =>
+                    copyText(toHex(ctx.stop.color))
+                  }
+                >
+                  {toHex(ctx.stop.color)}
+                </ContextMenu.Item>
+                <ContextMenu.Item
+                  style={(state) => getItemStyle(lightMode, state)}
+                  onClick={() =>
+                    copyText(toOklchString(ctx.stop.color))
+                  }
+                >
+                  {toOklchString(ctx.stop.color)}
+                </ContextMenu.Item>
+                <ContextMenu.Separator style={getSeparatorStyle(lightMode)} />
+                <ContextMenu.Item
+                  style={(state) => getItemStyle(lightMode, state)}
+                  onClick={() => onRemoveRampStop?.(ctx.objectId, ctx.stop.index)}
+                >
+                  Delete stop
+                </ContextMenu.Item>
+              </>
+            )}
+
             {ctx?.type === "image" && (
-              <ContextMenu.Item style={(state) => getItemStyle(lightMode, state)} onClick={onDeleteSelected}>
-                Delete
-              </ContextMenu.Item>
+              <>
+                <ContextMenu.Item
+                  style={(state) => getItemStyle(lightMode, state)}
+                  onClick={() => onExtractColors?.(ctx.objectId)}
+                >
+                  Extract colors
+                </ContextMenu.Item>
+                <ContextMenu.Separator style={getSeparatorStyle(lightMode)} />
+                <ContextMenu.Item style={(state) => getItemStyle(lightMode, state)} onClick={onDeleteSelected}>
+                  Delete
+                </ContextMenu.Item>
+              </>
             )}
           </ContextMenu.Popup>
         </ContextMenu.Positioner>

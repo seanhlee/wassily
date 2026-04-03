@@ -21,6 +21,7 @@ import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship,
 import { getObjectBounds, findStripPlacement, extractHues } from "./canvasHelpers";
 import { samplePixelAt } from "../hooks/useEyedropper";
 import { usePasteAndDrop } from "../hooks/usePasteAndDrop";
+import { extractColors, dataUrlToImageData } from "../engine/extract";
 
 /** Prime an offscreen canvas for pixel sampling from a reference image */
 function primeImageCanvas(
@@ -72,6 +73,7 @@ export function Canvas() {
     toggleLightMode,
     snapshot,
     dispatch,
+    duplicateSelected,
     loadBoard,
     undo,
     redo,
@@ -641,9 +643,27 @@ export function Canvas() {
     containerRef,
     cameraRef,
     createSwatch,
-    createSwatches,
     addReferenceImage,
   });
+
+  // ---- Context menu extract colors handler ----
+  const handleExtractColors = useCallback(
+    async (imageId: string) => {
+      const obj = state.objects[imageId];
+      if (!obj || obj.type !== "reference-image") return;
+      const img = obj as ReferenceImage;
+      const imageData = await dataUrlToImageData(img.dataUrl);
+      const result = extractColors(imageData);
+      const swatches = result.colors.map((color, i) => ({
+        position: { x: img.position.x + img.size.width + 16, y: img.position.y + i * 56 },
+        color,
+      }));
+      snapshot();
+      createSwatches(swatches);
+    },
+    [state.objects, createSwatches, snapshot],
+  );
+
 
   // ---- Context menu harmonize handler ----
   const handleHarmonize = useCallback(() => {
@@ -678,6 +698,11 @@ export function Canvas() {
       onPromoteToRamp={promoteToRamp}
       onHarmonize={handleHarmonize}
       onToggleLock={toggleLockSelected}
+      onExtractColors={handleExtractColors}
+      onRemoveRampStop={(id, stopIndex) => {
+        snapshot();
+        dispatch({ type: "REMOVE_RAMP_STOP", id, stopIndex });
+      }}
     >
       <div
         onClick={handleCanvasClick}
@@ -765,6 +790,7 @@ export function Canvas() {
                 onAdjustColor={adjustSwatchColor}
                 onUpdateColor={updateSwatchColor}
                 onSnapshot={snapshot}
+                onDuplicateDrag={duplicateSelected}
               />
             );
           }
@@ -781,6 +807,7 @@ export function Canvas() {
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
                 onSnapshot={snapshot}
+                onDuplicateDrag={duplicateSelected}
               />
             );
           }
@@ -797,6 +824,7 @@ export function Canvas() {
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
                 onSnapshot={snapshot}
+                onDuplicateDrag={duplicateSelected}
               />
             );
           }

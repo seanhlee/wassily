@@ -51,13 +51,66 @@ const L_MIN = 0.25;
 
 /**
  * Compute lightness for a given stop position (0=lightest, 1=darkest).
- * Uses easeOutQuad — more resolution in the light/mid range,
- * compressed in the darks. Matches Tailwind v4's distribution.
+ * Uses easeInQuad — more resolution in the light/mid range,
+ * compressed in the darks.
  */
 function lightnessAt(t: number): number {
-  // easeInQuad: stays bright for light stops, drops steeply for darks
-  // Matches Tailwind v4's lightness distribution
   return L_MAX - (L_MAX - L_MIN) * easeInQuad(t);
+}
+
+/**
+ * Seed-anchored lightness curve.
+ *
+ * Uses a single power curve L = L_MAX - (L_MAX - L_MIN) * t^p where
+ * the exponent p is chosen so the anchor stop lands exactly on the
+ * seed's lightness. This is a smooth, continuous curve with no kinks —
+ * just a gentler or steeper version of the base easeInQuad.
+ */
+function lightnessAtAnchored(t: number, exponent: number): number {
+  if (t <= 0) return L_MAX;
+  if (t >= 1) return L_MIN;
+  return L_MAX - (L_MAX - L_MIN) * Math.pow(t, exponent);
+}
+
+/**
+ * Find the stop t-value nearest to where the seed's lightness naturally falls,
+ * and compute the power exponent that makes the curve pass through seedL there.
+ */
+function findAnchorStop(
+  seedL: number,
+  stopCount: number,
+): { tAnchor: number; anchorIndex: number; exponent: number } {
+  // Clamp seedL to valid range
+  const sL = Math.max(L_MIN + 0.01, Math.min(L_MAX - 0.01, seedL));
+
+  // Where seedL falls in the default easeInQuad curve
+  const ratio = (L_MAX - sL) / (L_MAX - L_MIN);
+  const tSeed = Math.sqrt(Math.max(0, Math.min(1, ratio)));
+
+  // Find nearest stop
+  let bestIndex = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < stopCount; i++) {
+    const t = stopCount > 1 ? i / (stopCount - 1) : 0.5;
+    const dist = Math.abs(t - tSeed);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestIndex = i;
+    }
+  }
+
+  const tAnchor = stopCount > 1 ? bestIndex / (stopCount - 1) : 0.5;
+
+  // Solve for exponent: sL = L_MAX - (L_MAX - L_MIN) * tAnchor^p
+  // → ratio = tAnchor^p → p = log(ratio) / log(tAnchor)
+  let exponent = 2; // default (matches easeInQuad)
+  if (tAnchor > 0.01 && tAnchor < 0.99 && ratio > 0.001 && ratio < 0.999) {
+    exponent = Math.log(ratio) / Math.log(tAnchor);
+    // Keep exponent reasonable — stay between linear (1) and cubic (3)
+    exponent = Math.max(1.2, Math.min(3.0, exponent));
+  }
+
+  return { tAnchor, anchorIndex: bestIndex, exponent };
 }
 
 // ---- Chroma Curve ----
@@ -66,17 +119,14 @@ function lightnessAt(t: number): number {
  * Chroma intensity curve — gamut-relative.
  *
  * Returns a value 0-1 representing what fraction of the gamut
- * maximum to use at this position in the ramp. Peaks around
- * t=0.3-0.5 (stops 300-500) with an asymmetric falloff.
- *
- * seedIntensity scales the peak — a vivid seed pushes the whole
- * ramp more saturated, a muted seed keeps it restrained.
+ * maximum to use at this position in the ramp. seedIntensity is
+ * the seed's raw gamut-relative chroma ratio, so the ramp naturally
+ * reproduces the seed's chroma at its anchor stop.
  */
 function chromaIntensityAt(_t: number, seedIntensity: number): number {
-  // Flat percentage of gamut max. The gamut boundary itself provides
-  // all the shaping — it rolls off naturally at extreme lightness.
-  // No artificial bell curve or edge rolloff needed.
-  return 0.92 * seedIntensity;
+  // Direct gamut-relative scaling. clampToGamut handles boundary safety.
+  // The gamut boundary itself shapes the curve at extreme lightness.
+  return seedIntensity;
 }
 
 // ---- Hue Drift ----
@@ -189,15 +239,19 @@ export function generateRamp(config: RampConfig): RampStop[] {
       ? STOP_PRESETS[stopCount as StopPreset]
       : generateCustomLabels(stopCount);
 
-  // Compute seed intensity: how vivid is the seed relative to
-  // the gamut max at its lightness? This scales the whole ramp.
+  // Compute seed intensity: raw gamut-relative chroma ratio (no boost).
+  // This ensures the ramp naturally reproduces the seed's chroma level.
   let seedIntensity = 1.0;
   if (seedChroma !== undefined && seedLightness !== undefined && !isNeutral) {
     const seedMaxC = maxChroma(seedLightness, hue);
     seedIntensity = seedMaxC > 0 ? Math.min(seedChroma / seedMaxC, 1.0) : 1.0;
-    // Boost slightly — seeds from images may be below max
-    seedIntensity = Math.min(seedIntensity * 1.2, 1.0);
   }
+
+  // Find anchor stop — the stop whose lightness will exactly match the seed.
+  const hasSeed = seedLightness !== undefined && !isNeutral;
+  const anchor = hasSeed
+    ? findAnchorStop(seedLightness!, labels.length)
+    : null;
 
   return labels.map((label, index) => {
     const t = labels.length > 1 ? index / (labels.length - 1) : 0.5;
@@ -212,8 +266,22 @@ export function generateRamp(config: RampConfig): RampStop[] {
     }
 
     // ---- Opinionated generation ----
-    const l = lightnessAt(t);
-    const drift = hueDriftAt(t, hue);
+
+    // Lightness: use seed-anchored power curve when we have a seed
+    const l = anchor
+      ? lightnessAtAnchored(t, anchor.exponent)
+      : lightnessAt(t);
+
+    // Hue drift: suppress at anchor stop, blend in smoothly away from it
+    const rawDrift = hueDriftAt(t, hue);
+    let drift = rawDrift;
+    if (anchor) {
+      // Blend: 0 drift at anchor, full drift at extremes
+      const distFromAnchor = Math.abs(t - anchor.tAnchor);
+      const maxDist = Math.max(anchor.tAnchor, 1 - anchor.tAnchor);
+      const blendFactor = maxDist > 0 ? distFromAnchor / maxDist : 0;
+      drift = rawDrift * blendFactor;
+    }
     const h = (((hue + drift) % 360) + 360) % 360;
 
     // Gamut-relative chroma

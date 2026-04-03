@@ -1,10 +1,65 @@
 import { useState } from "react";
-import type { Ramp } from "../types";
+import type { Ramp, RampStop } from "../types";
 import { toHex } from "../engine/gamut";
 import { generateRamp } from "../engine/ramp";
 import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
 import { useDrag } from "../hooks/useDrag";
 import { SelectionBrackets, LockIcon } from "./SelectionBrackets";
+
+/** Individual stop cell — shows hex value on hover */
+function RampStopCell({
+  stop,
+  rampId,
+  lightMode,
+}: {
+  stop: RampStop;
+  rampId: string;
+  lightMode: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const hex = toHex(stop.color);
+  const textColor = lightMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)";
+
+  return (
+    <div
+      data-ramp-id={rampId}
+      data-stop-index={stop.index}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ position: "relative" }}
+    >
+      <div
+        style={{
+          width: SWATCH_SIZE,
+          height: SWATCH_SIZE,
+          backgroundColor: hex,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          width: SWATCH_SIZE,
+          fontFamily: FONT,
+          fontSize: FONT_SIZE,
+          color: textColor,
+          textAlign: "center",
+          marginTop: 4,
+          userSelect: "none",
+          pointerEvents: "none",
+          opacity: hovered ? 1 : 0,
+          transition: "opacity 0.15s ease",
+        }}
+      >
+        <div style={{ textTransform: "uppercase", letterSpacing: "-0.55px" }}>
+          {stop.label}
+        </div>
+        <div>{hex}</div>
+      </div>
+    </div>
+  );
+}
 
 interface RampNodeProps {
   ramp: Ramp;
@@ -16,6 +71,7 @@ interface RampNodeProps {
   onMove: (id: string, x: number, y: number) => void;
   onMoveSelected: (dx: number, dy: number) => void;
   onSnapshot?: () => void;
+  onDuplicateDrag?: () => void;
 }
 
 export function RampNode({
@@ -28,8 +84,8 @@ export function RampNode({
   onMove,
   onMoveSelected,
   onSnapshot,
+  onDuplicateDrag,
 }: RampNodeProps) {
-  const showDetail = zoom > 1.5;
   const [hovered, setHovered] = useState(false);
 
   const displayStops = peekPureMode
@@ -49,6 +105,7 @@ export function RampNode({
     onMove,
     onMoveSelected,
     onSnapshot,
+    onDuplicateDrag,
   );
 
   const outlineColor = lightMode ? "#000" : "#fff";
@@ -102,54 +159,14 @@ export function RampNode({
       </div>
 
       <div style={{ display: "flex" }}>
-        {displayStops.map((stop) => {
-          const hex = toHex(stop.color);
-          return (
-            <div
-              key={stop.label}
-              style={{
-                width: SWATCH_SIZE,
-                height: SWATCH_SIZE,
-                backgroundColor: hex,
-              }}
-            />
-          );
-        })}
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          top: "100%",
-          left: 0,
-          display: "flex",
-          pointerEvents: "none",
-          opacity: hovered && showDetail ? 1 : 0,
-          transition: "opacity 0.15s ease",
-        }}
-      >
-        {displayStops.map((stop) => {
-          const hex = toHex(stop.color);
-          return (
-            <div
-              key={stop.label}
-              style={{
-                width: SWATCH_SIZE,
-                fontFamily: FONT,
-                fontSize: FONT_SIZE,
-                color: lightMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
-                textAlign: "center",
-                marginTop: 4,
-                userSelect: "none",
-              }}
-            >
-              <div style={{ textTransform: "uppercase", letterSpacing: "-0.55px" }}>
-                {stop.label}
-              </div>
-              <div>{hex}</div>
-            </div>
-          );
-        })}
+        {displayStops.map((stop) => (
+          <RampStopCell
+            key={stop.label}
+            stop={stop}
+            rampId={ramp.id}
+            lightMode={lightMode}
+          />
+        ))}
       </div>
     </div>
   );
