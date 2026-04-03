@@ -339,13 +339,15 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         // Non-preset count: find the nearest preset in the delta direction
         if (action.delta > 0) {
           currentIdx = presets.findIndex((p) => p > ramp.stopCount);
-          if (currentIdx === -1) currentIdx = presets.length - 1;
-          else currentIdx -= 1; // so +delta lands on that next preset
+          if (currentIdx === -1) return state; // already above max preset
+          currentIdx -= 1; // so +delta lands on that next preset
         } else {
+          // Find the last preset below current count
+          let found = false;
           for (let i = presets.length - 1; i >= 0; i--) {
-            if (presets[i] < ramp.stopCount) { currentIdx = i + 1; break; }
+            if (presets[i] < ramp.stopCount) { currentIdx = i + 1; found = true; break; }
           }
-          if (currentIdx === -1) currentIdx = 0;
+          if (!found) return state; // already below min preset
         }
       }
       const newIdx = Math.max(
@@ -616,7 +618,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       for (const id of state.selectedIds) {
         const obj = objects[id];
         if (!obj || obj.type === "connection") continue;
-        const newId = genId();
+        const newId = action.idMap?.[id] ?? genId();
         newIds.push(newId);
         objects[newId] = { ...obj, id: newId } as typeof obj;
       }
@@ -962,10 +964,30 @@ export function useCanvasState(activeBoardId: string) {
 
   const duplicateSelected = useCallback(
     () => {
+      // Pre-generate IDs so we know old→new mapping for blob copies
+      const idMap: Record<string, string> = {};
+      for (const id of state.selectedIds) {
+        const obj = state.objects[id];
+        if (!obj || obj.type === "connection") continue;
+        idMap[id] = genId();
+      }
       dispatch({ type: "SNAPSHOT" });
-      dispatch({ type: "DUPLICATE_SELECTED" });
+      dispatch({ type: "DUPLICATE_SELECTED", idMap });
+      // Copy IndexedDB blobs for duplicated reference images
+      for (const [oldId, newId] of Object.entries(idMap)) {
+        const obj = state.objects[oldId];
+        if (obj?.type === "reference-image") {
+          const dataUrl = (obj as ReferenceImage).dataUrl;
+          if (dataUrl) {
+            fetch(dataUrl)
+              .then((r) => r.blob())
+              .then((blob) => storeImageBlob(newId, blob))
+              .catch(() => {}); // degrade silently
+          }
+        }
+      }
     },
-    [dispatch],
+    [dispatch, state.selectedIds, state.objects],
   );
 
   const loadBoard = useCallback(

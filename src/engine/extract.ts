@@ -38,18 +38,18 @@ export function extractColors(imageData: ImageData): ExtractionResult {
   // Adaptive k based on variance
   const k = Math.min(7, Math.max(3, Math.round(variance * 80)));
 
-  // Run k-means in OKLCH space
-  const clusters = kMeans(pixels, k, 20);
+  // Run k-means 5 times with seeded PRNG, pick best clustering
+  const clusters = bestOfN(pixels, k, 20, 5);
 
-  // Sort by perceptual prominence (chroma * cluster size weight)
+  // Sort by perceptual prominence (centroid chroma × cluster size weight)
   const sorted = clusters
     .filter((c) => c.count > 0)
     .sort((a, b) => {
       const scoreA =
-        (a.peak.c / Math.max(0.01, maxChroma(a.peak.l, a.peak.h))) *
+        (a.center.c / Math.max(0.01, maxChroma(a.center.l, a.center.h))) *
         Math.sqrt(a.count);
       const scoreB =
-        (b.peak.c / Math.max(0.01, maxChroma(b.peak.l, b.peak.h))) *
+        (b.center.c / Math.max(0.01, maxChroma(b.center.l, b.center.h))) *
         Math.sqrt(b.count);
       return scoreB - scoreA;
     });
@@ -252,8 +252,12 @@ function oklchDistance(a: OklchColor, b: OklchColor): number {
   let dh = Math.abs(a.h - b.h);
   if (dh > 180) dh = 360 - dh;
   // Weight hue by chroma (low chroma = hue doesn't matter)
+  // Boost for muted-but-chromatic colors (C > 0.03): smooth ramp from
+  // 0 to 0.002 over C = 0.03..0.07, no discontinuity at the boundary.
   const avgC = (a.c + b.c) / 2;
-  const hueWeight = avgC * 0.025;
+  const boost =
+    avgC > 0.03 ? 0.002 * Math.min(1, (avgC - 0.03) / 0.04) : 0;
+  const hueWeight = avgC * 0.025 + boost;
   return Math.sqrt(dl * dl + dc * dc + dh * dh * hueWeight * hueWeight);
 }
 
@@ -263,11 +267,62 @@ interface Cluster {
   count: number;
 }
 
+/** Simple seeded PRNG (mulberry32) */
+function mulberry32(seed: number): () => number {
+  return () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Derive a deterministic seed from pixel data */
+function pixelSeed(pixels: OklchColor[]): number {
+  let h = 0;
+  const step = Math.max(1, Math.floor(pixels.length / 64));
+  for (let i = 0; i < pixels.length; i += step) {
+    const p = pixels[i];
+    h = (h * 31 + ((p.l * 1000) | 0)) | 0;
+    h = (h * 31 + ((p.c * 1000) | 0)) | 0;
+    h = (h * 31 + ((p.h * 10) | 0)) | 0;
+  }
+  return h;
+}
+
+/** Run k-means N times with different seeds, return the best clustering (lowest WCSS) */
+function bestOfN(
+  pixels: OklchColor[],
+  k: number,
+  maxIter: number,
+  n: number,
+): Cluster[] {
+  const seed = pixelSeed(pixels);
+  let bestClusters: Cluster[] = [];
+  let bestWCSS = Infinity;
+
+  for (let run = 0; run < n; run++) {
+    const random = mulberry32(seed + run);
+    const { clusters, wcss } = kMeans(pixels, k, maxIter, random);
+    if (wcss < bestWCSS) {
+      bestWCSS = wcss;
+      bestClusters = clusters;
+    }
+  }
+  return bestClusters;
+}
+
 /** K-means clustering in OKLCH space */
-function kMeans(pixels: OklchColor[], k: number, maxIter: number): Cluster[] {
+function kMeans(
+  pixels: OklchColor[],
+  k: number,
+  maxIter: number,
+  random: () => number,
+): { clusters: Cluster[]; wcss: number } {
   // Initialize centers using k-means++
   const centers: OklchColor[] = [];
-  centers.push(pixels[Math.floor(Math.random() * pixels.length)]);
+  centers.push(pixels[Math.floor(random() * pixels.length)]);
 
   for (let i = 1; i < k; i++) {
     const distances = pixels.map((p) => {
@@ -275,7 +330,7 @@ function kMeans(pixels: OklchColor[], k: number, maxIter: number): Cluster[] {
       return minDist * minDist;
     });
     const totalDist = distances.reduce((s, d) => s + d, 0);
-    let r = Math.random() * totalDist;
+    let r = random() * totalDist;
     for (let j = 0; j < pixels.length; j++) {
       r -= distances[j];
       if (r <= 0) {
@@ -284,7 +339,7 @@ function kMeans(pixels: OklchColor[], k: number, maxIter: number): Cluster[] {
       }
     }
     if (centers.length <= i) {
-      centers.push(pixels[Math.floor(Math.random() * pixels.length)]);
+      centers.push(pixels[Math.floor(random() * pixels.length)]);
     }
   }
 
@@ -314,15 +369,22 @@ function kMeans(pixels: OklchColor[], k: number, maxIter: number): Cluster[] {
 
     // Update centers
     for (let j = 0; j < centers.length; j++) {
-      const members = pixels.filter((_, i) => assignments[i] === j);
+      const members = pixels.filter((_, idx) => assignments[idx] === j);
       if (members.length > 0) {
         centers[j] = averageColor(members);
       }
     }
   }
 
+  // Compute WCSS (within-cluster sum of squared distances)
+  let wcss = 0;
+  for (let i = 0; i < pixels.length; i++) {
+    const d = oklchDistance(pixels[i], centers[assignments[i]]);
+    wcss += d * d;
+  }
+
   // Build clusters with peak-chroma representatives
-  return centers.map((center, j) => {
+  const clusters = centers.map((center, j) => {
     const members = pixels.filter((_, i) => assignments[i] === j);
     const peak =
       members.length > 0
@@ -330,6 +392,8 @@ function kMeans(pixels: OklchColor[], k: number, maxIter: number): Cluster[] {
         : center;
     return { center, peak, count: members.length };
   });
+
+  return { clusters, wcss };
 }
 
 /**
@@ -380,16 +444,16 @@ export function extractFromPixels(pixels: OklchColor[]): ExtractionResult {
   }
 
   const k = Math.min(7, Math.max(3, Math.round(variance * 80)));
-  const clusters = kMeans(pixels, k, 20);
+  const clusters = bestOfN(pixels, k, 20, 5);
 
   const sorted = clusters
     .filter((c) => c.count > 0)
     .sort((a, b) => {
       const scoreA =
-        (a.peak.c / Math.max(0.01, maxChroma(a.peak.l, a.peak.h))) *
+        (a.center.c / Math.max(0.01, maxChroma(a.center.l, a.center.h))) *
         Math.sqrt(a.count);
       const scoreB =
-        (b.peak.c / Math.max(0.01, maxChroma(b.peak.l, b.peak.h))) *
+        (b.center.c / Math.max(0.01, maxChroma(b.center.l, b.center.h))) *
         Math.sqrt(b.count);
       return scoreB - scoreA;
     });

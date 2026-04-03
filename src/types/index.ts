@@ -187,7 +187,7 @@ export type Action =
   | { type: "TOGGLE_LIGHT_MODE" }
 
   // Duplication
-  | { type: "DUPLICATE_SELECTED" }
+  | { type: "DUPLICATE_SELECTED"; idMap?: Record<string, string> }
 
   // State management
   | { type: "RESTORE_IMAGE_URLS"; urls: Record<string, string> }

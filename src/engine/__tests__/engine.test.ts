@@ -615,4 +615,47 @@ describe("extraction", () => {
     const result = _cullForDistinctiveness(colors);
     expect(result.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("produces deterministic results for the same pixel data", () => {
+    const pixels = [
+      ...makePixels(25, 50, 0.15),
+      ...makePixels(200, 50, 0.15),
+      ...makePixels(120, 30, 0.10),
+    ];
+    const r1 = extractFromPixels(pixels);
+    const r2 = extractFromPixels(pixels);
+    expect(r1.colors).toEqual(r2.colors);
+    expect(r1.isSingleColor).toEqual(r2.isSingleColor);
+  });
+
+  it("extracts green from a muted olive-dominated image (not gold/red)", () => {
+    // Simulates an olive-green car: mostly muted green with dark shadows
+    // and small vivid red accents (taillights)
+    const pixels = [
+      // 70% — muted olive green (car body)
+      ...Array.from({ length: 700 }, (_, i) => ({
+        l: 0.35 + (i % 10) * 0.02,
+        c: 0.06 + (i % 5) * 0.005,
+        h: 125 + (i % 7) * 2,
+      })),
+      // 20% — dark neutrals (wheels, shadows)
+      ...Array.from({ length: 200 }, (_, i) => ({
+        l: 0.15 + (i % 8) * 0.02,
+        c: 0.01,
+        h: 0,
+      })),
+      // 10% — vivid red (taillights, accents)
+      ...Array.from({ length: 100 }, (_, i) => ({
+        l: 0.45 + (i % 5) * 0.01,
+        c: 0.18 + (i % 3) * 0.02,
+        h: 15 + (i % 4) * 2,
+      })),
+    ];
+    const result = extractFromPixels(pixels);
+    expect(result.isSingleColor).toBe(false);
+
+    // The dominant olive-green hue must appear in the palette
+    const hasGreen = result.colors.some((c) => c.h >= 100 && c.h <= 150);
+    expect(hasGreen).toBe(true);
+  });
 });
