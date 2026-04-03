@@ -101,6 +101,31 @@ export function imageFileToImageData(file: File): Promise<ImageData> {
 }
 
 /**
+ * Convert a data URL to ImageData for on-demand color extraction.
+ */
+export function dataUrlToImageData(dataUrl: string): Promise<ImageData> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 200;
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+
+      resolve(ctx.getImageData(0, 0, w, h));
+    };
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = dataUrl;
+  });
+}
+
+/**
  * Create a data URL from a File for display on canvas.
  */
 export function fileToDataUrl(file: File): Promise<string> {

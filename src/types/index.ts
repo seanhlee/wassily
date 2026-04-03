@@ -163,6 +163,7 @@ export type Action =
   | { type: "PROMOTE_TO_RAMP"; id: string; stopCount: number }
   | { type: "CHANGE_STOP_COUNT"; id: string; delta: number }
   | { type: "RENAME_RAMP"; id: string; name: string }
+  | { type: "REMOVE_RAMP_STOP"; id: string; stopIndex: number }
 
   // Harmonization
   | {
@@ -184,6 +185,9 @@ export type Action =
   // Camera & display
   | { type: "SET_CAMERA"; camera: Camera }
   | { type: "TOGGLE_LIGHT_MODE" }
+
+  // Duplication
+  | { type: "DUPLICATE_SELECTED" }
 
   // State management
   | { type: "RESTORE_IMAGE_URLS"; urls: Record<string, string> }

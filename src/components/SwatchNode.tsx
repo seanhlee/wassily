@@ -23,6 +23,7 @@ interface SwatchNodeProps {
   onAdjustColor?: (id: string, dl: number, dc: number) => void;
   onUpdateColor?: (id: string, color: OklchColor) => void;
   onSnapshot?: () => void;
+  onDuplicateDrag?: () => void;
 }
 
 export function SwatchNode({
@@ -37,6 +38,7 @@ export function SwatchNode({
   onAdjustColor,
   onUpdateColor,
   onSnapshot,
+  onDuplicateDrag,
 }: SwatchNodeProps) {
   const hex = toHex(swatch.color);
   const [editing, setEditing] = useState(false);
@@ -181,6 +183,7 @@ export function SwatchNode({
     onMove,
     onMoveSelected,
     onSnapshot,
+    onDuplicateDrag,
   );
 
   const outlineColor = lightMode ? "#000" : "#fff";
