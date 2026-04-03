@@ -41,15 +41,15 @@ export function extractColors(imageData: ImageData): ExtractionResult {
   // Run k-means in OKLCH space
   const clusters = kMeans(pixels, k, 20);
 
-  // Sort by perceptual prominence (chroma * cluster size weight)
+  // Sort by perceptual prominence (centroid chroma × cluster size weight)
   const sorted = clusters
     .filter((c) => c.count > 0)
     .sort((a, b) => {
       const scoreA =
-        (a.peak.c / Math.max(0.01, maxChroma(a.peak.l, a.peak.h))) *
+        (a.center.c / Math.max(0.01, maxChroma(a.center.l, a.center.h))) *
         Math.sqrt(a.count);
       const scoreB =
-        (b.peak.c / Math.max(0.01, maxChroma(b.peak.l, b.peak.h))) *
+        (b.center.c / Math.max(0.01, maxChroma(b.center.l, b.center.h))) *
         Math.sqrt(b.count);
       return scoreB - scoreA;
     });
@@ -252,8 +252,12 @@ function oklchDistance(a: OklchColor, b: OklchColor): number {
   let dh = Math.abs(a.h - b.h);
   if (dh > 180) dh = 360 - dh;
   // Weight hue by chroma (low chroma = hue doesn't matter)
+  // Boost for muted-but-chromatic colors (C > 0.03): smooth ramp from
+  // 0 to 0.002 over C = 0.03..0.07, no discontinuity at the boundary.
   const avgC = (a.c + b.c) / 2;
-  const hueWeight = avgC * 0.025;
+  const boost =
+    avgC > 0.03 ? 0.002 * Math.min(1, (avgC - 0.03) / 0.04) : 0;
+  const hueWeight = avgC * 0.025 + boost;
   return Math.sqrt(dl * dl + dc * dc + dh * dh * hueWeight * hueWeight);
 }
 
@@ -386,10 +390,10 @@ export function extractFromPixels(pixels: OklchColor[]): ExtractionResult {
     .filter((c) => c.count > 0)
     .sort((a, b) => {
       const scoreA =
-        (a.peak.c / Math.max(0.01, maxChroma(a.peak.l, a.peak.h))) *
+        (a.center.c / Math.max(0.01, maxChroma(a.center.l, a.center.h))) *
         Math.sqrt(a.count);
       const scoreB =
-        (b.peak.c / Math.max(0.01, maxChroma(b.peak.l, b.peak.h))) *
+        (b.center.c / Math.max(0.01, maxChroma(b.center.l, b.center.h))) *
         Math.sqrt(b.count);
       return scoreB - scoreA;
     });
