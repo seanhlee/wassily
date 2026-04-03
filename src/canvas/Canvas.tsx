@@ -664,6 +664,7 @@ export function Canvas() {
     [state.objects, createSwatches, snapshot],
   );
 
+
   // ---- Context menu harmonize handler ----
   const handleHarmonize = useCallback(() => {
     const hues = extractHues(state.objects, state.selectedIds);
