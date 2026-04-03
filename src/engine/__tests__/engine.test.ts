@@ -616,6 +616,18 @@ describe("extraction", () => {
     expect(result.length).toBeGreaterThanOrEqual(1);
   });
 
+  it("produces deterministic results for the same pixel data", () => {
+    const pixels = [
+      ...makePixels(25, 50, 0.15),
+      ...makePixels(200, 50, 0.15),
+      ...makePixels(120, 30, 0.10),
+    ];
+    const r1 = extractFromPixels(pixels);
+    const r2 = extractFromPixels(pixels);
+    expect(r1.colors).toEqual(r2.colors);
+    expect(r1.isSingleColor).toEqual(r2.isSingleColor);
+  });
+
   it("extracts green from a muted olive-dominated image (not gold/red)", () => {
     // Simulates an olive-green car: mostly muted green with dark shadows
     // and small vivid red accents (taillights)
