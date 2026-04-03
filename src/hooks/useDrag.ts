@@ -39,8 +39,11 @@ export function useDrag(
         if (!isDragging.current && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
           isDragging.current = true;
           onDragSnapshot?.(); // undo checkpoint before drag
-          // Option+drag: duplicate selected objects, then drag the copies
+          // Option+drag: select this object if needed, then duplicate
           if (altKey && onDuplicateDrag && !duplicated) {
+            if (!selected) {
+              onSelect(id, false); // ensure the clicked object is selected
+            }
             duplicated = true;
             onDuplicateDrag();
           }
