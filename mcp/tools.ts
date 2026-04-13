@@ -10,15 +10,12 @@ import { z } from "zod";
 import {
   purify,
   purifyColor,
-  randomPurifiedColor,
   parseColor,
   toHex,
-  toOklchString,
   isInGamut,
   generateRamp,
   nameForHue,
   checkContrast,
-  contrastRatio,
   harmonizePair,
   harmonizeMultiple,
   WHITE,
@@ -32,7 +29,7 @@ import type {
   CanvasState,
   StopPreset,
   Action,
-  BoardMeta,
+  ReferenceImage,
 } from "../src/types/index.js";
 
 // ---- Helpers ----
@@ -312,7 +309,12 @@ function autoPlace(state: CanvasState, count: number): { x: number; y: number }[
     if (obj.type === "connection") continue;
     const pos = (obj as Swatch | Ramp).position as { x: number; y: number };
     if (!pos) continue;
-    const width = obj.type === "ramp" ? (obj as Ramp).stops.length * 48 : obj.type === "reference-image" ? (obj as any).size.width : 48;
+    const width =
+      obj.type === "ramp"
+        ? (obj as Ramp).stops.length * 48
+        : obj.type === "reference-image"
+          ? (obj as ReferenceImage).size.width
+          : 48;
     if (pos.x + width > maxRight) {
       maxRight = pos.x + width;
       topY = pos.y;

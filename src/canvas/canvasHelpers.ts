@@ -13,6 +13,21 @@ export function getObjectBounds(obj: CanvasObject): { x: number; y: number; w: n
   return null;
 }
 
+/** Find all selectable object IDs whose bounds intersect a rectangle (canvas space) */
+export function objectsInRect(
+  objects: Record<string, CanvasObject>,
+  rect: { x: number; y: number; w: number; h: number },
+): string[] {
+  const ids: string[] = [];
+  for (const obj of Object.values(objects)) {
+    if (obj.type === "connection") continue;
+    const bounds = getObjectBounds(obj);
+    if (!bounds) continue;
+    if (rectsOverlap(bounds, rect, 0)) ids.push(obj.id);
+  }
+  return ids;
+}
+
 /** Check if two rectangles overlap (with padding) */
 function rectsOverlap(
   a: { x: number; y: number; w: number; h: number },

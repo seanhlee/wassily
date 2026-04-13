@@ -48,7 +48,12 @@ export function SwatchNode({
 
   // Close editor when deselected
   useEffect(() => {
-    if (!selected) setEditing(false);
+    if (selected) return;
+    const timer = window.setTimeout(() => {
+      setEditing(false);
+      setHexEditing(false);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [selected]);
 
   // Auto-select hex input text
@@ -166,7 +171,7 @@ export function SwatchNode({
     [swatch.id, swatch.color, onUpdateColor],
   );
 
-  const handleScrubStart = useCallback((_ch: LchChannel) => {
+  const handleScrubStart = useCallback(() => {
     onSnapshot?.();
   }, [onSnapshot]);
 

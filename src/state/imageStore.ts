@@ -92,21 +92,6 @@ export async function loadAllImageBlobs(): Promise<
   }
 }
 
-/** Delete a single image blob by ID. */
-export async function deleteImageBlob(id: string): Promise<void> {
-  try {
-    const db = await openDB();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).delete(id);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } catch {
-    // Silently degrade
-  }
-}
-
 /** Delete all blobs whose IDs are NOT in the active set. */
 export async function cleanOrphanedBlobs(
   activeIds: Set<string>,

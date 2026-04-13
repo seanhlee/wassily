@@ -7,7 +7,7 @@
  * constant regardless of zoom level.
  */
 
-import { useState, useMemo, memo } from "react";
+import { useState, memo } from "react";
 import type { Swatch, Ramp, Connection, OklchColor } from "../types";
 import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
 import { contrastRatio } from "../engine/contrast";
@@ -70,16 +70,14 @@ export const ConnectionLine = memo(
     const colorB = getObjColor(toObj, connection.toStopIndex);
 
     // Compute metrics
-    const metrics = useMemo(() => {
-      const contrast = contrastRatio(colorA, colorB);
-      const hueDist = Math.abs(angularDistance(colorA.h, colorB.h));
-      const dE = deltaEOklch(toCulori(colorA), toCulori(colorB));
-      return {
-        contrast: Math.round(contrast * 10) / 10,
-        hueDist: Math.round(hueDist),
-        deltaE: Math.round((dE ?? 0) * 100) / 100,
-      };
-    }, [colorA.l, colorA.c, colorA.h, colorB.l, colorB.c, colorB.h]);
+    const contrast = contrastRatio(colorA, colorB);
+    const hueDist = Math.abs(angularDistance(colorA.h, colorB.h));
+    const dE = deltaEOklch(toCulori(colorA), toCulori(colorB));
+    const metrics = {
+      contrast: Math.round(contrast * 10) / 10,
+      hueDist: Math.round(hueDist),
+      deltaE: Math.round((dE ?? 0) * 100) / 100,
+    };
 
     const lineColor = lightMode ? "rgba(0,0,0," : "rgba(255,255,255,";
     const lineOpacity = 1;

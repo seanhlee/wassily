@@ -217,7 +217,7 @@ describe("SET_LOCK", () => {
     });
     // Connection should not have a locked property set
     const conn = result.objects["conn_1"] as Connection;
-    expect((conn as any).locked).toBeUndefined();
+    expect("locked" in conn).toBe(false);
   });
 
   it("does not affect objects not in the ids list", () => {

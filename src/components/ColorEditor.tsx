@@ -92,10 +92,11 @@ export function ColorField({
   onDragEnd?: () => void;
 }) {
   const fieldRef = useRef<HTMLDivElement>(null);
+  const roundedHue = Math.round(color.h);
 
   const dataUrl = useMemo(
-    () => generateFieldImage(Math.round(color.h), FIELD_SIZE, FIELD_SIZE),
-    [Math.round(color.h)],
+    () => generateFieldImage(roundedHue, FIELD_SIZE, FIELD_SIZE),
+    [roundedHue],
   );
 
   const okhsl = oklchToOkhsl(color);

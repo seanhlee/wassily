@@ -128,6 +128,15 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       return { ...state, selectedIds: [action.id] };
     }
 
+    case "SELECT_IDS": {
+      if (action.additive) {
+        const existing = new Set(state.selectedIds);
+        for (const id of action.ids) existing.add(id);
+        return { ...state, selectedIds: [...existing] };
+      }
+      return { ...state, selectedIds: action.ids };
+    }
+
     case "SELECT_ALL":
       return {
         ...state,
@@ -663,6 +672,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
 /** Actions that should NOT create undo history (too granular) */
 const SKIP_HISTORY: Set<string> = new Set([
   "SELECT",
+  "SELECT_IDS",
   "SELECT_ALL",
   "DESELECT_ALL",
   "SET_CAMERA",
@@ -851,48 +861,48 @@ export function useCanvasState(activeBoardId: string) {
   const select = useCallback(
     (id: string, additive?: boolean) =>
       dispatch({ type: "SELECT", id, additive }),
-    [],
+    [dispatch],
   );
 
-  const deselectAll = useCallback(() => dispatch({ type: "DESELECT_ALL" }), []);
+  const deselectAll = useCallback(() => dispatch({ type: "DESELECT_ALL" }), [dispatch]);
 
   const deleteSelected = useCallback(
     () => dispatch({ type: "DELETE_SELECTED" }),
-    [],
+    [dispatch],
   );
 
   const moveObject = useCallback(
     (id: string, position: Point) =>
       dispatch({ type: "MOVE_OBJECT", id, position }),
-    [],
+    [dispatch],
   );
 
   const moveSelected = useCallback(
     (dx: number, dy: number) => dispatch({ type: "MOVE_SELECTED", dx, dy }),
-    [],
+    [dispatch],
   );
 
   const rotateHue = useCallback(
     (id: string, delta: number) => dispatch({ type: "ROTATE_HUE", id, delta }),
-    [],
+    [dispatch],
   );
 
   const updateSwatchColor = useCallback(
     (id: string, color: OklchColor) =>
       dispatch({ type: "UPDATE_SWATCH_COLOR", id, color }),
-    [],
+    [dispatch],
   );
 
   const adjustSwatchColor = useCallback(
     (id: string, dl: number, dc: number) =>
       dispatch({ type: "ADJUST_SWATCH_COLOR", id, dl, dc }),
-    [],
+    [dispatch],
   );
 
   const createSwatches = useCallback(
     (swatches: { position: Point; color: OklchColor }[]) =>
       dispatch({ type: "CREATE_SWATCHES", swatches }),
-    [],
+    [dispatch],
   );
 
   const addReferenceImage = useCallback(
@@ -907,7 +917,7 @@ export function useCanvasState(activeBoardId: string) {
       storeImageBlob(id, blob);
       dispatch({ type: "ADD_REFERENCE_IMAGE", id, dataUrl, position, size });
     },
-    [],
+    [dispatch],
   );
 
   const promoteToRamp = useCallback(
@@ -929,37 +939,37 @@ export function useCanvasState(activeBoardId: string) {
       replaceIds?: string[],
     ) =>
       dispatch({ type: "HARMONIZE_SELECTED", adjustments, placement, replaceIds }),
-    [],
+    [dispatch],
   );
 
   const toggleLockSelected = useCallback(
     () => dispatch({ type: "TOGGLE_LOCK_SELECTED" }),
-    [],
+    [dispatch],
   );
 
   const createConnection = useCallback(
     () => dispatch({ type: "CREATE_CONNECTION" }),
-    [],
+    [dispatch],
   );
 
   const toggleConnections = useCallback(
     () => dispatch({ type: "TOGGLE_CONNECTIONS" }),
-    [],
+    [dispatch],
   );
 
   const setCamera = useCallback(
     (camera: Camera) => dispatch({ type: "SET_CAMERA", camera }),
-    [],
+    [dispatch],
   );
 
   const toggleLightMode = useCallback(
     () => dispatch({ type: "TOGGLE_LIGHT_MODE" }),
-    [],
+    [dispatch],
   );
 
   const snapshot = useCallback(
     () => dispatch({ type: "SNAPSHOT" }),
-    [],
+    [dispatch],
   );
 
   const duplicateSelected = useCallback(

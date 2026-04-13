@@ -24,7 +24,6 @@ import {
   purify,
   parseColor,
   toHex,
-  toOklchString,
   isInGamut,
   generateRamp,
   nameForHue,
@@ -34,7 +33,6 @@ import {
   WHITE,
   BLACK,
 } from "../../src/engine/index.js";
-import type { RampStop } from "../../src/types/index.js";
 
 describe("purify_color", () => {
   it("increases chroma of a muddy red", () => {

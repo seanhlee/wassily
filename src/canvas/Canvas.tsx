@@ -7,6 +7,7 @@ import { migrateFromLegacy } from "../state/boardStore";
 import { SwatchNode, RampNode, RefImageNode } from "../components/SwatchNode";
 import { CanvasContextMenu } from "../components/ContextMenu";
 import { harmonizeMultiple } from "../engine/harmonize";
+import { showHarmonizeFeedback } from "../components/harmonizeFeedback";
 import {
   toHex,
   toOklchString,
@@ -15,10 +16,10 @@ import {
 } from "../engine/gamut";
 import { ConnectionLine } from "../components/ConnectionLine";
 import { HelpOverlay } from "../components/HelpOverlay";
-import { HarmonizeOverlay, showHarmonizeFeedback } from "../components/HarmonizeLabel";
+import { HarmonizeOverlay } from "../components/HarmonizeLabel";
 import { BoardBar } from "../components/BoardBar";
 import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, ReferenceImage } from "../types";
-import { getObjectBounds, findStripPlacement, extractHues } from "./canvasHelpers";
+import { getObjectBounds, findStripPlacement, extractHues, objectsInRect } from "./canvasHelpers";
 import { samplePixelAt } from "../hooks/useEyedropper";
 import { usePasteAndDrop } from "../hooks/usePasteAndDrop";
 import { extractColors, dataUrlToImageData } from "../engine/extract";
@@ -86,24 +87,43 @@ export function Canvas() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const cameraRef = useRef(state.camera);
-  cameraRef.current = state.camera;
+  const isPanningRef = useRef(false);
+  const panStart = useRef<Point>({ x: 0, y: 0 });
+  const cameraStart = useRef(state.camera);
+  const [isPanning, setIsPanning] = useState(false);
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [peekPureMode, setPeekPureMode] = useState(false);
   const [eKeyHeld, setEKeyHeld] = useState(false);
   const [iKeyHeld, setIKeyHeld] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const isPanning = useRef(false);
-  const panStart = useRef<Point>({ x: 0, y: 0 });
-  const cameraStart = useRef(state.camera);
 
   // ---- Eyedropper state ----
   const eyedropperOriginalColor = useRef<OklchColor | null>(null);
   const eyedropperCommitted = useRef(false);
   const eyedropperTargetId = useRef<string | null>(null);
   const eyedropperCanvasCache = useRef<Map<string, CanvasRenderingContext2D>>(new Map());
+  const [eyedropperTargetIdState, setEyedropperTargetIdState] = useState<string | null>(null);
+  const eyedropperActive = iKeyHeld && eyedropperTargetIdState !== null;
 
-  const selectedIdsRef = useRef(state.selectedIds);
-  selectedIdsRef.current = state.selectedIds;
+  // ---- Marquee selection state ----
+  const marqueeOriginRef = useRef<Point | null>(null);
+  const marqueeActiveRef = useRef(false);
+  const marqueeCompletedRef = useRef(false);
+  const [marqueeRect, setMarqueeRect] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+
+  useEffect(() => {
+    cameraRef.current = state.camera;
+  }, [state.camera]);
+
+  const setPanningState = useCallback((value: boolean) => {
+    isPanningRef.current = value;
+    setIsPanning(value);
+  }, []);
+
+  const setEyedropperTarget = useCallback((id: string | null) => {
+    eyedropperTargetId.current = id;
+    setEyedropperTargetIdState(id);
+  }, []);
 
   // ---- Harmony cycling state ----
   const lastHarmonyRef = useRef<{
@@ -147,7 +167,8 @@ export function Canvas() {
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent) => {
       // Eyedropper: commit sampled color on click
-      if (iKeyHeld && eyedropperTargetId.current) {
+      const targetId = eyedropperTargetId.current;
+      if (iKeyHeld && targetId) {
         const rect = containerRef.current?.getBoundingClientRect();
         if (rect) {
           const color = samplePixelAt(
@@ -156,14 +177,15 @@ export function Canvas() {
           );
           if (color) {
             snapshot();
-            updateSwatchColor(eyedropperTargetId.current, color);
+            updateSwatchColor(targetId, color);
             eyedropperCommitted.current = true;
           }
         }
         return; // never deselect during eyedropper
       }
 
-      if (isPanning.current) return;
+      if (isPanningRef.current) return;
+      if (marqueeCompletedRef.current) return;
       const target = e.target as HTMLElement;
       if (target.closest(".swatch-node, .ramp-node, .ref-image-node")) return;
 
@@ -171,7 +193,7 @@ export function Canvas() {
         deselectAll();
       }
     },
-    [state.camera, state.selectedIds, state.objects, deselectAll, iKeyHeld, snapshot, updateSwatchColor],
+    [state.selectedIds, state.objects, deselectAll, iKeyHeld, snapshot, updateSwatchColor],
   );
 
   // ---- Wheel: pinch-to-zoom + two-finger-pan + hue rotation ----
@@ -213,19 +235,79 @@ export function Canvas() {
     (e: React.MouseEvent) => {
       if (iKeyHeld) return; // eyedropper mode — don't start panning
       if (spaceHeld) {
-        isPanning.current = true;
+        setPanningState(true);
         panStart.current = { x: e.clientX, y: e.clientY };
         cameraStart.current = { ...cameraRef.current };
         e.preventDefault();
+        return;
       }
+
+      // Marquee: start on left-click on empty canvas
+      if (e.button !== 0) return;
+      const target = e.target as HTMLElement;
+      if (target.closest(".swatch-node, .ramp-node, .ref-image-node")) return;
+
+      marqueeOriginRef.current = { x: e.clientX, y: e.clientY };
+      marqueeActiveRef.current = false;
+      marqueeCompletedRef.current = false;
+      const shiftKey = e.shiftKey;
+
+      const handleMove = (me: MouseEvent) => {
+        const origin = marqueeOriginRef.current!;
+        const dx = me.clientX - origin.x;
+        const dy = me.clientY - origin.y;
+        if (!marqueeActiveRef.current && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+          marqueeActiveRef.current = true;
+        }
+        if (marqueeActiveRef.current) {
+          setMarqueeRect({ x1: origin.x, y1: origin.y, x2: me.clientX, y2: me.clientY });
+        }
+      };
+
+      const handleUp = (me: MouseEvent) => {
+        window.removeEventListener("mousemove", handleMove);
+        window.removeEventListener("mouseup", handleUp);
+
+        if (marqueeActiveRef.current) {
+          const rect = containerRef.current?.getBoundingClientRect();
+          if (rect) {
+            const cam = cameraRef.current;
+            const origin = marqueeOriginRef.current!;
+            const toCanvas = (sx: number, sy: number) => ({
+              x: (sx - rect.left - cam.x) / cam.zoom,
+              y: (sy - rect.top - cam.y) / cam.zoom,
+            });
+            const p1 = toCanvas(origin.x, origin.y);
+            const p2 = toCanvas(me.clientX, me.clientY);
+            const canvasRect = {
+              x: Math.min(p1.x, p2.x),
+              y: Math.min(p1.y, p2.y),
+              w: Math.abs(p2.x - p1.x),
+              h: Math.abs(p2.y - p1.y),
+            };
+            const hitIds = objectsInRect(state.objects, canvasRect);
+            dispatch({ type: "SELECT_IDS", ids: hitIds, additive: shiftKey });
+          }
+          marqueeCompletedRef.current = true;
+          setTimeout(() => { marqueeCompletedRef.current = false; }, 0);
+        }
+
+        setMarqueeRect(null);
+        marqueeOriginRef.current = null;
+        marqueeActiveRef.current = false;
+      };
+
+      window.addEventListener("mousemove", handleMove);
+      window.addEventListener("mouseup", handleUp);
     },
-    [spaceHeld, iKeyHeld],
+    [spaceHeld, iKeyHeld, setPanningState, state.objects, dispatch],
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       // Eyedropper: live preview
-      if (iKeyHeld && eyedropperTargetId.current) {
+      const targetId = eyedropperTargetId.current;
+      if (iKeyHeld && targetId) {
         const rect = containerRef.current?.getBoundingClientRect();
         if (rect) {
           const color = samplePixelAt(
@@ -233,16 +315,16 @@ export function Canvas() {
             state.objects, eyedropperCanvasCache.current,
           );
           if (color) {
-            updateSwatchColor(eyedropperTargetId.current, color);
+            updateSwatchColor(targetId, color);
           } else if (eyedropperOriginalColor.current) {
             // Off image — revert to original
-            updateSwatchColor(eyedropperTargetId.current, eyedropperOriginalColor.current);
+            updateSwatchColor(targetId, eyedropperOriginalColor.current);
           }
         }
         return;
       }
 
-      if (isPanning.current) {
+      if (isPanningRef.current) {
         const dx = e.clientX - panStart.current.x;
         const dy = e.clientY - panStart.current.y;
         setCamera({
@@ -257,9 +339,9 @@ export function Canvas() {
 
   const handleMouseUp = useCallback(() => {
     setTimeout(() => {
-      isPanning.current = false;
+      setPanningState(false);
     }, 50);
-  }, []);
+  }, [setPanningState]);
 
   // ---- Keyboard shortcuts ----
   useEffect(() => {
@@ -286,19 +368,19 @@ export function Canvas() {
         return;
       }
 
-      if (e.key === "i" && !e.repeat && !e.metaKey && !e.ctrlKey) {
-        // Store original color for revert on cancel
-        const targetId = state.selectedIds[0];
-        const targetObj = targetId ? state.objects[targetId] : null;
-        if (targetObj?.type === "swatch") {
-          eyedropperTargetId.current = targetId;
-          eyedropperOriginalColor.current = { ...(targetObj as Swatch).color };
-          eyedropperCommitted.current = false;
-        } else {
-          eyedropperTargetId.current = null;
-        }
-        setIKeyHeld(true);
-        return;
+        if (e.key === "i" && !e.repeat && !e.metaKey && !e.ctrlKey) {
+          // Store original color for revert on cancel
+          const targetId = state.selectedIds[0];
+          const targetObj = targetId ? state.objects[targetId] : null;
+          if (targetObj?.type === "swatch") {
+            setEyedropperTarget(targetId);
+            eyedropperOriginalColor.current = { ...(targetObj as Swatch).color };
+            eyedropperCommitted.current = false;
+          } else {
+            setEyedropperTarget(null);
+          }
+          setIKeyHeld(true);
+          return;
       }
 
       const selected = state.selectedIds[0];
@@ -582,11 +664,12 @@ export function Canvas() {
       if (e.key === "e") setEKeyHeld(false);
       if (e.key === "i") {
         // Revert if not committed
-        if (!eyedropperCommitted.current && eyedropperTargetId.current && eyedropperOriginalColor.current) {
-          updateSwatchColor(eyedropperTargetId.current, eyedropperOriginalColor.current);
+        const targetId = eyedropperTargetId.current;
+        if (!eyedropperCommitted.current && targetId && eyedropperOriginalColor.current) {
+          updateSwatchColor(targetId, eyedropperOriginalColor.current);
         }
         setIKeyHeld(false);
-        eyedropperTargetId.current = null;
+        setEyedropperTarget(null);
         eyedropperOriginalColor.current = null;
       }
     };
@@ -614,29 +697,30 @@ export function Canvas() {
     undo,
     redo,
     updateSwatchColor,
+    dispatch,
+    state.camera,
     showHelp,
+    setEyedropperTarget,
   ]);
 
   // ---- Reset modifier keys on window blur (prevents stuck states) ----
-  const updateSwatchColorRef = useRef(updateSwatchColor);
-  updateSwatchColorRef.current = updateSwatchColor;
-
   useEffect(() => {
     const handleBlur = () => {
       setSpaceHeld(false);
       setPeekPureMode(false);
       setEKeyHeld(false);
       // Revert eyedropper on blur
-      if (!eyedropperCommitted.current && eyedropperTargetId.current && eyedropperOriginalColor.current) {
-        updateSwatchColorRef.current(eyedropperTargetId.current, eyedropperOriginalColor.current);
+      const targetId = eyedropperTargetId.current;
+      if (!eyedropperCommitted.current && targetId && eyedropperOriginalColor.current) {
+        updateSwatchColor(targetId, eyedropperOriginalColor.current);
       }
       setIKeyHeld(false);
-      eyedropperTargetId.current = null;
+      setEyedropperTarget(null);
       eyedropperOriginalColor.current = null;
     };
     window.addEventListener("blur", handleBlur);
     return () => window.removeEventListener("blur", handleBlur);
-  }, []);
+  }, [setEyedropperTarget, updateSwatchColor]);
 
   // ---- Paste & Drop ----
   const { handleDragOver, handleDrop } = usePasteAndDrop({
@@ -677,7 +761,7 @@ export function Canvas() {
     const placement = findStripPlacement(state.objects, state.selectedIds, hues.length);
     harmonizeSelected(result.adjustments, placement);
     showHarmonizeFeedback({ ...result, count: hues.length, alreadyHarmonized: false, placement, camera: state.camera });
-  }, [state.selectedIds, state.objects, harmonizeSelected]);
+  }, [state.selectedIds, state.objects, harmonizeSelected, state.camera]);
 
   // ---- Render ----
   const canvasBg = state.lightMode ? "#fff" : "#000";
@@ -717,10 +801,10 @@ export function Canvas() {
           backgroundColor: canvasBg,
           overflow: "hidden",
           cursor: spaceHeld
-            ? isPanning.current
+            ? isPanning
               ? "grabbing"
               : "grab"
-            : iKeyHeld && eyedropperTargetId.current
+            : eyedropperActive
               ? "crosshair"
               : "default",
           userSelect: "none",
@@ -819,7 +903,7 @@ export function Canvas() {
                 selected={state.selectedIds.includes(obj.id)}
                 zoom={state.camera.zoom}
                 lightMode={state.lightMode}
-                eyedropperActive={iKeyHeld && !!eyedropperTargetId.current}
+                eyedropperActive={eyedropperActive}
                 onSelect={select}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
@@ -833,6 +917,20 @@ export function Canvas() {
       </div>
 
       </div>
+      {marqueeRect && (
+        <div
+          style={{
+            position: "fixed",
+            left: Math.min(marqueeRect.x1, marqueeRect.x2),
+            top: Math.min(marqueeRect.y1, marqueeRect.y2),
+            width: Math.abs(marqueeRect.x2 - marqueeRect.x1),
+            height: Math.abs(marqueeRect.y2 - marqueeRect.y1),
+            border: `1px solid ${state.lightMode ? "#000" : "#fff"}`,
+            pointerEvents: "none",
+            zIndex: 9999,
+          }}
+        />
+      )}
       {showHelp && (
         <HelpOverlay
           lightMode={state.lightMode}

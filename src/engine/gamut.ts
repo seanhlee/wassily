@@ -5,7 +5,6 @@
  * When desired chroma exceeds the boundary, chroma is reduced (never lightness).
  */
 
-// @ts-expect-error culori types don't expose okhsl but the runtime does
 import { oklch, rgb, displayable, clampChroma, type Oklch, okhsl as toOkhslMode } from "culori";
 import type { OklchColor } from "../types";
 
@@ -18,7 +17,7 @@ export function toCulori(color: OklchColor): Oklch {
 }
 
 /** Convert culori Oklch back to our format */
-export function fromCulori(color: Oklch): OklchColor {
+function fromCulori(color: Oklch): OklchColor {
   return { l: color.l, c: color.c ?? 0, h: color.h ?? 0 };
 }
 
@@ -131,7 +130,7 @@ export function oklchToOkhsl(color: OklchColor): { h: number; s: number; l: numb
 
 /** Convert Okhsl {h, s, l} to OklchColor for field interaction */
 export function okhslToOklch(h: number, s: number, l: number): OklchColor {
-  const result = oklch({ mode: "okhsl" as any, h, s, l });
+  const result = oklch({ mode: "okhsl", h, s, l });
   return { l: result?.l ?? 0, c: result?.c ?? 0, h: result?.h ?? h };
 }
 

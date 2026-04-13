@@ -6,7 +6,7 @@
  * We just provide the styling and context-aware menu items.
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { ContextMenu } from "@base-ui/react/context-menu";
 import type { CanvasObject, Swatch, Ramp, RampStop, Camera, Point } from "../types";
 import { FONT, FONT_SIZE } from "../constants";
@@ -81,7 +81,7 @@ function getSeparatorStyle(lightMode: boolean): React.CSSProperties {
 
 // ---- Props ----
 
-export interface CanvasContextMenuProps {
+interface CanvasContextMenuProps {
   objects: Record<string, CanvasObject>;
   selectedIds: string[];
   lightMode: boolean;
@@ -117,11 +117,6 @@ export function CanvasContextMenu({
   children,
 }: CanvasContextMenuProps) {
   const [ctx, setCtx] = useState<MenuContext>(null);
-  // Store refs for values needed in callbacks that fire after menu opens
-  const selectedIdsRef = useRef(selectedIds);
-  selectedIdsRef.current = selectedIds;
-  const objectsRef = useRef(objects);
-  objectsRef.current = objects;
 
   const handleOpenChange = useCallback(
     (open: boolean, details: { event: Event }) => {
@@ -139,15 +134,15 @@ export function CanvasContextMenu({
       const imageEl = target.closest(".ref-image-node");
       const objectEl = swatchEl || rampEl || imageEl;
       const objectId = objectEl?.getAttribute("data-object-id") ?? null;
-      const obj = objectId ? objectsRef.current[objectId] : null;
+      const obj = objectId ? objects[objectId] : null;
 
       // Detect stop-level right-click on ramp
       const stopEl = target.closest("[data-stop-index]");
       const stopIndex = stopEl?.getAttribute("data-stop-index");
 
       // Selection logic: if right-clicked object isn't selected, replace selection
-      let effectiveSelectedIds = selectedIdsRef.current;
-      if (objectId && !selectedIdsRef.current.includes(objectId)) {
+      let effectiveSelectedIds = selectedIds;
+      if (objectId && !selectedIds.includes(objectId)) {
         onSelect(objectId);
         effectiveSelectedIds = [objectId];
       }
@@ -162,13 +157,13 @@ export function CanvasContextMenu({
         }
       } else {
         const harmonizableCount = effectiveSelectedIds.filter((id) => {
-          const o = objectsRef.current[id];
+          const o = objects[id];
           return o && (o.type === "swatch" || o.type === "ramp");
         }).length;
 
         if (harmonizableCount >= 2) {
           const anyUnlocked = effectiveSelectedIds.some((id) => {
-            const o = objectsRef.current[id];
+            const o = objects[id];
             return o && (o.type === "swatch" || o.type === "ramp") && !(o as Swatch | Ramp).locked;
           });
           setCtx({ type: "multi-selection", anyUnlocked });
@@ -190,7 +185,7 @@ export function CanvasContextMenu({
         }
       }
     },
-    [camera, onSelect, containerRef],
+    [camera, containerRef, objects, onSelect, selectedIds],
   );
 
   return (

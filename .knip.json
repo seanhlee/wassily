@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "mcp/server.ts"
+  ],
+  "ignore": [
+    "src/types/culori.d.ts",
+    "tmp-*.mjs"
+  ]
+}

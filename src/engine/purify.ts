@@ -9,7 +9,7 @@
 import type { OklchColor } from "../types";
 import { maxChroma, chromaPeakLightness } from "./gamut";
 
-export interface PurificationResult {
+interface PurificationResult {
   original: OklchColor;
   purified: OklchColor;
   chromaGain: number; // how much chroma was added (0 = already optimal)

@@ -6,7 +6,7 @@
  * middleware cache.
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { Action, CanvasState } from "../types";
 import type { BoardManager } from "./useBoardManager";
 
@@ -42,20 +42,19 @@ export function useMcpBridge(
 
   // Refs so the SSE handler always sees current values
   const stateRef = useRef(state);
-  stateRef.current = state;
-
   const boardManagerRef = useRef(boardManager);
-  boardManagerRef.current = boardManager;
-
   const applyRef = useRef(applyExternalActions);
-  applyRef.current = applyExternalActions;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+  useEffect(() => {
+    boardManagerRef.current = boardManager;
+  }, [boardManager]);
+  useEffect(() => {
+    applyRef.current = applyExternalActions;
+  }, [applyExternalActions]);
 
-  // Strict mode guard — prevent double EventSource in dev
-  const connectedRef = useRef(false);
-
-  // Sync function — fire and forget
-  const syncState = useRef(() => {});
-  syncState.current = () => {
+  const syncState = useCallback(() => {
     fetch("/__mcp__/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -66,19 +65,17 @@ export function useMcpBridge(
         activeBoardId: boardManagerRef.current.activeBoardId,
       }),
     }).catch(() => {});
-  };
+  }, [clientId]);
 
   // SSE connection effect
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    if (connectedRef.current) return;
-    connectedRef.current = true;
 
     const es = new EventSource(`/__mcp__/events?clientId=${clientId}`);
 
     es.onopen = () => {
       console.log("[mcp-bridge] SSE connected");
-      syncState.current();
+      syncState();
     };
 
     es.onmessage = async (event) => {
@@ -98,7 +95,7 @@ export function useMcpBridge(
               deleted,
             }),
           });
-          syncState.current();
+          syncState();
           return;
         }
 
@@ -144,7 +141,7 @@ export function useMcpBridge(
               ...result,
             }),
           });
-          syncState.current();
+          syncState();
           return;
         }
       } catch (err) {
@@ -167,16 +164,15 @@ export function useMcpBridge(
     };
 
     return () => {
-      connectedRef.current = false;
       es.close();
       console.log("[mcp-bridge] SSE disconnected");
     };
-  }, [clientId]);
+  }, [clientId, syncState]);
 
   // Debounced state sync on local changes
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    const timer = setTimeout(() => syncState.current(), 300);
+    const timer = setTimeout(syncState, 300);
     return () => clearTimeout(timer);
-  }, [state]);
+  }, [state, syncState]);
 }

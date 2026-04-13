@@ -143,6 +143,7 @@ export type Action =
 
   // Selection
   | { type: "SELECT"; id: string; additive?: boolean }
+  | { type: "SELECT_IDS"; ids: string[]; additive?: boolean }
   | { type: "SELECT_ALL" }
   | { type: "DESELECT_ALL" }
 
@@ -194,10 +195,6 @@ export type Action =
   | { type: "LOAD_STATE"; state: CanvasState }
   | { type: "LOAD_BOARD"; state: CanvasState }
   | { type: "SNAPSHOT" };
-
-// ---- Export ----
-
-export type ExportFormat = "css" | "css-dark" | "tailwind" | "hex" | "json";
 
 // ---- Contrast ----
 

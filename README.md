@@ -1,73 +1,48 @@
-# React + TypeScript + Vite
+# Wassily
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Wassily is a color exploration studio built around OKLCH. It combines moodboarding, palette extraction, ramp generation, harmonization, and export-ready color output inside a spatial canvas.
 
-Currently, two official plugins are available:
+## What It Does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Create purified swatches directly on the canvas.
+- Drop or paste images and extract dominant colors.
+- Promote swatches into ramps in `opinionated` or `pure` mode.
+- Harmonize selected colors into useful geometric relationships.
+- Compare contrast and relationships visually.
+- Organize work into named boards.
+- Export palette structure for implementation workflows.
 
-## React Compiler
+## Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- TypeScript
+- Vite
+- `culori` for color science
+- localStorage + IndexedDB persistence
+- optional MCP tooling for development-time canvas access
 
-## Expanding the ESLint configuration
+## Commands
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
+npm run build
+npm run test:run
+npm run lint
+npm run deadcode
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Shape
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- `src/engine` — gamut math, purification, ramps, harmonization, extraction, contrast
+- `src/canvas` — camera and spatial canvas behavior
+- `src/components` — swatches, ramps, overlays, menus, board UI
+- `src/state` — reducer-driven canvas state, persistence, and bridge hooks
+- `src/hooks` — interaction helpers like paste/drop and eyedropper support
+- `mcp` — MCP server/tooling for development-time canvas access
+- `docs` — PRD, product arc, design research, and implementation notes
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Notes
+
+Some files in this repo are intentionally development-oriented, especially around the MCP bridge. `npm run deadcode` is useful for pruning obvious leftovers, but a couple of low-frequency entrypoints may still be intentional even if static analysis cannot trace them from the main browser app.
+
+For deeper product context, start with `CLAUDE.md` and the documents in `docs/`.

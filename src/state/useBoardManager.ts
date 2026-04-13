@@ -9,7 +9,7 @@
  * (Canvas.tsx) to break the circular dependency with useCanvasState.
  */
 
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import type { BoardMeta, CanvasState } from "../types";
 import { initialState } from "./canvas";
 import {
@@ -49,12 +49,6 @@ export function useBoardManager(
   const { boards, activeBoardId } = boardState;
   const activeBoard = boards.find((b) => b.id === activeBoardId) ?? boards[0];
 
-  // Refs for latest values — avoids stale closures in callbacks
-  const canvasStateRef = useRef(canvasState);
-  canvasStateRef.current = canvasState;
-  const loadBoardRef = useRef(loadBoard);
-  loadBoardRef.current = loadBoard;
-
   // ---- createBoard ----
 
   const createBoard = useCallback(
@@ -72,8 +66,8 @@ export function useBoardManager(
         if (andSwitch) {
           // Save current board and switch in the same state update
           // to avoid React batching issues
-          saveBoardState(prev.activeBoardId, canvasStateRef.current);
-          loadBoardRef.current(initialState);
+          saveBoardState(prev.activeBoardId, canvasState);
+          loadBoard(initialState);
           saveActiveBoardId(id);
           return { boards: next, activeBoardId: id };
         }
@@ -83,7 +77,7 @@ export function useBoardManager(
 
       return id;
     },
-    [setBoardState],
+    [canvasState, loadBoard, setBoardState],
   );
 
   // ---- switchBoard ----
@@ -96,11 +90,11 @@ export function useBoardManager(
         if (id === prev.activeBoardId) return prev;
 
         // Save current board's canvas state (use ref for latest)
-        saveBoardState(prev.activeBoardId, canvasStateRef.current);
+        saveBoardState(prev.activeBoardId, canvasState);
 
         // Load the target board
         const newState = loadBoardState(id) ?? initialState;
-        loadBoardRef.current(newState);
+        loadBoard(newState);
 
         // Update timestamps on the board being left
         const now = Date.now();
@@ -113,7 +107,7 @@ export function useBoardManager(
         return { boards: updatedBoards, activeBoardId: id };
       });
     },
-    [setBoardState],
+    [canvasState, loadBoard, setBoardState],
   );
 
   // ---- deleteBoard ----
@@ -142,9 +136,9 @@ export function useBoardManager(
         if (nextActiveId === id) {
           const target = nextBoards.find((b) => b.id !== id);
           if (target) {
-            saveBoardState(prev.activeBoardId, canvasStateRef.current);
+            saveBoardState(prev.activeBoardId, canvasState);
             const newState = loadBoardState(target.id) ?? initialState;
-            loadBoardRef.current(newState);
+            loadBoard(newState);
             nextActiveId = target.id;
             saveActiveBoardId(nextActiveId);
           }
@@ -158,7 +152,7 @@ export function useBoardManager(
         return { boards: nextBoards, activeBoardId: nextActiveId };
       });
     },
-    [setBoardState],
+    [canvasState, loadBoard, setBoardState],
   );
 
   // ---- renameBoard ----
@@ -186,7 +180,7 @@ export function useBoardManager(
 
       // Load the source board's state (if it's the active board, use live state)
       const sourceState =
-        id === activeBoardId ? canvasStateRef.current : (loadBoardState(id) ?? initialState);
+        id === activeBoardId ? canvasState : (loadBoardState(id) ?? initialState);
 
       const newId = crypto.randomUUID();
       const now = Date.now();
@@ -207,7 +201,7 @@ export function useBoardManager(
 
       return newId;
     },
-    [boards, activeBoardId, setBoardState],
+    [boards, activeBoardId, canvasState, setBoardState],
   );
 
   return {

@@ -4,21 +4,16 @@
  * Pure functions for color science. No React, no DOM, no side effects.
  */
 
-export { purify, purifyColor, randomPurifiedColor } from "./purify";
+export { purify, purifyColor } from "./purify";
 export {
   isInGamut,
-  clampToGamut,
-  maxChroma,
-  chromaPeakLightness,
   toHex,
-  toOklchString,
   parseColor,
 } from "./gamut";
-export { generateRamp, nameForHue, uniqueRampName } from "./ramp";
+export { generateRamp, nameForHue } from "./ramp";
 export {
-  contrastRatio,
   checkContrast,
-  swatchDots,
+  contrastRatio,
   WHITE,
   BLACK,
 } from "./contrast";

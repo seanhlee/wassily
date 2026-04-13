@@ -1,25 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import type { HarmonicRelationship, Camera, Point } from "../types";
 import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
-
-interface HarmonizeFeedback {
-  relationship: HarmonicRelationship;
-  angle: number;
-  count: number;
-  alreadyHarmonized: boolean;
-  /** Canvas-space position of the strip's top-left corner */
-  placement?: Point;
-  /** Current camera for canvas→screen conversion */
-  camera?: Camera;
-}
-
-// ---- Global listener dispatch (callable from Canvas.tsx without props) ----
-
-const listeners: Set<(fb: HarmonizeFeedback) => void> = new Set();
-
-export function showHarmonizeFeedback(fb: HarmonizeFeedback) {
-  listeners.forEach((fn) => fn(fb));
-}
+import {
+  subscribeToHarmonizeFeedback,
+  type HarmonizeFeedback,
+} from "./harmonizeFeedback";
 
 // ---- Display formatting ----
 
@@ -49,9 +33,9 @@ export function HarmonizeOverlay() {
       setFeedback(fb);
       timerRef.current = setTimeout(() => setFeedback(null), 2400);
     };
-    listeners.add(handler);
+    const unsubscribe = subscribeToHarmonizeFeedback(handler);
     return () => {
-      listeners.delete(handler);
+      unsubscribe();
       clearTimeout(timerRef.current);
     };
   }, []);
