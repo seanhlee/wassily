@@ -20,6 +20,11 @@ import {
 import { harmonizePair, harmonizeMultiple } from "../harmonize";
 import type { OklchColor } from "../../types";
 
+function circularHueDistance(a: number, b: number): number {
+  const delta = Math.abs(a - b) % 360;
+  return Math.min(delta, 360 - delta);
+}
+
 // ---- Gamut ----
 
 describe("gamut", () => {
@@ -226,6 +231,34 @@ describe("ramp generation", () => {
     const chroma300 = stops[3].color.c;
     const chroma800 = stops[8].color.c;
     expect(chroma800).toBeGreaterThan(chroma300);
+  });
+
+  it("transitions family behavior smoothly across adjacent boundary hues", () => {
+    const baseConfig = {
+      seedLightness: 0.62,
+      seedChroma: 0.14,
+      stopCount: 11 as const,
+      mode: "opinionated" as const,
+    };
+
+    for (const [leftHue, rightHue] of [
+      [150, 151],
+      [185, 186],
+      [235, 236],
+      [239, 240],
+      [285, 286],
+    ]) {
+      const leftRamp = generateRamp({ ...baseConfig, hue: leftHue });
+      const rightRamp = generateRamp({ ...baseConfig, hue: rightHue });
+      const leftTop = leftRamp[0].color;
+      const rightTop = rightRamp[0].color;
+      const leftDark = leftRamp.at(-1)!.color;
+      const rightDark = rightRamp.at(-1)!.color;
+
+      expect(Math.abs(leftTop.l - rightTop.l)).toBeLessThan(0.03);
+      expect(Math.abs(leftTop.c - rightTop.c)).toBeLessThan(0.015);
+      expect(circularHueDistance(leftDark.h, rightDark.h)).toBeLessThan(4);
+    }
   });
 });
 

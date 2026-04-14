@@ -14,7 +14,7 @@ import {
   clampToGamut,
   NEUTRAL_CHROMA,
 } from "./gamut";
-import { FAMILY_PROFILES, type RampFamily } from "./familyProfiles";
+import { resolveFamilyProfile } from "./familyProfiles";
 import { interpolate, oklch as toOklch, oklab as toOklab } from "culori";
 
 // ---- Stop Presets ----
@@ -58,8 +58,6 @@ const L_MIN = 0.25;
 const L_FLOOR = 0.05;
 const L_CEILING = 1.0;
 const MIN_WHITE_LIFT = 0.02;
-const LIGHT_ENDPOINT_THRESHOLD = 0.25;
-const DARK_ENDPOINT_THRESHOLD = 0.25;
 
 /**
  * Compute lightness for a given stop position (0=lightest, 1=darkest).
@@ -171,15 +169,6 @@ function generateNeutralStop(
 
 function normalizeHue(hue: number): number {
   return ((hue % 360) + 360) % 360;
-}
-
-function classifyFamily(seedHue: number, seedChroma?: number): RampFamily {
-  const hue = normalizeHue(seedHue);
-  if (seedChroma !== undefined && seedChroma < NEUTRAL_CHROMA) return "neutral";
-  if (hue >= 80 && hue <= 150) return "lime";
-  if (hue >= 185 && hue <= 235) return "cyan";
-  if (hue >= 240 && hue <= 285) return "ultramarine";
-  return "generic";
 }
 
 function adjustHue(hue: number, offset: number): number {
@@ -344,8 +333,7 @@ function interpolateArcLength(
   seedIntensity: number,
   totalStops: number,
 ): OklchColor[] {
-  const family = classifyFamily(seedH, seedC);
-  const profile = FAMILY_PROFILES[family];
+  const profile = resolveFamilyProfile(seedH, seedC);
 
   // Choose the lightest endpoint that still leaves room for visible chroma
   // at this hue. Narrow-near-white hues like blue need to come further down

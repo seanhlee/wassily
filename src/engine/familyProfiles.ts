@@ -24,6 +24,7 @@ export interface FamilyProfile {
 }
 
 export type DerivedFamily = Exclude<RampFamily, "generic">;
+type ChromaticFamily = Exclude<DerivedFamily, "neutral">;
 type StopLabel =
   | "50"
   | "100"
@@ -63,6 +64,23 @@ export interface FamilyFitReport {
   anchorLabels: StopLabel[];
   profile: FamilyProfile;
   archetype: ControlPointSet;
+  shoulderGeometry: ShoulderGeometryFit;
+}
+
+export interface ReferenceShoulderGeometryFit {
+  referenceId: string;
+  lightMix: number;
+  darkMix: number;
+  lightResidual: number;
+  darkResidual: number;
+}
+
+export interface ShoulderGeometryFit {
+  lightMix: number;
+  darkMix: number;
+  lightResidualMean: number;
+  darkResidualMean: number;
+  references: ReferenceShoulderGeometryFit[];
 }
 
 const STOP_LABELS: StopLabel[] = [
@@ -79,25 +97,19 @@ const STOP_LABELS: StopLabel[] = [
   "950",
 ];
 
-const SHOULDER_MIX_TEMPLATES: Record<DerivedFamily, Pick<FamilyProfile, "lightShoulderMix" | "darkShoulderMix">> =
-  {
-    lime: {
-      lightShoulderMix: 0.32,
-      darkShoulderMix: 0.6,
-    },
-    ultramarine: {
-      lightShoulderMix: 0.42,
-      darkShoulderMix: 0.58,
-    },
-    cyan: {
-      lightShoulderMix: 0.36,
-      darkShoulderMix: 0.58,
-    },
-    neutral: {
-      lightShoulderMix: 0.38,
-      darkShoulderMix: 0.56,
-    },
-  };
+const CHROMATIC_FAMILIES: readonly ChromaticFamily[] = [
+  "lime",
+  "cyan",
+  "ultramarine",
+];
+
+const GENERIC_BLEND_WEIGHT = 0.25;
+const CHROMATIC_BLEND_EXPONENT = 2;
+const FAMILY_BLEND_SIGMAS: Record<ChromaticFamily, number> = {
+  lime: 30,
+  cyan: 28,
+  ultramarine: 32,
+};
 
 const FAMILY_EXEMPLARS: Record<DerivedFamily, OklchColor> = {
   lime: { l: 0.931, c: 0.223, h: 121.082 },
@@ -277,6 +289,11 @@ function normalizeHue(hue: number): number {
   return ((hue % 360) + 360) % 360;
 }
 
+function circularHueDistance(a: number, b: number): number {
+  const delta = Math.abs(normalizeHue(a) - normalizeHue(b));
+  return Math.min(delta, 360 - delta);
+}
+
 function hueDelta(from: number, to: number): number {
   let delta = normalizeHue(to) - normalizeHue(from);
   if (delta > 180) delta -= 360;
@@ -334,6 +351,69 @@ function averageColor(
   };
 }
 
+function distance3(
+  a: { x: number; y: number; z: number },
+  b: { x: number; y: number; z: number },
+): number {
+  return Math.sqrt(
+    (a.x - b.x) ** 2 +
+      (a.y - b.y) ** 2 +
+      (a.z - b.z) ** 2,
+  );
+}
+
+function projectShoulderMix(
+  start: OklchColor,
+  end: OklchColor,
+  shoulder: OklchColor,
+): { mix: number; residual: number } {
+  // Treat shoulder fitting as a geometry problem first: measure how far the
+  // reference shoulder travels along the endpoint-to-seed segment in OKLab,
+  // then keep residuals so we can inspect how much off-axis shaping remains.
+  const startLab = toOklab({ mode: "oklch", ...start })!;
+  const endLab = toOklab({ mode: "oklch", ...end })!;
+  const shoulderLab = toOklab({ mode: "oklch", ...shoulder })!;
+
+  const segment = {
+    x: endLab.l - startLab.l,
+    y: endLab.a - startLab.a,
+    z: endLab.b - startLab.b,
+  };
+  const shoulderOffset = {
+    x: shoulderLab.l - startLab.l,
+    y: shoulderLab.a - startLab.a,
+    z: shoulderLab.b - startLab.b,
+  };
+  const segmentLengthSquared =
+    segment.x ** 2 + segment.y ** 2 + segment.z ** 2;
+
+  const mix =
+    segmentLengthSquared > 1e-9
+      ? clamp(
+          (shoulderOffset.x * segment.x +
+            shoulderOffset.y * segment.y +
+            shoulderOffset.z * segment.z) /
+            segmentLengthSquared,
+          0,
+          1,
+        )
+      : 0.5;
+
+  const projected = {
+    x: startLab.l + segment.x * mix,
+    y: startLab.a + segment.y * mix,
+    z: startLab.b + segment.z * mix,
+  };
+
+  return {
+    mix,
+    residual: distance3(
+      { x: shoulderLab.l, y: shoulderLab.a, z: shoulderLab.b },
+      projected,
+    ),
+  };
+}
+
 function nearestAnchorLabel(stops: StopMap, exemplar: OklchColor): StopLabel {
   const exemplarLab = toOklab({ mode: "oklch", ...exemplar })!;
   let bestLabel = STOP_LABELS[0];
@@ -378,6 +458,63 @@ function getReferenceControlPoints(reference: ReferenceRamp): {
   };
 }
 
+function deriveShoulderGeometryFit(
+  referenceFits: ReadonlyArray<{
+    reference: ReferenceRamp;
+    controlPoints: ControlPointSet;
+  }>,
+  weights: readonly number[],
+): ShoulderGeometryFit {
+  const references = referenceFits.map((fit) => {
+    const light = projectShoulderMix(
+      fit.controlPoints.lightEndpoint,
+      fit.controlPoints.seed,
+      fit.controlPoints.lightShoulder,
+    );
+    const dark = projectShoulderMix(
+      fit.controlPoints.seed,
+      fit.controlPoints.darkEndpoint,
+      fit.controlPoints.darkShoulder,
+    );
+
+    return {
+      referenceId: fit.reference.id,
+      lightMix: light.mix,
+      darkMix: dark.mix,
+      lightResidual: light.residual,
+      darkResidual: dark.residual,
+    };
+  });
+
+  return {
+    lightMix: clamp(
+      weightedMean(
+        references.map((reference) => reference.lightMix),
+        weights,
+      ),
+      0.1,
+      0.9,
+    ),
+    darkMix: clamp(
+      weightedMean(
+        references.map((reference) => reference.darkMix),
+        weights,
+      ),
+      0.1,
+      0.9,
+    ),
+    lightResidualMean: weightedMean(
+      references.map((reference) => reference.lightResidual),
+      weights,
+    ),
+    darkResidualMean: weightedMean(
+      references.map((reference) => reference.darkResidual),
+      weights,
+    ),
+    references,
+  };
+}
+
 function deriveIntensityModel(
   exemplarSeedIntensity: number,
   targetIntensity: number,
@@ -406,6 +543,7 @@ function deriveFamilyProfile(family: DerivedFamily): FamilyFitReport {
     ...getReferenceControlPoints(reference),
   }));
   const weights = referenceFits.map((fit) => fit.reference.weight);
+  const shoulderGeometry = deriveShoulderGeometryFit(referenceFits, weights);
 
   const archetype: ControlPointSet = {
     lightEndpoint: averageColor(
@@ -487,7 +625,8 @@ function deriveFamilyProfile(family: DerivedFamily): FamilyFitReport {
     darkShoulderIntensityOffset: darkShoulderIntensity.offset,
     darkEndpointIntensityScale: darkEndpointIntensity.scale,
     darkEndpointIntensityOffset: darkEndpointIntensity.offset,
-    ...SHOULDER_MIX_TEMPLATES[family],
+    lightShoulderMix: shoulderGeometry.lightMix,
+    darkShoulderMix: shoulderGeometry.darkMix,
   };
 
   return {
@@ -497,6 +636,7 @@ function deriveFamilyProfile(family: DerivedFamily): FamilyFitReport {
     anchorLabels: referenceFits.map((fit) => fit.anchorLabel),
     profile,
     archetype,
+    shoulderGeometry,
   };
 }
 
@@ -536,4 +676,104 @@ export const FAMILY_PROFILES: Record<RampFamily, FamilyProfile> = {
 
 export function isNeutralFamily(seedChroma?: number): boolean {
   return seedChroma !== undefined && seedChroma < NEUTRAL_CHROMA;
+}
+
+function gaussianBlendWeight(distance: number, sigma: number): number {
+  return Math.exp(-0.5 * (distance / sigma) ** 2);
+}
+
+function blendProfiles(
+  profiles: readonly FamilyProfile[],
+  weights: readonly number[],
+): FamilyProfile {
+  return {
+    lightEndpointThreshold: weightedMean(
+      profiles.map((profile) => profile.lightEndpointThreshold),
+      weights,
+    ),
+    darkEndpointThreshold: weightedMean(
+      profiles.map((profile) => profile.darkEndpointThreshold),
+      weights,
+    ),
+    lightEndpointHueOffset: weightedMean(
+      profiles.map((profile) => profile.lightEndpointHueOffset),
+      weights,
+    ),
+    lightShoulderHueOffset: weightedMean(
+      profiles.map((profile) => profile.lightShoulderHueOffset),
+      weights,
+    ),
+    darkShoulderHueOffset: weightedMean(
+      profiles.map((profile) => profile.darkShoulderHueOffset),
+      weights,
+    ),
+    darkEndpointHueOffset: weightedMean(
+      profiles.map((profile) => profile.darkEndpointHueOffset),
+      weights,
+    ),
+    lightEndpointIntensityScale: weightedMean(
+      profiles.map((profile) => profile.lightEndpointIntensityScale),
+      weights,
+    ),
+    lightEndpointIntensityOffset: weightedMean(
+      profiles.map((profile) => profile.lightEndpointIntensityOffset),
+      weights,
+    ),
+    lightShoulderIntensityScale: weightedMean(
+      profiles.map((profile) => profile.lightShoulderIntensityScale),
+      weights,
+    ),
+    lightShoulderIntensityOffset: weightedMean(
+      profiles.map((profile) => profile.lightShoulderIntensityOffset),
+      weights,
+    ),
+    darkShoulderIntensityScale: weightedMean(
+      profiles.map((profile) => profile.darkShoulderIntensityScale),
+      weights,
+    ),
+    darkShoulderIntensityOffset: weightedMean(
+      profiles.map((profile) => profile.darkShoulderIntensityOffset),
+      weights,
+    ),
+    darkEndpointIntensityScale: weightedMean(
+      profiles.map((profile) => profile.darkEndpointIntensityScale),
+      weights,
+    ),
+    darkEndpointIntensityOffset: weightedMean(
+      profiles.map((profile) => profile.darkEndpointIntensityOffset),
+      weights,
+    ),
+    lightShoulderMix: weightedMean(
+      profiles.map((profile) => profile.lightShoulderMix),
+      weights,
+    ),
+    darkShoulderMix: weightedMean(
+      profiles.map((profile) => profile.darkShoulderMix),
+      weights,
+    ),
+  };
+}
+
+export function resolveFamilyProfile(seedHue: number, seedChroma?: number): FamilyProfile {
+  if (isNeutralFamily(seedChroma)) {
+    return FAMILY_PROFILES.neutral;
+  }
+
+  const chromaticWeights = CHROMATIC_FAMILIES.map((family) =>
+    gaussianBlendWeight(
+      circularHueDistance(seedHue, FAMILY_EXEMPLARS[family].h),
+      FAMILY_BLEND_SIGMAS[family],
+    ) ** CHROMATIC_BLEND_EXPONENT,
+  );
+  const strongestChromaticWeight = Math.max(...chromaticWeights);
+  const genericWeight = GENERIC_BLEND_WEIGHT * (1 - strongestChromaticWeight);
+  const weights = [genericWeight, ...chromaticWeights];
+
+  return blendProfiles(
+    [
+      FAMILY_PROFILES.generic,
+      ...CHROMATIC_FAMILIES.map((family) => FAMILY_PROFILES[family]),
+    ],
+    weights,
+  );
 }

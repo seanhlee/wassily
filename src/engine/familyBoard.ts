@@ -7,6 +7,7 @@ import {
   type DerivedFamily,
   type FamilyFitReport,
   type ReferenceRamp,
+  type ReferenceShoulderGeometryFit,
 } from "./familyProfiles";
 import {
   RESEARCH_SEEDS,
@@ -31,6 +32,7 @@ export interface FamilyBoardReference {
   notes: string;
   weight: number;
   anchorLabel: string;
+  shoulderFit: ReferenceShoulderGeometryFit;
   swatches: FamilyBoardSwatch[];
 }
 
@@ -85,6 +87,7 @@ function toBoardSwatch(label: string, color: OklchColor): FamilyBoardSwatch {
 function toReferenceEntry(
   reference: ReferenceRamp,
   anchorLabel: string,
+  shoulderFit: ReferenceShoulderGeometryFit,
 ): FamilyBoardReference {
   return {
     id: reference.id,
@@ -92,6 +95,7 @@ function toReferenceEntry(
     notes: reference.notes,
     weight: reference.weight,
     anchorLabel,
+    shoulderFit,
     swatches: Object.entries(reference.stops).map(([label, color]) =>
       toBoardSwatch(label, color),
     ),
@@ -132,7 +136,11 @@ export function buildFamilyProfileBoardData(): FamilyProfileBoardData {
         family,
         exemplarSeed,
         references: references.map((reference, index) =>
-          toReferenceEntry(reference, fit.anchorLabels[index]),
+          toReferenceEntry(
+            reference,
+            fit.anchorLabels[index],
+            fit.shoulderGeometry.references[index],
+          ),
         ),
         fit,
         archetypeControlPoints: controlPointsToSwatches(fit.archetype),

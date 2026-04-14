@@ -38,6 +38,14 @@ describe("research harness", () => {
       "tw-cyan-v3",
     ]);
     expect(CURATED_FAMILY_PROFILE_FITS.neutral.referenceIds).toHaveLength(3);
+
+    for (const fit of Object.values(CURATED_FAMILY_PROFILE_FITS)) {
+      expect(fit.shoulderGeometry.references).toHaveLength(fit.referenceIds.length);
+      expect(fit.shoulderGeometry.lightMix).toBeGreaterThan(0);
+      expect(fit.shoulderGeometry.lightMix).toBeLessThan(1);
+      expect(fit.shoulderGeometry.darkMix).toBeGreaterThan(0);
+      expect(fit.shoulderGeometry.darkMix).toBeLessThan(1);
+    }
   });
 
   it("includes the documented hard-color seed suite", () => {

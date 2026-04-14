@@ -348,6 +348,9 @@ function renderHtml(data: ReturnType<typeof buildFamilyProfileBoardData>): strin
                               <div class="reference__meta">
                                 <div class="chip">weight · ${reference.weight.toFixed(2)}</div>
                                 <div class="chip">anchor · ${reference.anchorLabel}</div>
+                                <div class="chip">
+                                  shoulders · ${reference.shoulderFit.lightMix.toFixed(3)} / ${reference.shoulderFit.darkMix.toFixed(3)}
+                                </div>
                               </div>
                             </div>
                             <p>${reference.notes}</p>
@@ -391,6 +394,24 @@ function renderHtml(data: ReturnType<typeof buildFamilyProfileBoardData>): strin
                   </article>
                   <article class="card">
                     <h3>Fit Metadata</h3>
+                    <div class="metric-grid">
+                      ${renderMetric(
+                        "light shoulder mix",
+                        section.fit.shoulderGeometry.lightMix.toFixed(3),
+                      )}
+                      ${renderMetric(
+                        "dark shoulder mix",
+                        section.fit.shoulderGeometry.darkMix.toFixed(3),
+                      )}
+                      ${renderMetric(
+                        "light residual",
+                        section.fit.shoulderGeometry.lightResidualMean.toFixed(3),
+                      )}
+                      ${renderMetric(
+                        "dark residual",
+                        section.fit.shoulderGeometry.darkResidualMean.toFixed(3),
+                      )}
+                    </div>
                     <div class="profile-grid">
                       ${Object.entries(section.fit.profile)
                         .map(([key, value]) => renderMetric(key, Number(value).toFixed(3)))

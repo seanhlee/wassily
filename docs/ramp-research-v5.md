@@ -552,6 +552,13 @@ A prototype should be treated as failed if any of the following occur:
 - The first corpus fit suggests a useful architectural split:
   - endpoint thresholds, hue tendencies, and intensity behavior can be learned from references now
   - shoulder placement should remain an explicit research problem until there is a dedicated fitter for path geometry
+- A first dedicated shoulder fitter is now in place:
+  - each reference shoulder is projected onto its endpoint-to-seed segment in OKLab
+  - the resulting segment progress is averaged with corpus weights and used as the generated shoulder placement
+  - this is meaningfully better than frozen per-family templates because it is at least learned from reference geometry rather than guessed
+- The projection residuals are now informative:
+  - lime, cyan, and neutrals have low shoulder residuals, so simple segment progress captures a meaningful part of their path structure
+  - ultramarine still shows a noticeably larger light-shoulder residual, which suggests the next fitter probably needs off-axis curve learning rather than only better scalar placement
 
 ### Former bug, now addressed by the probes
 
@@ -613,3 +620,13 @@ A prototype should be treated as failed if any of the following occur:
 - Result: cyan darks now drift bluer (`~228`) instead of warmer.
 - Result: warm and cool neutrals now stay temperature-stable with effectively zero hue drift and very low endpoint chroma.
 - Result: this is the first probe that feels genuinely family-aware rather than merely family-tolerant.
+- Replaced the fixed shoulder-mix templates with a corpus-fit shoulder geometry pass.
+- Method:
+  - for each curated reference, project the light shoulder onto the light-endpoint→seed OKLab segment
+  - project the dark shoulder onto the seed→dark-endpoint segment
+  - average those progress values with corpus weights and feed the result back into ramp generation
+- Added shoulder-fit visibility to the research board and JSON output so the learned geometry is inspectable instead of implicit.
+- Result:
+  - lime, cyan, and neutral families fit cleanly with low projection residuals
+  - ultramarine's light shoulder still has a materially larger residual, which is a useful signal that the remaining gap is real curve shape, not just better scalar placement
+- Result: this is a better research baseline because shoulder placement is now learned from the corpus while still keeping the path model simple enough to reason about.
