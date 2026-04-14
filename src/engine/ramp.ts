@@ -1,17 +1,15 @@
 /**
- * Ramp Generation v4.
+ * Ramp Generation v2.
  *
- * Archetype-controlled arc-length OKLab interpolation.
- * The backbone is v3's perceptually even arc-length sampling through
- * white → seed → dark in OKLab. What changes per archetype is where
- * the endpoints sit — lightness, chroma, hue — giving each color family
- * its own character without sacrificing spacing.
+ * Based on research from ColorBox, Tailwind v4, and Radix Colors.
+ * Uses parametric easing curves instead of fixed lookup tables.
+ * Chroma is gamut-relative — expressed as a percentage of the
+ * maximum available at each (L, H) point.
  */
 
 import type { OklchColor, RampStop, RampConfig, StopPreset } from "../types";
 import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "./gamut";
 import { interpolate, oklch as toOklch, oklab as toOklab } from "culori";
-import { blendArchetypes } from "./archetypes";
 
 // ---- Stop Presets ----
 
@@ -47,7 +45,21 @@ function easeInCubic(t: number): number {
   return t * t * t;
 }
 
-// ---- Hue Drift (used by neutral ramps and fallback) ----
+// ---- Lightness Curve ----
+
+const L_MAX = 0.98;
+const L_MIN = 0.25;
+
+/**
+ * Compute lightness for a given stop position (0=lightest, 1=darkest).
+ * Uses easeInQuad — more resolution in the light/mid range,
+ * compressed in the darks.
+ */
+function lightnessAt(t: number): number {
+  return L_MAX - (L_MAX - L_MIN) * easeInQuad(t);
+}
+
+// ---- Hue Drift ----
 
 /**
  * Hue rotation toward amber for dark stops.
@@ -136,7 +148,7 @@ function generateNeutralStop(
   seedHue: number,
   seedChroma: number,
 ): { light: OklchColor; dark: OklchColor } {
-  const l = 0.98 - (0.98 - 0.25) * easeInQuad(t);
+  const l = lightnessAt(t);
   const drift = hueDriftAt(t, seedHue);
   const h = (((seedHue + drift) % 360) + 360) % 360;
   const c = seedChroma * (0.5 + 0.5 * (1 - Math.abs(t - 0.5) * 2));
@@ -146,52 +158,55 @@ function generateNeutralStop(
   return { light, dark };
 }
 
-// ---- V4: Archetype-Controlled Arc-Length OKLab Path ----
+// ---- OKLab Arc-Length Interpolation ----
 
 /**
- * Generate a ramp using archetype-controlled OKLab arc-length interpolation.
+ * Arc-length parameterized 3-point OKLab interpolation.
  *
- * The backbone is v3's arc-length OKLab path (perceptually even steps by
- * construction). Archetypes shape the *endpoints* — light and dark anchors
- * get per-hue-family positioning in OKLCH — so lime gets tinted highlights
- * and warm-drifting darks, ultramarine gets clean highlights and rich deep
- * darks, etc. Path geometry provides evenness; endpoints provide character.
+ * Three anchors: tinted white → seed → hue-drifted dark, interpolated
+ * in Cartesian OKLab. Stops are sampled at equal OKLab Euclidean distances
+ * along the two-segment path, giving perceptually even steps.
+ *
+ * The seed naturally falls wherever its OKLab distance from white places it —
+ * light seeds land near the top, dark seeds near the bottom, mid-tones near
+ * the center. No explicit seed classification needed; the geometry adapts.
+ *
+ * The white endpoint is tinted (max gamut chroma at L_MAX, scaled by seed
+ * intensity) so the lightest stop carries the seed's hue character.
+ * The dark endpoint carries the full hue drift (amber warming) and
+ * gamut-relative chroma at L_MIN.
  */
-function generateV4Ramp(
+function interpolateArcLength(
   seedL: number,
   seedC: number,
   seedH: number,
   seedIntensity: number,
   totalStops: number,
 ): OklchColor[] {
-  const profile = blendArchetypes(seedH);
-
-  // Light endpoint: L=0.96 (gamut has room for visible chroma), hue-shifted
-  // per archetype, chroma scaled by archetype and seed intensity.
-  // If the seed is lighter than 0.96, expand to include it.
+  // White endpoint: slightly below L_MAX so the gamut has room for visible
+  // chroma. At L=0.98 most hues get C≈0.009 — invisible. At 0.96, twice that.
+  // If the seed is lighter, expand to include it (avoids path doubling back).
   const whiteL = Math.max(0.96, seedL);
-  const whiteH =
-    (((seedH + profile.lightHueOffset) % 360) + 360) % 360;
-  const whiteC =
-    maxChroma(whiteL, whiteH) * profile.lightChromaScale * seedIntensity;
-  const whiteEnd = { mode: "oklch" as const, l: whiteL, c: whiteC, h: whiteH };
+  const whiteC = maxChroma(whiteL, seedH) * seedIntensity;
+  const whiteEnd = { mode: "oklch" as const, l: whiteL, c: whiteC, h: seedH };
 
   const seedPt = { mode: "oklch" as const, l: seedL, c: seedC, h: seedH };
 
-  // Dark endpoint: L=0.25 (or below if seed is darker), hue-shifted per
-  // archetype, chroma scaled by archetype and seed intensity.
-  const darkL = 0.25 < seedL ? 0.25 : Math.max(0.05, seedL - 0.05);
-  const darkH =
-    (((seedH + profile.darkHueOffset) % 360) + 360) % 360;
-  const darkC =
-    maxChroma(darkL, darkH) * profile.darkChromaScale * seedIntensity;
+  // Dark endpoint: L_MIN, full hue drift, gamut-relative chroma.
+  // If the seed is at or below L_MIN, push the dark endpoint further down
+  // so the path doesn't double back or collapse to zero length.
+  const fullDrift = hueDriftAt(1.0, seedH);
+  const darkH = (((seedH + fullDrift) % 360) + 360) % 360;
+  const darkL = L_MIN < seedL ? L_MIN : Math.max(0.05, seedL - 0.05);
+  const darkC = maxChroma(darkL, darkH) * seedIntensity;
   const darkEnd = { mode: "oklch" as const, l: darkL, c: darkC, h: darkH };
 
-  // OKLab Euclidean distances for each segment
+  // Convert to OKLab for distance computation
   const whiteOklab = toOklab(whiteEnd)!;
   const seedOklab = toOklab(seedPt)!;
   const darkOklab = toOklab(darkEnd)!;
 
+  // OKLab Euclidean distances for each segment
   const d1 = Math.sqrt(
     (whiteOklab.l - seedOklab.l) ** 2 +
       (whiteOklab.a - seedOklab.a) ** 2 +
@@ -208,7 +223,7 @@ function generateV4Ramp(
   const interpLight = interpolate([whiteEnd, seedPt], "oklab");
   const interpDark = interpolate([seedPt, darkEnd], "oklab");
 
-  // Arc-length sampling: equal OKLab Euclidean distance between stops
+  // Sample at equal OKLab distance intervals
   const seedFrac = total > 0 ? d1 / total : 0.5;
   const results: OklchColor[] = [];
   let snapIndex = 0;
@@ -235,6 +250,7 @@ function generateV4Ramp(
       }),
     );
 
+    // Track which stop is closest to the seed's arc-length position
     const dist = Math.abs(frac - seedFrac);
     if (dist < snapDist) {
       snapDist = dist;
@@ -259,19 +275,20 @@ export function generateRamp(config: RampConfig): RampStop[] {
       : generateCustomLabels(stopCount);
 
   // Compute seed intensity: raw gamut-relative chroma ratio (no boost).
+  // This ensures the ramp naturally reproduces the seed's chroma level.
   let seedIntensity = 1.0;
   if (seedChroma !== undefined && seedLightness !== undefined && !isNeutral) {
     const seedMaxC = maxChroma(seedLightness, hue);
     seedIntensity = seedMaxC > 0 ? Math.min(seedChroma / seedMaxC, 1.0) : 1.0;
   }
 
-  // Pre-compute archetype-blended stops when we have a seed.
+  // Pre-compute OKLab-interpolated stops when we have a seed.
   const hasSeed =
     seedLightness !== undefined &&
     seedChroma !== undefined &&
     !isNeutral;
-  const v4Stops = hasSeed
-    ? generateV4Ramp(
+  const interpolated = hasSeed
+    ? interpolateArcLength(
         seedLightness!,
         seedChroma!,
         hue,
@@ -292,18 +309,21 @@ export function generateRamp(config: RampConfig): RampStop[] {
       return generatePureStop(label, hue, index, labels.length);
     }
 
-    // ---- Opinionated: archetype-blended v4 ----
-    if (v4Stops) {
-      const color = v4Stops[index];
+    // ---- Opinionated generation ----
+
+    // OKLab interpolation: white → seed → dark, seed at center
+    if (interpolated) {
+      const color = interpolated[index];
       const dark = darkModeAdjust(color.l, color.c, color.h, t);
       return { index, label, color, darkColor: dark };
     }
 
-    // Fallback: no seed — use base ladder with full gamut chroma + hue drift
-    const l = 0.98 - (0.98 - 0.25) * easeInQuad(t);
+    // Fallback: parametric (no seed provided)
+    const l = lightnessAt(t);
     const drift = hueDriftAt(t, hue);
     const h = (((hue + drift) % 360) + 360) % 360;
-    const c = maxChroma(l, h) * seedIntensity;
+    const gamutMax = maxChroma(l, h);
+    const c = gamutMax * seedIntensity;
 
     const light = clampToGamut({ l, c, h });
     const dark = darkModeAdjust(l, c, h, t);
@@ -321,7 +341,7 @@ function generatePureStop(
   total: number,
 ): { index: number; label: string; color: OklchColor; darkColor: OklchColor } {
   const t = total > 1 ? index / (total - 1) : 0.5;
-  const l = 0.98 - (0.98 - 0.25) * t; // linear
+  const l = L_MAX - (L_MAX - L_MIN) * t; // linear
   const mc = maxChroma(l, seedHue);
   const c = mc * 0.85;
   const color = clampToGamut({ l, c, h: seedHue });
