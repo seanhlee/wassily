@@ -8,7 +8,13 @@
  */
 
 import type { OklchColor, RampStop, RampConfig, StopPreset } from "../types";
-import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "./gamut";
+import {
+  maxChroma,
+  chromaPeakLightness,
+  clampToGamut,
+  NEUTRAL_CHROMA,
+} from "./gamut";
+import { FAMILY_PROFILES, type RampFamily } from "./familyProfiles";
 import { interpolate, oklch as toOklch, oklab as toOklab } from "culori";
 
 // ---- Stop Presets ----
@@ -49,6 +55,11 @@ function easeInCubic(t: number): number {
 
 const L_MAX = 0.98;
 const L_MIN = 0.25;
+const L_FLOOR = 0.05;
+const L_CEILING = 1.0;
+const MIN_WHITE_LIFT = 0.02;
+const LIGHT_ENDPOINT_THRESHOLD = 0.25;
+const DARK_ENDPOINT_THRESHOLD = 0.25;
 
 /**
  * Compute lightness for a given stop position (0=lightest, 1=darkest).
@@ -158,6 +169,156 @@ function generateNeutralStop(
   return { light, dark };
 }
 
+function normalizeHue(hue: number): number {
+  return ((hue % 360) + 360) % 360;
+}
+
+function classifyFamily(seedHue: number, seedChroma?: number): RampFamily {
+  const hue = normalizeHue(seedHue);
+  if (seedChroma !== undefined && seedChroma < NEUTRAL_CHROMA) return "neutral";
+  if (hue >= 80 && hue <= 150) return "lime";
+  if (hue >= 185 && hue <= 235) return "cyan";
+  if (hue >= 240 && hue <= 285) return "ultramarine";
+  return "generic";
+}
+
+function adjustHue(hue: number, offset: number): number {
+  return normalizeHue(hue + offset);
+}
+
+function applyIntensity(seedIntensity: number, scale: number, offset: number): number {
+  return Math.max(0, Math.min(1, seedIntensity * scale + offset));
+}
+
+function findLightEndpointLightness(hue: number, threshold: number): number {
+  const cusp = chromaPeakLightness(hue);
+  const targetC = cusp.maxC * threshold;
+
+  if (maxChroma(L_MAX, hue) >= targetC) return L_MAX;
+
+  let lo = cusp.l;
+  let hi = L_MAX;
+
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    if (maxChroma(mid, hue) >= targetC) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+
+  return lo;
+}
+
+function findDarkEndpointLightness(hue: number, threshold: number): number {
+  const cusp = chromaPeakLightness(hue);
+  const targetC = cusp.maxC * threshold;
+
+  if (maxChroma(L_FLOOR, hue) >= targetC) return L_FLOOR;
+
+  let lo = L_FLOOR;
+  let hi = Math.max(L_FLOOR, cusp.l);
+
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    if (maxChroma(mid, hue) >= targetC) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+
+  return hi;
+}
+
+function mix(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function sampleArcLengthPath(
+  points: ReadonlyArray<{ l: number; c: number; h: number }>,
+  totalStops: number,
+  seedPointIndex: number,
+  seedColor: OklchColor,
+): OklchColor[] {
+  if (points.length < 2) {
+    return Array.from({ length: totalStops }, () => clampToGamut(seedColor));
+  }
+
+  const pointLabs = points.map((point) =>
+    toOklab({ mode: "oklch", l: point.l, c: point.c, h: point.h })!,
+  );
+
+  const segmentLengths = pointLabs.slice(1).map((lab, index) =>
+    Math.sqrt(
+      (lab.l - pointLabs[index].l) ** 2 +
+        (lab.a - pointLabs[index].a) ** 2 +
+        (lab.b - pointLabs[index].b) ** 2,
+    ),
+  );
+  const cumulativeLengths = [0];
+  for (const segmentLength of segmentLengths) {
+    cumulativeLengths.push(
+      cumulativeLengths[cumulativeLengths.length - 1] + segmentLength,
+    );
+  }
+
+  const totalLength = cumulativeLengths[cumulativeLengths.length - 1];
+  const seedDistance = cumulativeLengths[seedPointIndex] ?? totalLength / 2;
+  const seedFrac = totalLength > 0 ? seedDistance / totalLength : 0.5;
+
+  const segmentInterpolators = points.slice(1).map((point, index) =>
+    interpolate(
+      [
+        { mode: "oklch" as const, ...points[index] },
+        { mode: "oklch" as const, ...point },
+      ],
+      "oklab",
+    ),
+  );
+
+  const results: OklchColor[] = [];
+  let snapIndex = 0;
+  let snapDistance = Infinity;
+
+  for (let i = 0; i < totalStops; i++) {
+    const frac = totalStops > 1 ? i / (totalStops - 1) : 0.5;
+    const targetDistance = frac * totalLength;
+
+    let segmentIndex = segmentLengths.length - 1;
+    for (let j = 0; j < segmentLengths.length; j++) {
+      if (targetDistance <= cumulativeLengths[j + 1]) {
+        segmentIndex = j;
+        break;
+      }
+    }
+
+    const startDistance = cumulativeLengths[segmentIndex];
+    const segmentLength = segmentLengths[segmentIndex];
+    const segmentT =
+      segmentLength > 0 ? (targetDistance - startDistance) / segmentLength : 0;
+    const color = toOklch(segmentInterpolators[segmentIndex](segmentT));
+
+    results.push(
+      clampToGamut({
+        l: color!.l,
+        c: color!.c ?? 0,
+        h: color!.h ?? seedColor.h,
+      }),
+    );
+
+    const distance = Math.abs(frac - seedFrac);
+    if (distance < snapDistance) {
+      snapDistance = distance;
+      snapIndex = i;
+    }
+  }
+
+  results[snapIndex] = clampToGamut(seedColor);
+  return results;
+}
+
 // ---- OKLab Arc-Length Interpolation ----
 
 /**
@@ -183,84 +344,82 @@ function interpolateArcLength(
   seedIntensity: number,
   totalStops: number,
 ): OklchColor[] {
-  // White endpoint: slightly below L_MAX so the gamut has room for visible
-  // chroma. At L=0.98 most hues get C≈0.009 — invisible. At 0.96, twice that.
-  // If the seed is lighter, expand to include it (avoids path doubling back).
-  const whiteL = Math.max(0.96, seedL);
-  const whiteC = maxChroma(whiteL, seedH) * seedIntensity;
-  const whiteEnd = { mode: "oklch" as const, l: whiteL, c: whiteC, h: seedH };
+  const family = classifyFamily(seedH, seedC);
+  const profile = FAMILY_PROFILES[family];
 
-  const seedPt = { mode: "oklch" as const, l: seedL, c: seedC, h: seedH };
-
-  // Dark endpoint: L_MIN, full hue drift, gamut-relative chroma.
-  // If the seed is at or below L_MIN, push the dark endpoint further down
-  // so the path doesn't double back or collapse to zero length.
-  const fullDrift = hueDriftAt(1.0, seedH);
-  const darkH = (((seedH + fullDrift) % 360) + 360) % 360;
-  const darkL = L_MIN < seedL ? L_MIN : Math.max(0.05, seedL - 0.05);
-  const darkC = maxChroma(darkL, darkH) * seedIntensity;
-  const darkEnd = { mode: "oklch" as const, l: darkL, c: darkC, h: darkH };
-
-  // Convert to OKLab for distance computation
-  const whiteOklab = toOklab(whiteEnd)!;
-  const seedOklab = toOklab(seedPt)!;
-  const darkOklab = toOklab(darkEnd)!;
-
-  // OKLab Euclidean distances for each segment
-  const d1 = Math.sqrt(
-    (whiteOklab.l - seedOklab.l) ** 2 +
-      (whiteOklab.a - seedOklab.a) ** 2 +
-      (whiteOklab.b - seedOklab.b) ** 2,
+  // Choose the lightest endpoint that still leaves room for visible chroma
+  // at this hue. Narrow-near-white hues like blue need to come further down
+  // into the gamut; lime can stay near the top.
+  const lightEndpointH = adjustHue(seedH, profile.lightEndpointHueOffset);
+  const whiteL = Math.max(
+    findLightEndpointLightness(lightEndpointH, profile.lightEndpointThreshold),
+    Math.min(L_CEILING, seedL + MIN_WHITE_LIFT),
   );
-  const d2 = Math.sqrt(
-    (seedOklab.l - darkOklab.l) ** 2 +
-      (seedOklab.a - darkOklab.a) ** 2 +
-      (seedOklab.b - darkOklab.b) ** 2,
-  );
-  const total = d1 + d2;
-
-  // Build segment interpolators
-  const interpLight = interpolate([whiteEnd, seedPt], "oklab");
-  const interpDark = interpolate([seedPt, darkEnd], "oklab");
-
-  // Sample at equal OKLab distance intervals
-  const seedFrac = total > 0 ? d1 / total : 0.5;
-  const results: OklchColor[] = [];
-  let snapIndex = 0;
-  let snapDist = Infinity;
-
-  for (let i = 0; i < totalStops; i++) {
-    const frac = totalStops > 1 ? i / (totalStops - 1) : 0.5;
-    const targetDist = frac * total;
-
-    let color;
-    if (targetDist <= d1) {
-      const segT = d1 > 0 ? targetDist / d1 : 0;
-      color = toOklch(interpLight(segT));
-    } else {
-      const segT = d2 > 0 ? (targetDist - d1) / d2 : 0;
-      color = toOklch(interpDark(segT));
-    }
-
-    results.push(
-      clampToGamut({
-        l: color!.l,
-        c: color!.c ?? 0,
-        h: color!.h ?? seedH,
-      }),
+  const whiteC =
+    maxChroma(whiteL, lightEndpointH) *
+    applyIntensity(
+      seedIntensity,
+      profile.lightEndpointIntensityScale,
+      profile.lightEndpointIntensityOffset,
     );
+  const whiteEnd = { l: whiteL, c: whiteC, h: lightEndpointH };
 
-    // Track which stop is closest to the seed's arc-length position
-    const dist = Math.abs(frac - seedFrac);
-    if (dist < snapDist) {
-      snapDist = dist;
-      snapIndex = i;
-    }
-  }
+  const seedPt = { l: seedL, c: seedC, h: seedH };
 
-  // Snap the closest stop to the seed's exact color
-  results[snapIndex] = clampToGamut({ l: seedL, c: seedC, h: seedH });
-  return results;
+  // Use the same cusp-aware search on the shadow side. If the seed is already
+  // darker than the target endpoint, expand the path downward to keep the
+  // geometry monotone.
+  const darkH = adjustHue(seedH, profile.darkEndpointHueOffset);
+  const darkTarget = findDarkEndpointLightness(darkH, profile.darkEndpointThreshold);
+  const darkL = seedL <= darkTarget ? Math.max(L_FLOOR, seedL - 0.05) : darkTarget;
+  const darkC =
+    maxChroma(darkL, darkH) *
+    applyIntensity(
+      seedIntensity,
+      profile.darkEndpointIntensityScale,
+      profile.darkEndpointIntensityOffset,
+    );
+  const darkEnd = { l: darkL, c: darkC, h: darkH };
+
+  // Add one shoulder on each side of the seed to test whether path shape,
+  // not just endpoints, improves family character while preserving the
+  // same arc-length sampling backbone.
+  const lightShoulderH = adjustHue(seedH, profile.lightShoulderHueOffset);
+  const lightShoulderL = mix(whiteL, seedL, profile.lightShoulderMix);
+  const lightShoulderIntensity = applyIntensity(
+    seedIntensity,
+    profile.lightShoulderIntensityScale,
+    profile.lightShoulderIntensityOffset,
+  );
+  const lightShoulderC =
+    maxChroma(lightShoulderL, lightShoulderH) * lightShoulderIntensity;
+  const lightShoulder = {
+    l: lightShoulderL,
+    c: lightShoulderC,
+    h: lightShoulderH,
+  };
+
+  const darkShoulderH = adjustHue(seedH, profile.darkShoulderHueOffset);
+  const darkShoulderL = mix(seedL, darkL, profile.darkShoulderMix);
+  const darkShoulderC =
+    maxChroma(darkShoulderL, darkShoulderH) *
+    applyIntensity(
+      seedIntensity,
+      profile.darkShoulderIntensityScale,
+      profile.darkShoulderIntensityOffset,
+    );
+  const darkShoulder = {
+    l: darkShoulderL,
+    c: darkShoulderC,
+    h: darkShoulderH,
+  };
+
+  return sampleArcLengthPath(
+    [whiteEnd, lightShoulder, seedPt, darkShoulder, darkEnd],
+    totalStops,
+    2,
+    { l: seedL, c: seedC, h: seedH },
+  );
 }
 
 // ---- Main Generation ----
@@ -277,16 +436,14 @@ export function generateRamp(config: RampConfig): RampStop[] {
   // Compute seed intensity: raw gamut-relative chroma ratio (no boost).
   // This ensures the ramp naturally reproduces the seed's chroma level.
   let seedIntensity = 1.0;
-  if (seedChroma !== undefined && seedLightness !== undefined && !isNeutral) {
+  if (seedChroma !== undefined && seedLightness !== undefined) {
     const seedMaxC = maxChroma(seedLightness, hue);
     seedIntensity = seedMaxC > 0 ? Math.min(seedChroma / seedMaxC, 1.0) : 1.0;
   }
 
   // Pre-compute OKLab-interpolated stops when we have a seed.
   const hasSeed =
-    seedLightness !== undefined &&
-    seedChroma !== undefined &&
-    !isNeutral;
+    seedLightness !== undefined && seedChroma !== undefined;
   const interpolated = hasSeed
     ? interpolateArcLength(
         seedLightness!,
@@ -300,7 +457,7 @@ export function generateRamp(config: RampConfig): RampStop[] {
   return labels.map((label, index) => {
     const t = labels.length > 1 ? index / (labels.length - 1) : 0.5;
 
-    if (isNeutral) {
+    if (isNeutral && !interpolated) {
       const { light, dark } = generateNeutralStop(t, hue, seedChroma!);
       return { index, label, color: light, darkColor: dark };
     }

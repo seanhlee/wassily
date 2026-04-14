@@ -1,0 +1,1589 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wassily Family Profile Board</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f2eb;
+        --surface: rgba(255, 255, 255, 0.74);
+        --surface-border: rgba(17, 17, 17, 0.12);
+        --text: #171411;
+        --muted: #5d5650;
+        --accent: #6d645b;
+        --code: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        --display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 42%),
+          linear-gradient(180deg, #f9f6f0 0%, var(--bg) 100%);
+      }
+
+      main {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 48px 28px 72px;
+      }
+
+      h1, h2, h3 {
+        margin: 0;
+        font-family: var(--display);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      h1 {
+        font-size: clamp(2.6rem, 5vw, 4.4rem);
+        line-height: 0.96;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      code {
+        font-family: var(--code);
+        font-size: 0.95em;
+      }
+
+      .hero {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 36px;
+      }
+
+      .hero__meta {
+        font-family: var(--code);
+        font-size: 0.9rem;
+        color: var(--accent);
+      }
+
+      .family {
+        margin-top: 36px;
+        border: 1px solid var(--surface-border);
+        border-radius: 24px;
+        background: var(--surface);
+        box-shadow: 0 30px 80px rgba(44, 33, 24, 0.08);
+        overflow: hidden;
+      }
+
+      .family__header {
+        padding: 28px 28px 18px;
+        border-bottom: 1px solid var(--surface-border);
+        display: grid;
+        gap: 12px;
+      }
+
+      .family__title-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--surface-border);
+        background: rgba(255, 255, 255, 0.72);
+        font-family: var(--code);
+        font-size: 0.82rem;
+        color: var(--accent);
+      }
+
+      .chip__dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.12);
+      }
+
+      .family__body {
+        display: grid;
+        gap: 22px;
+        padding: 24px 28px 30px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .grid--summary {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+
+      .card {
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(17, 17, 17, 0.1);
+      }
+
+      .card h3 {
+        font-size: 1.35rem;
+      }
+
+      .swatch-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(98px, 1fr));
+        gap: 10px;
+      }
+
+      .swatch {
+        min-height: 112px;
+        padding: 12px;
+        border-radius: 14px;
+        display: grid;
+        align-content: space-between;
+        border: 1px solid rgba(17, 17, 17, 0.08);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      }
+
+      .swatch--anchor {
+        outline: 2px solid rgba(146, 92, 255, 0.45);
+        outline-offset: 2px;
+      }
+
+      .swatch__label {
+        font-family: var(--code);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .swatch__oklch,
+      .swatch__hex {
+        font-family: var(--code);
+        font-size: 0.72rem;
+        line-height: 1.45;
+      }
+
+      .reference-list {
+        display: grid;
+        gap: 16px;
+      }
+
+      .reference {
+        display: grid;
+        gap: 12px;
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(17, 17, 17, 0.08);
+        background: rgba(252, 251, 249, 0.95);
+      }
+
+      .reference__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .reference__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        display: grid;
+        gap: 4px;
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(249, 247, 242, 0.95);
+        border: 1px solid rgba(17, 17, 17, 0.06);
+      }
+
+      .metric__label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        font-family: var(--code);
+      }
+
+      .metric__value {
+        font-family: var(--code);
+        font-size: 0.95rem;
+        color: var(--text);
+      }
+
+      .profile-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+      }
+
+      .profile-grid .metric__value {
+        font-size: 0.82rem;
+      }
+
+      @media (max-width: 840px) {
+        main { padding-inline: 18px; }
+        .family__header,
+        .family__body { padding-inline: 18px; }
+        .swatch-strip { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="hero__meta">Generated 2026-04-14T20:18:46.965Z</div>
+        <h1>Corpus-Fit Family Profile Board</h1>
+        <p>
+          Reference ramps, the derived archetype control points, and the current Wassily exemplar ramps shown side by side.
+          This board is meant to answer one question: is the fitter learning a believable family shape, or only a set of numbers?
+        </p>
+      </section>
+      
+            <section class="family">
+              <header class="family__header">
+                <div class="family__title-row">
+                  <h2>lime</h2>
+                  <div class="chip">
+                    <span class="chip__dot" style="background:#D3FD05"></span>
+                    exemplar seed · Bright Lime
+                  </div>
+                  <div class="chip">
+                    seed stop · 200
+                  </div>
+                </div>
+                <p>Canonical hard case: luminous yellow-green seed with extreme high-lightness chroma.</p>
+              </header>
+              <div class="family__body">
+                <div class="grid grid--summary">
+                  <article class="card">
+                    <h3>Derived Archetype</h3>
+                    <p>Control points averaged in Oklab from the weighted curated corpus.</p>
+                    
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#F9FEE7; color:#111111">
+              <div class="swatch__label">light endpoint</div>
+              <div class="swatch__oklch">oklch(0.986 0.029 116.8)</div>
+              <div class="swatch__hex">#F9FEE7</div>
+            </div>
+          
+            <div class="swatch" style="background:#E3F798; color:#111111">
+              <div class="swatch__label">light shoulder</div>
+              <div class="swatch__oklch">oklch(0.940 0.121 118.6)</div>
+              <div class="swatch__hex">#E3F798</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#CFEE5D; color:#111111">
+              <div class="swatch__label">seed</div>
+              <div class="swatch__oklch">oklch(0.899 0.172 120.1)</div>
+              <div class="swatch__hex">#CFEE5D</div>
+            </div>
+          
+            <div class="swatch" style="background:#BDE02F; color:#111111">
+              <div class="swatch__label">dark shoulder</div>
+              <div class="swatch__oklch">oklch(0.852 0.192 121.0)</div>
+              <div class="swatch__hex">#BDE02F</div>
+            </div>
+          
+            <div class="swatch" style="background:#272B05; color:#f8f8f8">
+              <div class="swatch__label">dark endpoint</div>
+              <div class="swatch__oklch">oklch(0.277 0.057 116.2)</div>
+              <div class="swatch__hex">#272B05</div>
+            </div>
+          
+    </div>
+  
+                  </article>
+                  <article class="card">
+                    <h3>Wassily Exemplar Ramp</h3>
+                    <p>The current arc-length ramp generated for the canonical family seed.</p>
+                    
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#F6FDDB; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.044 116.8)</div>
+              <div class="swatch__hex">#F6FDDB</div>
+            </div>
+          
+            <div class="swatch" style="background:#E4FC9B; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.952 0.124 120.3)</div>
+              <div class="swatch__hex">#E4FC9B</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#D3FD05; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.931 0.223 121.1)</div>
+              <div class="swatch__hex">#D3FD05</div>
+            </div>
+          
+            <div class="swatch" style="background:#BFE40E; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.862 0.205 121.1)</div>
+              <div class="swatch__hex">#BFE40E</div>
+            </div>
+          
+            <div class="swatch" style="background:#A6C713; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.778 0.183 121.1)</div>
+              <div class="swatch__hex">#A6C713</div>
+            </div>
+          
+            <div class="swatch" style="background:#8FAB15; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.695 0.162 121.0)</div>
+              <div class="swatch__hex">#8FAB15</div>
+            </div>
+          
+            <div class="swatch" style="background:#788F15; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.611 0.140 121.0)</div>
+              <div class="swatch__hex">#788F15</div>
+            </div>
+          
+            <div class="swatch" style="background:#617514; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.528 0.119 120.9)</div>
+              <div class="swatch__hex">#617514</div>
+            </div>
+          
+            <div class="swatch" style="background:#4D5B0E; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.444 0.098 120.0)</div>
+              <div class="swatch__hex">#4D5B0E</div>
+            </div>
+          
+            <div class="swatch" style="background:#394209; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.360 0.078 118.6)</div>
+              <div class="swatch__hex">#394209</div>
+            </div>
+          
+            <div class="swatch" style="background:#272B05; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.276 0.057 116.2)</div>
+              <div class="swatch__hex">#272B05</div>
+            </div>
+          
+    </div>
+  
+                  </article>
+                </div>
+
+                <article class="card">
+                  <h3>Reference Corpus</h3>
+                  <div class="reference-list">
+                    
+                          <div class="reference">
+                            <div class="reference__header">
+                              <div>
+                                <strong>tw-lime-v3</strong>
+                                <p>Tailwind CSS v3 lime</p>
+                              </div>
+                              <div class="reference__meta">
+                                <div class="chip">weight · 0.75</div>
+                                <div class="chip">anchor · 300</div>
+                              </div>
+                            </div>
+                            <p>Bright yellow-green family reference with clean, leafy darks.</p>
+                            
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#F7FEE7; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.986 0.031 120.8)</div>
+              <div class="swatch__hex">#F7FEE7</div>
+            </div>
+          
+            <div class="swatch" style="background:#ECFCCB; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.967 0.066 122.3)</div>
+              <div class="swatch__hex">#ECFCCB</div>
+            </div>
+          
+            <div class="swatch" style="background:#D9F99D; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.938 0.122 124.3)</div>
+              <div class="swatch__hex">#D9F99D</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#BEF264; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.897 0.179 126.7)</div>
+              <div class="swatch__hex">#BEF264</div>
+            </div>
+          
+            <div class="swatch" style="background:#A3E635; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.849 0.207 128.8)</div>
+              <div class="swatch__hex">#A3E635</div>
+            </div>
+          
+            <div class="swatch" style="background:#84CC17; color:#111111">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.768 0.204 130.8)</div>
+              <div class="swatch__hex">#84CC17</div>
+            </div>
+          
+            <div class="swatch" style="background:#65A30E; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.648 0.175 131.7)</div>
+              <div class="swatch__hex">#65A30E</div>
+            </div>
+          
+            <div class="swatch" style="background:#4D7C0E; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.532 0.141 131.6)</div>
+              <div class="swatch__hex">#4D7C0E</div>
+            </div>
+          
+            <div class="swatch" style="background:#3F6212; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.453 0.113 130.9)</div>
+              <div class="swatch__hex">#3F6212</div>
+            </div>
+          
+            <div class="swatch" style="background:#365314; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.405 0.096 131.1)</div>
+              <div class="swatch__hex">#365314</div>
+            </div>
+          
+            <div class="swatch" style="background:#1A2E05; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.274 0.069 132.1)</div>
+              <div class="swatch__hex">#1A2E05</div>
+            </div>
+          
+    </div>
+  
+                          </div>
+                        
+                          <div class="reference">
+                            <div class="reference__header">
+                              <div>
+                                <strong>tw-yellow-v3</strong>
+                                <p>Tailwind CSS v3 yellow</p>
+                              </div>
+                              <div class="reference__meta">
+                                <div class="chip">weight · 0.25</div>
+                                <div class="chip">anchor · 300</div>
+                              </div>
+                            </div>
+                            <p>Warm yellow-side counterweight for the lime family.</p>
+                            
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#FEFCE8; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.987 0.026 102.2)</div>
+              <div class="swatch__hex">#FEFCE8</div>
+            </div>
+          
+            <div class="swatch" style="background:#FEF9C3; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.973 0.069 103.2)</div>
+              <div class="swatch__hex">#FEF9C3</div>
+            </div>
+          
+            <div class="swatch" style="background:#FEF08A; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.945 0.124 101.5)</div>
+              <div class="swatch__hex">#FEF08A</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#FDE046; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.905 0.166 98.1)</div>
+              <div class="swatch__hex">#FDE046</div>
+            </div>
+          
+            <div class="swatch" style="background:#FACC16; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.861 0.173 91.9)</div>
+              <div class="swatch__hex">#FACC16</div>
+            </div>
+          
+            <div class="swatch" style="background:#EAB305; color:#111111">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.795 0.162 86.0)</div>
+              <div class="swatch__hex">#EAB305</div>
+            </div>
+          
+            <div class="swatch" style="background:#CA8A06; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.681 0.142 75.8)</div>
+              <div class="swatch__hex">#CA8A06</div>
+            </div>
+          
+            <div class="swatch" style="background:#A16206; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.554 0.121 66.4)</div>
+              <div class="swatch__hex">#A16206</div>
+            </div>
+          
+            <div class="swatch" style="background:#854D0F; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.476 0.103 61.9)</div>
+              <div class="swatch__hex">#854D0F</div>
+            </div>
+          
+            <div class="swatch" style="background:#713F12; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.421 0.090 57.7)</div>
+              <div class="swatch__hex">#713F12</div>
+            </div>
+          
+            <div class="swatch" style="background:#422006; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.286 0.064 53.8)</div>
+              <div class="swatch__hex">#422006</div>
+            </div>
+          
+    </div>
+  
+                          </div>
+                        
+                  </div>
+                </article>
+
+                <div class="grid grid--summary">
+                  <article class="card">
+                    <h3>Ramp Diagnostics</h3>
+                    <div class="metric-grid">
+                      <div class="metric"><span class="metric__label">seed stop</span><span class="metric__value">200</span></div>
+                      <div class="metric"><span class="metric__label">endpoint light</span><span class="metric__value">L 0.980 · C 0.044</span></div>
+                      <div class="metric"><span class="metric__label">endpoint dark</span><span class="metric__value">L 0.276 · C 0.057</span></div>
+                      <div class="metric"><span class="metric__label">max hue drift</span><span class="metric__value">4.9°</span></div>
+                      <div class="metric"><span class="metric__label">distance cv</span><span class="metric__value">0.078</span></div>
+                      <div class="metric"><span class="metric__label">monotone</span><span class="metric__value">yes</span></div>
+                    </div>
+                  </article>
+                  <article class="card">
+                    <h3>Fit Metadata</h3>
+                    <div class="profile-grid">
+                      <div class="metric"><span class="metric__label">lightEndpointThreshold</span><span class="metric__value">0.201</span></div><div class="metric"><span class="metric__label">darkEndpointThreshold</span><span class="metric__value">0.293</span></div><div class="metric"><span class="metric__label">lightEndpointHueOffset</span><span class="metric__value">-4.314</span></div><div class="metric"><span class="metric__label">lightShoulderHueOffset</span><span class="metric__value">-2.495</span></div><div class="metric"><span class="metric__label">darkShoulderHueOffset</span><span class="metric__value">-0.071</span></div><div class="metric"><span class="metric__label">darkEndpointHueOffset</span><span class="metric__value">-4.884</span></div><div class="metric"><span class="metric__label">lightEndpointIntensityScale</span><span class="metric__value">0.675</span></div><div class="metric"><span class="metric__label">lightEndpointIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightShoulderIntensityScale</span><span class="metric__value">0.551</span></div><div class="metric"><span class="metric__label">lightShoulderIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkShoulderIntensityScale</span><span class="metric__value">0.942</span></div><div class="metric"><span class="metric__label">darkShoulderIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkEndpointIntensityScale</span><span class="metric__value">0.905</span></div><div class="metric"><span class="metric__label">darkEndpointIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightShoulderMix</span><span class="metric__value">0.320</span></div><div class="metric"><span class="metric__label">darkShoulderMix</span><span class="metric__value">0.600</span></div>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+          
+            <section class="family">
+              <header class="family__header">
+                <div class="family__title-row">
+                  <h2>ultramarine</h2>
+                  <div class="chip">
+                    <span class="chip__dot" style="background:#274FBE"></span>
+                    exemplar seed · Ultramarine
+                  </div>
+                  <div class="chip">
+                    seed stop · 600
+                  </div>
+                </div>
+                <p>Deep vivid blue seed that tests dark retention and blue highlight presence.</p>
+              </header>
+              <div class="family__body">
+                <div class="grid grid--summary">
+                  <article class="card">
+                    <h3>Derived Archetype</h3>
+                    <p>Control points averaged in Oklab from the weighted curated corpus.</p>
+                    
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#E7F5FF; color:#111111">
+              <div class="swatch__label">light endpoint</div>
+              <div class="swatch__oklch">oklch(0.963 0.020 238.7)</div>
+              <div class="swatch__hex">#E7F5FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#3178C0; color:#f8f8f8">
+              <div class="swatch__label">light shoulder</div>
+              <div class="swatch__oklch">oklch(0.563 0.132 251.6)</div>
+              <div class="swatch__hex">#3178C0</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#245A96; color:#f8f8f8">
+              <div class="swatch__label">seed</div>
+              <div class="swatch__oklch">oklch(0.463 0.113 253.2)</div>
+              <div class="swatch__hex">#245A96</div>
+            </div>
+          
+            <div class="swatch" style="background:#194777; color:#f8f8f8">
+              <div class="swatch__label">dark shoulder</div>
+              <div class="swatch__oklch">oklch(0.393 0.095 252.4)</div>
+              <div class="swatch__hex">#194777</div>
+            </div>
+          
+            <div class="swatch" style="background:#031225; color:#f8f8f8">
+              <div class="swatch__label">dark endpoint</div>
+              <div class="swatch__oklch">oklch(0.181 0.045 253.3)</div>
+              <div class="swatch__hex">#031225</div>
+            </div>
+          
+    </div>
+  
+                  </article>
+                  <article class="card">
+                    <h3>Wassily Exemplar Ramp</h3>
+                    <p>The current arc-length ramp generated for the canonical family seed.</p>
+                    
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#E9F5FE; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.964 0.018 238.7)</div>
+              <div class="swatch__hex">#E9F5FE</div>
+            </div>
+          
+            <div class="swatch" style="background:#C1DDF9; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.885 0.049 248.8)</div>
+              <div class="swatch__hex">#C1DDF9</div>
+            </div>
+          
+            <div class="swatch" style="background:#99C4F3; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.807 0.082 250.9)</div>
+              <div class="swatch__hex">#99C4F3</div>
+            </div>
+          
+            <div class="swatch" style="background:#75AAEA; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.727 0.110 253.8)</div>
+              <div class="swatch__hex">#75AAEA</div>
+            </div>
+          
+            <div class="swatch" style="background:#5A8EDD; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.646 0.131 258.6)</div>
+              <div class="swatch__hex">#5A8EDD</div>
+            </div>
+          
+            <div class="swatch" style="background:#4172CF; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.565 0.154 262.1)</div>
+              <div class="swatch__hex">#4172CF</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#274FBE; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.470 0.180 265.0)</div>
+              <div class="swatch__hex">#274FBE</div>
+            </div>
+          
+            <div class="swatch" style="background:#1D4496; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.411 0.142 262.7)</div>
+              <div class="swatch__hex">#1D4496</div>
+            </div>
+          
+            <div class="swatch" style="background:#133769; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.340 0.096 257.6)</div>
+              <div class="swatch__hex">#133769</div>
+            </div>
+          
+            <div class="swatch" style="background:#0A2643; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.263 0.064 252.6)</div>
+              <div class="swatch__hex">#0A2643</div>
+            </div>
+          
+            <div class="swatch" style="background:#031225; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.181 0.045 253.3)</div>
+              <div class="swatch__hex">#031225</div>
+            </div>
+          
+    </div>
+  
+                  </article>
+                </div>
+
+                <article class="card">
+                  <h3>Reference Corpus</h3>
+                  <div class="reference-list">
+                    
+                          <div class="reference">
+                            <div class="reference__header">
+                              <div>
+                                <strong>wa-blue-bright</strong>
+                                <p>Web Awesome bright blue</p>
+                              </div>
+                              <div class="reference__meta">
+                                <div class="chip">weight · 1.00</div>
+                                <div class="chip">anchor · 600</div>
+                              </div>
+                            </div>
+                            <p>Blue-side ultramarine reference with strong colored highlights.</p>
+                            
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#E7F5FF; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.963 0.020 238.7)</div>
+              <div class="swatch__hex">#E7F5FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#CEEAFF; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.923 0.041 240.4)</div>
+              <div class="swatch__hex">#CEEAFF</div>
+            </div>
+          
+            <div class="swatch" style="background:#93D0FF; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.833 0.091 242.3)</div>
+              <div class="swatch__hex">#93D0FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#5BB5FE; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.748 0.137 245.6)</div>
+              <div class="swatch__hex">#5BB5FE</div>
+            </div>
+          
+            <div class="swatch" style="background:#4A99E4; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.667 0.136 249.6)</div>
+              <div class="swatch__hex">#4A99E4</div>
+            </div>
+          
+            <div class="swatch" style="background:#3178C0; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.563 0.132 251.6)</div>
+              <div class="swatch__hex">#3178C0</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#245A96; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.463 0.113 253.2)</div>
+              <div class="swatch__hex">#245A96</div>
+            </div>
+          
+            <div class="swatch" style="background:#194777; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.393 0.095 252.4)</div>
+              <div class="swatch__hex">#194777</div>
+            </div>
+          
+            <div class="swatch" style="background:#103359; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.318 0.079 253.2)</div>
+              <div class="swatch__hex">#103359</div>
+            </div>
+          
+            <div class="swatch" style="background:#061E38; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.233 0.059 252.8)</div>
+              <div class="swatch__hex">#061E38</div>
+            </div>
+          
+            <div class="swatch" style="background:#031225; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.181 0.045 253.3)</div>
+              <div class="swatch__hex">#031225</div>
+            </div>
+          
+    </div>
+  
+                          </div>
+                        
+                  </div>
+                </article>
+
+                <div class="grid grid--summary">
+                  <article class="card">
+                    <h3>Ramp Diagnostics</h3>
+                    <div class="metric-grid">
+                      <div class="metric"><span class="metric__label">seed stop</span><span class="metric__value">600</span></div>
+                      <div class="metric"><span class="metric__label">endpoint light</span><span class="metric__value">L 0.964 · C 0.018</span></div>
+                      <div class="metric"><span class="metric__label">endpoint dark</span><span class="metric__value">L 0.181 · C 0.045</span></div>
+                      <div class="metric"><span class="metric__label">max hue drift</span><span class="metric__value">26.3°</span></div>
+                      <div class="metric"><span class="metric__label">distance cv</span><span class="metric__value">0.073</span></div>
+                      <div class="metric"><span class="metric__label">monotone</span><span class="metric__value">yes</span></div>
+                    </div>
+                  </article>
+                  <article class="card">
+                    <h3>Fit Metadata</h3>
+                    <div class="profile-grid">
+                      <div class="metric"><span class="metric__label">lightEndpointThreshold</span><span class="metric__value">0.121</span></div><div class="metric"><span class="metric__label">darkEndpointThreshold</span><span class="metric__value">0.286</span></div><div class="metric"><span class="metric__label">lightEndpointHueOffset</span><span class="metric__value">-26.300</span></div><div class="metric"><span class="metric__label">lightShoulderHueOffset</span><span class="metric__value">-13.400</span></div><div class="metric"><span class="metric__label">darkShoulderHueOffset</span><span class="metric__value">-12.600</span></div><div class="metric"><span class="metric__label">darkEndpointHueOffset</span><span class="metric__value">-11.700</span></div><div class="metric"><span class="metric__label">lightEndpointIntensityScale</span><span class="metric__value">1.500</span></div><div class="metric"><span class="metric__label">lightEndpointIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightShoulderIntensityScale</span><span class="metric__value">1.326</span></div><div class="metric"><span class="metric__label">lightShoulderIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkShoulderIntensityScale</span><span class="metric__value">1.337</span></div><div class="metric"><span class="metric__label">darkShoulderIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkEndpointIntensityScale</span><span class="metric__value">1.337</span></div><div class="metric"><span class="metric__label">darkEndpointIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightShoulderMix</span><span class="metric__value">0.420</span></div><div class="metric"><span class="metric__label">darkShoulderMix</span><span class="metric__value">0.580</span></div>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+          
+            <section class="family">
+              <header class="family__header">
+                <div class="family__title-row">
+                  <h2>cyan</h2>
+                  <div class="chip">
+                    <span class="chip__dot" style="background:#00CFE8"></span>
+                    exemplar seed · Cyan
+                  </div>
+                  <div class="chip">
+                    seed stop · 300
+                  </div>
+                </div>
+                <p>High-energy cyan where gamut geometry shifts quickly between highlights and shadows.</p>
+              </header>
+              <div class="family__body">
+                <div class="grid grid--summary">
+                  <article class="card">
+                    <h3>Derived Archetype</h3>
+                    <p>Control points averaged in Oklab from the weighted curated corpus.</p>
+                    
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#E4FBFD; color:#111111">
+              <div class="swatch__label">light endpoint</div>
+              <div class="swatch__oklch">oklch(0.972 0.025 202.8)</div>
+              <div class="swatch__hex">#E4FBFD</div>
+            </div>
+          
+            <div class="swatch" style="background:#5DE2F3; color:#111111">
+              <div class="swatch__label">light shoulder</div>
+              <div class="swatch__oklch">oklch(0.846 0.117 207.2)</div>
+              <div class="swatch__hex">#5DE2F3</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#29C9E1; color:#111111">
+              <div class="swatch__label">seed</div>
+              <div class="swatch__oklch">oklch(0.769 0.126 211.0)</div>
+              <div class="swatch__hex">#29C9E1</div>
+            </div>
+          
+            <div class="swatch" style="background:#16ACC6; color:#f8f8f8">
+              <div class="swatch__label">dark shoulder</div>
+              <div class="swatch__oklch">oklch(0.687 0.117 213.9)</div>
+              <div class="swatch__hex">#16ACC6</div>
+            </div>
+          
+            <div class="swatch" style="background:#02242E; color:#f8f8f8">
+              <div class="swatch__label">dark endpoint</div>
+              <div class="swatch__oklch">oklch(0.241 0.043 223.8)</div>
+              <div class="swatch__hex">#02242E</div>
+            </div>
+          
+    </div>
+  
+                  </article>
+                  <article class="card">
+                    <h3>Wassily Exemplar Ramp</h3>
+                    <p>The current arc-length ramp generated for the canonical family seed.</p>
+                    
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#E5FBFD; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.973 0.024 202.8)</div>
+              <div class="swatch__hex">#E5FBFD</div>
+            </div>
+          
+            <div class="swatch" style="background:#ABEFF8; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.910 0.069 207.1)</div>
+              <div class="swatch__hex">#ABEFF8</div>
+            </div>
+          
+            <div class="swatch" style="background:#6CDEF0; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.842 0.107 209.0)</div>
+              <div class="swatch__hex">#6CDEF0</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#00CEE7; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.780 0.135 210.0)</div>
+              <div class="swatch__hex">#00CEE7</div>
+            </div>
+          
+            <div class="swatch" style="background:#00B1C7; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.696 0.121 210.6)</div>
+              <div class="swatch__hex">#00B1C7</div>
+            </div>
+          
+            <div class="swatch" style="background:#0297AB; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.620 0.108 211.4)</div>
+              <div class="swatch__hex">#0297AB</div>
+            </div>
+          
+            <div class="swatch" style="background:#0E7D8F; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.544 0.092 212.4)</div>
+              <div class="swatch__hex">#0E7D8F</div>
+            </div>
+          
+            <div class="swatch" style="background:#136574; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.468 0.077 213.8)</div>
+              <div class="swatch__hex">#136574</div>
+            </div>
+          
+            <div class="swatch" style="background:#0D4E5B; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.391 0.064 215.9)</div>
+              <div class="swatch__hex">#0D4E5B</div>
+            </div>
+          
+            <div class="swatch" style="background:#073743; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.314 0.053 219.0)</div>
+              <div class="swatch__hex">#073743</div>
+            </div>
+          
+            <div class="swatch" style="background:#03232D; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.238 0.041 223.8)</div>
+              <div class="swatch__hex">#03232D</div>
+            </div>
+          
+    </div>
+  
+                  </article>
+                </div>
+
+                <article class="card">
+                  <h3>Reference Corpus</h3>
+                  <div class="reference-list">
+                    
+                          <div class="reference">
+                            <div class="reference__header">
+                              <div>
+                                <strong>wa-cyan-bright</strong>
+                                <p>Web Awesome bright cyan</p>
+                              </div>
+                              <div class="reference__meta">
+                                <div class="chip">weight · 0.50</div>
+                                <div class="chip">anchor · 300</div>
+                              </div>
+                            </div>
+                            <p>Clean cyan reference with cool, bluer darks.</p>
+                            
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#DBF9FC; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.961 0.031 204.0)</div>
+              <div class="swatch__hex">#DBF9FC</div>
+            </div>
+          
+            <div class="swatch" style="background:#A6F2FA; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.914 0.075 204.3)</div>
+              <div class="swatch__hex">#A6F2FA</div>
+            </div>
+          
+            <div class="swatch" style="background:#51DCEE; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.827 0.120 207.3)</div>
+              <div class="swatch__hex">#51DCEE</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#2EBFD5; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.741 0.119 210.5)</div>
+              <div class="swatch__hex">#2EBFD5</div>
+            </div>
+          
+            <div class="swatch" style="background:#1FA3B9; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.659 0.109 212.4)</div>
+              <div class="swatch__hex">#1FA3B9</div>
+            </div>
+          
+            <div class="swatch" style="background:#128095; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.553 0.094 215.2)</div>
+              <div class="swatch__hex">#128095</div>
+            </div>
+          
+            <div class="swatch" style="background:#036273; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.457 0.080 215.3)</div>
+              <div class="swatch__hex">#036273</div>
+            </div>
+          
+            <div class="swatch" style="background:#004C5A; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.384 0.068 215.5)</div>
+              <div class="swatch__hex">#004C5A</div>
+            </div>
+          
+            <div class="swatch" style="background:#003843; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.314 0.056 215.6)</div>
+              <div class="swatch__hex">#003843</div>
+            </div>
+          
+            <div class="swatch" style="background:#002129; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.229 0.041 217.2)</div>
+              <div class="swatch__hex">#002129</div>
+            </div>
+          
+            <div class="swatch" style="background:#00151A; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.180 0.032 213.8)</div>
+              <div class="swatch__hex">#00151A</div>
+            </div>
+          
+    </div>
+  
+                          </div>
+                        
+                          <div class="reference">
+                            <div class="reference__header">
+                              <div>
+                                <strong>tw-cyan-v3</strong>
+                                <p>Tailwind CSS v3 cyan</p>
+                              </div>
+                              <div class="reference__meta">
+                                <div class="chip">weight · 0.50</div>
+                                <div class="chip">anchor · 400</div>
+                              </div>
+                            </div>
+                            <p>Higher-energy cyan reference with vivid midtones and inky shadows.</p>
+                            
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#ECFEFF; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.984 0.019 200.9)</div>
+              <div class="swatch__hex">#ECFEFF</div>
+            </div>
+          
+            <div class="swatch" style="background:#CFFAFE; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.956 0.044 203.4)</div>
+              <div class="swatch__hex">#CFFAFE</div>
+            </div>
+          
+            <div class="swatch" style="background:#A5F3FC; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.917 0.077 205.0)</div>
+              <div class="swatch__hex">#A5F3FC</div>
+            </div>
+          
+            <div class="swatch" style="background:#68E8F9; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.865 0.115 207.1)</div>
+              <div class="swatch__hex">#68E8F9</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#21D3EE; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.797 0.134 211.5)</div>
+              <div class="swatch__hex">#21D3EE</div>
+            </div>
+          
+            <div class="swatch" style="background:#04B6D4; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.715 0.126 215.2)</div>
+              <div class="swatch__hex">#04B6D4</div>
+            </div>
+          
+            <div class="swatch" style="background:#0891B2; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.609 0.111 221.7)</div>
+              <div class="swatch__hex">#0891B2</div>
+            </div>
+          
+            <div class="swatch" style="background:#0D7490; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.520 0.094 223.1)</div>
+              <div class="swatch__hex">#0D7490</div>
+            </div>
+          
+            <div class="swatch" style="background:#155E75; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.450 0.077 224.3)</div>
+              <div class="swatch__hex">#155E75</div>
+            </div>
+          
+            <div class="swatch" style="background:#174E63; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.398 0.066 227.4)</div>
+              <div class="swatch__hex">#174E63</div>
+            </div>
+          
+            <div class="swatch" style="background:#083344; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.302 0.054 229.7)</div>
+              <div class="swatch__hex">#083344</div>
+            </div>
+          
+    </div>
+  
+                          </div>
+                        
+                  </div>
+                </article>
+
+                <div class="grid grid--summary">
+                  <article class="card">
+                    <h3>Ramp Diagnostics</h3>
+                    <div class="metric-grid">
+                      <div class="metric"><span class="metric__label">seed stop</span><span class="metric__value">300</span></div>
+                      <div class="metric"><span class="metric__label">endpoint light</span><span class="metric__value">L 0.973 · C 0.024</span></div>
+                      <div class="metric"><span class="metric__label">endpoint dark</span><span class="metric__value">L 0.238 · C 0.041</span></div>
+                      <div class="metric"><span class="metric__label">max hue drift</span><span class="metric__value">13.8°</span></div>
+                      <div class="metric"><span class="metric__label">distance cv</span><span class="metric__value">0.049</span></div>
+                      <div class="metric"><span class="metric__label">monotone</span><span class="metric__value">yes</span></div>
+                    </div>
+                  </article>
+                  <article class="card">
+                    <h3>Fit Metadata</h3>
+                    <div class="profile-grid">
+                      <div class="metric"><span class="metric__label">lightEndpointThreshold</span><span class="metric__value">0.201</span></div><div class="metric"><span class="metric__label">darkEndpointThreshold</span><span class="metric__value">0.303</span></div><div class="metric"><span class="metric__label">lightEndpointHueOffset</span><span class="metric__value">-7.178</span></div><div class="metric"><span class="metric__label">lightShoulderHueOffset</span><span class="metric__value">-2.798</span></div><div class="metric"><span class="metric__label">darkShoulderHueOffset</span><span class="metric__value">3.901</span></div><div class="metric"><span class="metric__label">darkEndpointHueOffset</span><span class="metric__value">13.796</span></div><div class="metric"><span class="metric__label">lightEndpointIntensityScale</span><span class="metric__value">0.808</span></div><div class="metric"><span class="metric__label">lightEndpointIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightShoulderIntensityScale</span><span class="metric__value">0.780</span></div><div class="metric"><span class="metric__label">lightShoulderIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkShoulderIntensityScale</span><span class="metric__value">0.937</span></div><div class="metric"><span class="metric__label">darkShoulderIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkEndpointIntensityScale</span><span class="metric__value">0.918</span></div><div class="metric"><span class="metric__label">darkEndpointIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightShoulderMix</span><span class="metric__value">0.360</span></div><div class="metric"><span class="metric__label">darkShoulderMix</span><span class="metric__value">0.580</span></div>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+          
+            <section class="family">
+              <header class="family__header">
+                <div class="family__title-row">
+                  <h2>neutral</h2>
+                  <div class="chip">
+                    <span class="chip__dot" style="background:#8D847B"></span>
+                    exemplar seed · Warm Neutral
+                  </div>
+                  <div class="chip">
+                    seed stop · 500
+                  </div>
+                </div>
+                <p>Warm gray / bone family for neutral-specific behavior and temperature handling.</p>
+              </header>
+              <div class="family__body">
+                <div class="grid grid--summary">
+                  <article class="card">
+                    <h3>Derived Archetype</h3>
+                    <p>Control points averaged in Oklab from the weighted curated corpus.</p>
+                    
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#F6F7F9; color:#111111">
+              <div class="swatch__label">light endpoint</div>
+              <div class="swatch__oklch">oklch(0.976 0.002 257.9)</div>
+              <div class="swatch__hex">#F6F7F9</div>
+            </div>
+          
+            <div class="swatch" style="background:#A0A7B4; color:#111111">
+              <div class="swatch__label">light shoulder</div>
+              <div class="swatch__oklch">oklch(0.727 0.020 263.2)</div>
+              <div class="swatch__hex">#A0A7B4</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#777F8E; color:#f8f8f8">
+              <div class="swatch__label">seed</div>
+              <div class="swatch__oklch">oklch(0.594 0.025 264.1)</div>
+              <div class="swatch__hex">#777F8E</div>
+            </div>
+          
+            <div class="swatch" style="background:#576070; color:#f8f8f8">
+              <div class="swatch__label">dark shoulder</div>
+              <div class="swatch__oklch">oklch(0.487 0.028 263.7)</div>
+              <div class="swatch__hex">#576070</div>
+            </div>
+          
+            <div class="swatch" style="background:#060B19; color:#f8f8f8">
+              <div class="swatch__label">dark endpoint</div>
+              <div class="swatch__oklch">oklch(0.153 0.032 267.6)</div>
+              <div class="swatch__hex">#060B19</div>
+            </div>
+          
+    </div>
+  
+                  </article>
+                  <article class="card">
+                    <h3>Wassily Exemplar Ramp</h3>
+                    <p>The current arc-length ramp generated for the canonical family seed.</p>
+                    
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#FAF8F6; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.003 70.0)</div>
+              <div class="swatch__hex">#FAF8F6</div>
+            </div>
+          
+            <div class="swatch" style="background:#E6E0D9; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.909 0.011 70.0)</div>
+              <div class="swatch__hex">#E6E0D9</div>
+            </div>
+          
+            <div class="swatch" style="background:#D1C8BE; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.837 0.018 70.0)</div>
+              <div class="swatch__hex">#D1C8BE</div>
+            </div>
+          
+            <div class="swatch" style="background:#BAB1A7; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.765 0.018 70.0)</div>
+              <div class="swatch__hex">#BAB1A7</div>
+            </div>
+          
+            <div class="swatch" style="background:#A49B91; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.694 0.018 70.0)</div>
+              <div class="swatch__hex">#A49B91</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#8D847B; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.620 0.018 70.0)</div>
+              <div class="swatch__hex">#8D847B</div>
+            </div>
+          
+            <div class="swatch" style="background:#777068; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.550 0.015 70.0)</div>
+              <div class="swatch__hex">#777068</div>
+            </div>
+          
+            <div class="swatch" style="background:#625C56; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.479 0.012 70.0)</div>
+              <div class="swatch__hex">#625C56</div>
+            </div>
+          
+            <div class="swatch" style="background:#4D4944; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.407 0.010 70.0)</div>
+              <div class="swatch__hex">#4D4944</div>
+            </div>
+          
+            <div class="swatch" style="background:#3A3631; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.335 0.011 70.0)</div>
+              <div class="swatch__hex">#3A3631</div>
+            </div>
+          
+            <div class="swatch" style="background:#29241F; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.263 0.012 70.0)</div>
+              <div class="swatch__hex">#29241F</div>
+            </div>
+          
+    </div>
+  
+                  </article>
+                </div>
+
+                <article class="card">
+                  <h3>Reference Corpus</h3>
+                  <div class="reference-list">
+                    
+                          <div class="reference">
+                            <div class="reference__header">
+                              <div>
+                                <strong>wa-gray-bright</strong>
+                                <p>Web Awesome bright gray</p>
+                              </div>
+                              <div class="reference__meta">
+                                <div class="chip">weight · 0.35</div>
+                                <div class="chip">anchor · 400</div>
+                              </div>
+                            </div>
+                            <p>Cool neutral structure reference with more visible chroma in the mids.</p>
+                            
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#F1F2F5; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.961 0.004 271.4)</div>
+              <div class="swatch__hex">#F1F2F5</div>
+            </div>
+          
+            <div class="swatch" style="background:#E4E6EB; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.925 0.007 268.5)</div>
+              <div class="swatch__hex">#E4E6EB</div>
+            </div>
+          
+            <div class="swatch" style="background:#C5CAD5; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.838 0.016 266.3)</div>
+              <div class="swatch__hex">#C5CAD5</div>
+            </div>
+          
+            <div class="swatch" style="background:#A8AFBF; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.754 0.024 266.9)</div>
+              <div class="swatch__hex">#A8AFBF</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#8C95AA; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.670 0.033 267.1)</div>
+              <div class="swatch__hex">#8C95AA</div>
+            </div>
+          
+            <div class="swatch" style="background:#6A7591; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.564 0.045 268.1)</div>
+              <div class="swatch__hex">#6A7591</div>
+            </div>
+          
+            <div class="swatch" style="background:#4A597A; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.465 0.057 265.4)</div>
+              <div class="swatch__hex">#4A597A</div>
+            </div>
+          
+            <div class="swatch" style="background:#384565; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.394 0.057 266.9)</div>
+              <div class="swatch__hex">#384565</div>
+            </div>
+          
+            <div class="swatch" style="background:#26314F; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.318 0.056 267.9)</div>
+              <div class="swatch__hex">#26314F</div>
+            </div>
+          
+            <div class="swatch" style="background:#131C38; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.235 0.056 268.5)</div>
+              <div class="swatch__hex">#131C38</div>
+            </div>
+          
+            <div class="swatch" style="background:#0A1127; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.185 0.046 268.4)</div>
+              <div class="swatch__hex">#0A1127</div>
+            </div>
+          
+    </div>
+  
+                          </div>
+                        
+                          <div class="reference">
+                            <div class="reference__header">
+                              <div>
+                                <strong>tw-slate-v3</strong>
+                                <p>Tailwind CSS v3 slate</p>
+                              </div>
+                              <div class="reference__meta">
+                                <div class="chip">weight · 0.40</div>
+                                <div class="chip">anchor · 500</div>
+                              </div>
+                            </div>
+                            <p>Cool neutral reference with blue-gray bias.</p>
+                            
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#F8FAFC; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.984 0.003 247.9)</div>
+              <div class="swatch__hex">#F8FAFC</div>
+            </div>
+          
+            <div class="swatch" style="background:#F1F5F9; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.968 0.007 247.9)</div>
+              <div class="swatch__hex">#F1F5F9</div>
+            </div>
+          
+            <div class="swatch" style="background:#E2E8F0; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.929 0.013 255.5)</div>
+              <div class="swatch__hex">#E2E8F0</div>
+            </div>
+          
+            <div class="swatch" style="background:#CBD5E1; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.869 0.020 252.9)</div>
+              <div class="swatch__hex">#CBD5E1</div>
+            </div>
+          
+            <div class="swatch" style="background:#94A3B8; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.711 0.035 256.8)</div>
+              <div class="swatch__hex">#94A3B8</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#64748B; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.554 0.041 257.4)</div>
+              <div class="swatch__hex">#64748B</div>
+            </div>
+          
+            <div class="swatch" style="background:#475569; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.446 0.037 257.3)</div>
+              <div class="swatch__hex">#475569</div>
+            </div>
+          
+            <div class="swatch" style="background:#334155; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.372 0.039 257.3)</div>
+              <div class="swatch__hex">#334155</div>
+            </div>
+          
+            <div class="swatch" style="background:#1E293B; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.279 0.037 260.0)</div>
+              <div class="swatch__hex">#1E293B</div>
+            </div>
+          
+            <div class="swatch" style="background:#0F172A; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.208 0.040 265.8)</div>
+              <div class="swatch__hex">#0F172A</div>
+            </div>
+          
+            <div class="swatch" style="background:#020617; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.129 0.041 264.7)</div>
+              <div class="swatch__hex">#020617</div>
+            </div>
+          
+    </div>
+  
+                          </div>
+                        
+                          <div class="reference">
+                            <div class="reference__header">
+                              <div>
+                                <strong>tw-stone-v3</strong>
+                                <p>Tailwind CSS v3 stone</p>
+                              </div>
+                              <div class="reference__meta">
+                                <div class="chip">weight · 0.25</div>
+                                <div class="chip">anchor · 500</div>
+                              </div>
+                            </div>
+                            <p>Warm neutral reference with bone-to-umber progression.</p>
+                            
+    <div class="swatch-strip">
+      
+            <div class="swatch" style="background:#FAFAF9; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.985 0.001 106.4)</div>
+              <div class="swatch__hex">#FAFAF9</div>
+            </div>
+          
+            <div class="swatch" style="background:#F5F5F4; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.970 0.001 106.4)</div>
+              <div class="swatch__hex">#F5F5F4</div>
+            </div>
+          
+            <div class="swatch" style="background:#E7E5E4; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.923 0.003 48.7)</div>
+              <div class="swatch__hex">#E7E5E4</div>
+            </div>
+          
+            <div class="swatch" style="background:#D6D3D1; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.869 0.004 56.4)</div>
+              <div class="swatch__hex">#D6D3D1</div>
+            </div>
+          
+            <div class="swatch" style="background:#A8A29E; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.716 0.009 56.3)</div>
+              <div class="swatch__hex">#A8A29E</div>
+            </div>
+          
+            <div class="swatch swatch--anchor" style="background:#78716C; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.553 0.012 58.1)</div>
+              <div class="swatch__hex">#78716C</div>
+            </div>
+          
+            <div class="swatch" style="background:#57534E; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.444 0.010 73.6)</div>
+              <div class="swatch__hex">#57534E</div>
+            </div>
+          
+            <div class="swatch" style="background:#44403C; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.374 0.009 67.6)</div>
+              <div class="swatch__hex">#44403C</div>
+            </div>
+          
+            <div class="swatch" style="background:#292524; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.268 0.006 34.3)</div>
+              <div class="swatch__hex">#292524</div>
+            </div>
+          
+            <div class="swatch" style="background:#1C1917; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.216 0.006 56.0)</div>
+              <div class="swatch__hex">#1C1917</div>
+            </div>
+          
+            <div class="swatch" style="background:#0C0A09; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.147 0.004 49.2)</div>
+              <div class="swatch__hex">#0C0A09</div>
+            </div>
+          
+    </div>
+  
+                          </div>
+                        
+                  </div>
+                </article>
+
+                <div class="grid grid--summary">
+                  <article class="card">
+                    <h3>Ramp Diagnostics</h3>
+                    <div class="metric-grid">
+                      <div class="metric"><span class="metric__label">seed stop</span><span class="metric__value">500</span></div>
+                      <div class="metric"><span class="metric__label">endpoint light</span><span class="metric__value">L 0.980 · C 0.003</span></div>
+                      <div class="metric"><span class="metric__label">endpoint dark</span><span class="metric__value">L 0.263 · C 0.012</span></div>
+                      <div class="metric"><span class="metric__label">max hue drift</span><span class="metric__value">0.0°</span></div>
+                      <div class="metric"><span class="metric__label">distance cv</span><span class="metric__value">0.012</span></div>
+                      <div class="metric"><span class="metric__label">monotone</span><span class="metric__value">yes</span></div>
+                    </div>
+                  </article>
+                  <article class="card">
+                    <h3>Fit Metadata</h3>
+                    <div class="profile-grid">
+                      <div class="metric"><span class="metric__label">lightEndpointThreshold</span><span class="metric__value">0.050</span></div><div class="metric"><span class="metric__label">darkEndpointThreshold</span><span class="metric__value">0.333</span></div><div class="metric"><span class="metric__label">lightEndpointHueOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightShoulderHueOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkShoulderHueOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkEndpointHueOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightEndpointIntensityScale</span><span class="metric__value">1.500</span></div><div class="metric"><span class="metric__label">lightEndpointIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightShoulderIntensityScale</span><span class="metric__value">1.071</span></div><div class="metric"><span class="metric__label">lightShoulderIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkShoulderIntensityScale</span><span class="metric__value">0.779</span></div><div class="metric"><span class="metric__label">darkShoulderIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">darkEndpointIntensityScale</span><span class="metric__value">1.500</span></div><div class="metric"><span class="metric__label">darkEndpointIntensityOffset</span><span class="metric__value">0.000</span></div><div class="metric"><span class="metric__label">lightShoulderMix</span><span class="metric__value">0.380</span></div><div class="metric"><span class="metric__label">darkShoulderMix</span><span class="metric__value">0.560</span></div>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+          
+    </main>
+  </body>
+</html>

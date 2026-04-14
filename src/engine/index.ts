@@ -12,6 +12,18 @@ export {
 } from "./gamut";
 export { generateRamp, nameForHue } from "./ramp";
 export {
+  CURATED_FAMILY_PROFILE_FITS,
+  CURATED_REFERENCE_CORPUS,
+  FAMILY_PROFILES,
+} from "./familyProfiles";
+export {
+  RESEARCH_SEEDS,
+  analyzeRamp,
+  evaluateSeed,
+  evaluateSeedSuite,
+  researchSeedToRampConfig,
+} from "./research";
+export {
   checkContrast,
   contrastRatio,
   WHITE,
