@@ -226,55 +226,58 @@ The reference image persists on the canvas at full opacity. You can:
 
 ---
 
-## Ramp Generation (v3 Engine)
+## Ramp Generation (v4 Engine)
 
 ### Architecture
 
-The ramp engine uses **arc-length parameterized OKLab interpolation** — three anchor points (tinted white → seed → hue-drifted dark) interpolated in Cartesian OKLab, sampled at equal Euclidean distances. One algorithm adapts to every seed through geometry, not branching.
+The ramp engine uses **archetype-controlled arc-length OKLab interpolation** — three anchor points in OKLab (tinted white → seed → hue-drifted dark), interpolated in Cartesian OKLab and sampled at equal Euclidean distances. What changes per color family is where the endpoints sit; the path geometry is universal.
 
-The core insight: instead of computing each channel (L, C, H) independently with parametric curves, interpolate a straight-line path through 3D OKLab space. This eliminates chroma discontinuities at the seed and distributes color change perceptually evenly.
+The core insight: **path geometry provides evenness, archetype endpoints provide character.** v3 proved arc-length OKLab makes ramps even by construction. v4 keeps that backbone and layers archetypal behavior into the anchor positions — so lime gets tinted highlights and warm-drifting darks while ultramarine gets clean highlights and rich deep retention, all from the same algorithm.
 
 ### The Opinions
 
 When a swatch is promoted to a ramp, four opinions shape the gradient:
 
-#### 1. Three Anchor Points
+#### 1. Three Archetype-Controlled Anchor Points
 
-- **White endpoint** (L=0.96): Tinted with the seed's hue at max gamut chroma, scaled by seed intensity. L=0.96 (not 0.98) so the gamut has room for visible chroma — at 0.98, most hues get C≈0.009.
+- **Light endpoint** (L=0.96, or seedL if lighter): Hue shifted by archetype's `lightHueOffset`, chroma scaled by archetype's `lightChromaScale` × seed intensity.
 - **Seed**: The user's chosen color, snapped to the nearest arc-length stop.
-- **Dark endpoint** (L=0.25): Hue-drifted toward amber with gamut-relative chroma, scaled by seed intensity.
+- **Dark endpoint** (L=0.25, or seedL − 0.05 if darker): Hue shifted by archetype's `darkHueOffset`, chroma scaled by `darkChromaScale` × seed intensity.
 
-#### 2. Arc-Length Parameterization
+L=0.96 (not 0.98) for the light endpoint so the sRGB gamut has room for visible chroma — at 0.98, most hues get C≈0.009.
 
-Stops are placed at equal OKLab Euclidean distances along the white→seed→dark path. The seed naturally falls wherever its perceptual distance from white places it — light seeds near the top, dark seeds near the bottom, mid-tones near center. The nearest stop is replaced with the seed's exact color.
+#### 2. Archetype Landmarks
 
-This adapts to seed properties through math alone:
+Phase 1 defines 4 landmarks on the hue wheel, each with 4 knobs:
+
+| Landmark | Hue | lightChroma | lightHueΔ | darkChroma | darkHueΔ |
+|----------|-----|-------------|-----------|------------|----------|
+| Lime     | 100 | 1.0         | −3°       | 1.0        | −40°     |
+| Cyan     | 195 | 1.0         | −2°       | 1.0        | +8°      |
+| Ultramarine | 265 | 1.0      | 0°        | 1.0        | −5°      |
+| Orange   | 30  | 1.0         | −2°       | 1.0        | +5°      |
+
+Every seed hue gets a **weighted blend** of all landmarks via circular Gaussian weights (spread 40°). No buckets — phthalo green (H≈165) is naturally a green-cyan blend, magenta is a red-violet blend.
+
+#### 3. Arc-Length Parameterization
+
+Stops are placed at equal OKLab Euclidean distances along the white→seed→dark path. The seed naturally falls wherever its perceptual distance from the light endpoint places it:
+
 - Light vivid seeds → few light stops, many dark (seed ≈ stop 100-200)
 - Mid-tone seeds → balanced (seed ≈ stop 500)
 - Dark seeds → many light stops, few dark (seed ≈ stop 800-900)
-- Vivid seeds → dramatic chroma curves
-- Muted seeds → gentle gradients
 
-#### 3. Hue Drift (target-based toward amber)
-
-Encoded in the dark endpoint and distributed smoothly via the OKLab path:
-
-- **Yellow-green zone** (H 60-130): aggressive drift (up to 55°) toward amber. Prevents olive in dark greens/yellows.
-- **Teal zone** (H 130-180): tapering drift.
-- **Blue/purple/red** (everything else): subtle base drift of up to +8°.
-
-The OKLab interpolation distributes the hue rotation continuously across the dark stops — no per-stop easing functions needed.
+The nearest stop is replaced with the seed's exact color for perfect preservation.
 
 #### 4. Gamut Safety
 
-Every color is in-gamut for sRGB. When desired chroma exceeds the boundary, chroma is reduced (never lightness). No clipping, ever. Uses culori's `clampChroma` for final safety.
+Every color is in-gamut for sRGB. When desired chroma exceeds the boundary, chroma is reduced (never lightness). Uses culori's `clampChroma` for final safety. If the seed is at or beyond the default endpoints, they expand to bracket it (prevents path doubling back).
 
-### What Changed from v2
+### What Changed from v3
 
-- **Parametric curves → OKLab interpolation** — L/C/H no longer computed independently. The straight-line OKLab path ties them together, eliminating chroma discontinuities.
-- **Power-curve anchoring → arc-length sampling** — the seed's position is determined by perceptual distance, not a lightness exponent.
-- **Flat gamut-relative chroma → OKLab-distributed chroma** — chroma peaks at the seed and falls off smoothly toward both endpoints via the interpolation path.
-- **Per-stop hue drift → endpoint-encoded drift** — hue shift is in the dark endpoint; OKLab distributes it naturally.
+- **Universal hue drift → archetype blending** — amber-target drift replaced by per-family hue offsets blended continuously around the wheel. Lime stops getting muddy olive; ultramarine stops getting purple-washed.
+- **Fixed endpoint chroma → archetype-scaled chroma** — per-family control over how much color to carry into highlights and darks.
+- **Single universal curve → family character** — every ramp still uses the same perceptually-even backbone, but the color family identity is preserved.
 
 ### Variable Stop Counts
 
@@ -485,7 +488,7 @@ Single container `<div>` with `transform: translate(x, y) scale(z)`. Swatches an
 
 **Purification:** Convert input to OKLCH. Hold H. Find max C at current L. Optionally sweep L for the hue's chroma peak. Neutrals (C < 0.05) bypass purification.
 
-**Ramp generation (v3):** Three OKLab anchors: tinted white (L=0.96, gamut-max chroma) → seed → dark (L=0.25, hue-drifted, gamut-max chroma). Both endpoints scaled by seedIntensity. Compute OKLab Euclidean distances for each segment. Sample stops at equal arc-length intervals. Snap nearest stop to seed's exact color. Clamp to gamut. Generate parallel dark mode variant.
+**Ramp generation (v4):** Blend archetype landmarks (lime, cyan, ultramarine, orange) via circular Gaussian weights for the seed's hue. Build three OKLab anchors with archetype-controlled endpoints: light (L=0.96, `lightHueOffset`, `lightChromaScale` × seedIntensity × gamut max), seed, dark (L=0.25, `darkHueOffset`, `darkChromaScale` × seedIntensity × gamut max). Compute OKLab Euclidean distances for each segment. Sample stops at equal arc-length intervals. Snap nearest stop to seed's exact color. Clamp to gamut. Generate parallel dark mode variant.
 
 **Harmonization:** For selected hues, measure angular distances. Compare to harmonic targets (30/90/120/150/180). Minimize total displacement. Split adjustment evenly (unless one is locked).
 
