@@ -35,7 +35,7 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 
 ## Architecture
 
-- `src/engine/` — color science (purification, ramp generation v2, harmonization, image extraction, gamut mapping)
+- `src/engine/` — color science (purification, ramp generation v3, harmonization, image extraction, gamut mapping)
 - `src/canvas/` — spatial canvas (camera, pan/zoom, coordinate system, object placement)
 - `src/components/` — React UI (swatches, ramp strips, reference images, context menus, harmonize feedback overlay, board bar)
 - `src/state/` — canvas state management (useReducer + undo history), board persistence, MCP bridge hook
@@ -55,11 +55,13 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 
 - **Color as primitive** — right-click = swatch. R = promote to ramp. Ramp is derived, not default. Click on empty space ONLY deselects.
 - **Purification** — every color that enters is maximized to peak chroma at its hue. Neutrals (C < `NEUTRAL_CHROMA` = 0.05 from `gamut.ts`) bypass purification. Exception: image extraction uses normalize-to-peak instead of max purification (see below).
-- **Ramp engine v2** — easing curves + gamut-relative chroma. No bell curves or lookup tables. The gamut boundary IS the shape.
-  - Lightness: easeInQuad from 0.98 to 0.25
-  - Chroma: flat 92% of gamut max, scaled by seedIntensity
-  - Hue drift: target-based toward amber (H~55), easeInCubic for darks, with hue-dependent intensity
-  - seedIntensity: calibrates the whole ramp based on how vivid the seed is relative to gamut max
+- **Ramp engine v3** — arc-length parameterized 3-point OKLab interpolation. Adapts to every seed through geometry, not branching.
+  - Three anchors: tinted white (L=0.96, max gamut chroma) → seed → hue-drifted dark (L=0.25, amber warming)
+  - Interpolation: Cartesian OKLab (no chroma dips), sampled at equal Euclidean distances for perceptually even steps
+  - Seed placement: arc-length determines position naturally — light seeds near top, dark near bottom, mid-tones centered
+  - Seed snapping: nearest stop is replaced with the seed's exact color
+  - seedIntensity: scales both endpoints' chroma based on how vivid the seed is relative to gamut max
+  - Hue drift: encoded in the dark endpoint, distributed smoothly via OKLab path (no per-stop easing)
 - **Always vivid display** — ramps show `stop.color` (vivid) in the tool. Dark variants (`stop.darkColor`) are for export only.
 - **Harmonization** — select 2+ objects, press H, hues snap to nearest harmonic geometry. Feedback overlay: "RELATIONSHIP · ANGLE" centered on screen for 1.2s (via `HarmonizeLabel.tsx`). Press H again to cycle: 2 objects cycle relationship types (analogous→triadic→complementary...), 3+ objects rotate the harmonic frame. Cycling replaces the previous strip (no accumulation). Already-harmonized colors show "ALREADY X" feedback. Uses optimal cyclic assignment with locked-hue pre-assignment for 3+ objects.
 - **Image extraction** — drop/paste an image, get 3-7 adaptive dominant colors in OKLCH space. K-means in OKLCH with three key refinements: gamut-relative scoring (eliminates yellow/cyan bias), boosted hue weight in distance (2.5x, separates distinct hues), peak-chroma representatives (most vivid pixel per cluster, not averaged centroid). Normalize-to-peak chroma scaling preserves the image's relative intensity relationships — the loudest color hits 95% of gamut max, quieter colors scale proportionally. Distinctiveness culling ensures palette spread (threshold 0.08 in OKLCH distance). Neutrals (C < 0.04) pass through unchanged. Single-color images still get full purification.

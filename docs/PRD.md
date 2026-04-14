@@ -226,56 +226,55 @@ The reference image persists on the canvas at full opacity. You can:
 
 ---
 
-## Ramp Generation (v2 Engine)
+## Ramp Generation (v3 Engine)
 
 ### Architecture
 
-The ramp engine uses **parametric easing curves** and **gamut-relative chroma**, not fixed lookup tables or bell curves. This is the fundamental design decision.
+The ramp engine uses **arc-length parameterized OKLab interpolation** — three anchor points (tinted white → seed → hue-drifted dark) interpolated in Cartesian OKLab, sampled at equal Euclidean distances. One algorithm adapts to every seed through geometry, not branching.
 
-The gamut boundary itself provides all the shaping. The engine asks: "at this lightness and hue, what's the maximum chroma the sRGB gamut allows?" and uses a flat percentage of that. No artificial bell curve or edge rolloff needed — the gamut's natural shape creates organic chroma contouring.
+The core insight: instead of computing each channel (L, C, H) independently with parametric curves, interpolate a straight-line path through 3D OKLab space. This eliminates chroma discontinuities at the seed and distributes color change perceptually evenly.
 
 ### The Opinions
 
-When a swatch is promoted to a ramp, four opinions shape every stop:
+When a swatch is promoted to a ramp, four opinions shape the gradient:
 
-#### 1. Gamut-Relative Chroma (flat percentage)
+#### 1. Three Anchor Points
 
-Chroma at each stop = **92% of the maximum available chroma** at that stop's (L, H) position in the sRGB gamut.
+- **White endpoint** (L=0.96): Tinted with the seed's hue at max gamut chroma, scaled by seed intensity. L=0.96 (not 0.98) so the gamut has room for visible chroma — at 0.98, most hues get C≈0.009.
+- **Seed**: The user's chosen color, snapped to the nearest arc-length stop.
+- **Dark endpoint** (L=0.25): Hue-drifted toward amber with gamut-relative chroma, scaled by seed intensity.
 
-The gamut boundary rolls off naturally at extreme lightness, so light stops get low chroma and dark stops get moderate chroma without any artificial curve. This is the engine's core insight: the gamut boundary IS the shape.
+#### 2. Arc-Length Parameterization
 
-**Seed intensity calibration:** The 92% base is scaled by `seedIntensity` — how vivid the seed swatch is relative to the gamut maximum at its lightness. A vivid seed pushes the whole ramp more saturated. A muted seed keeps it restrained. Seeds from images get a 1.2x boost (capped at 1.0) since extracted colors may be below their potential.
+Stops are placed at equal OKLab Euclidean distances along the white→seed→dark path. The seed naturally falls wherever its perceptual distance from white places it — light seeds near the top, dark seeds near the bottom, mid-tones near center. The nearest stop is replaced with the seed's exact color.
 
-#### 2. Non-Linear Lightness (easeInQuad)
-
-Lightness uses `easeInQuad` from L=0.98 (lightest) to L=0.25 (darkest):
-
-```
-lightnessAt(t) = 0.98 - (0.98 - 0.25) * t^2
-```
-
-This stays bright for light stops, then drops steeply for darks. More resolution in the workhorse light/mid range, compressed darks. Matches Tailwind v4's lightness distribution.
+This adapts to seed properties through math alone:
+- Light vivid seeds → few light stops, many dark (seed ≈ stop 100-200)
+- Mid-tone seeds → balanced (seed ≈ stop 500)
+- Dark seeds → many light stops, few dark (seed ≈ stop 800-900)
+- Vivid seeds → dramatic chroma curves
+- Muted seeds → gentle gradients
 
 #### 3. Hue Drift (target-based toward amber)
 
-Dark stops drift toward amber (H~55) with hue-dependent intensity:
+Encoded in the dark endpoint and distributed smoothly via the OKLab path:
 
-- **Cool highlight lift** (t < 0.3): up to -4 degrees cooler. Crispness in the highlights.
-- **Yellow-green zone** (H 60-130): aggressive drift (up to 55 degrees) toward amber using easeInCubic. Prevents olive in dark greens/yellows.
+- **Yellow-green zone** (H 60-130): aggressive drift (up to 55°) toward amber. Prevents olive in dark greens/yellows.
 - **Teal zone** (H 130-180): tapering drift.
-- **Blue/purple/red** (everything else): subtle base drift of up to +8 degrees using easeInQuad.
+- **Blue/purple/red** (everything else): subtle base drift of up to +8°.
 
-The drift is target-based — it calculates the angular distance to H=55 (amber) and uses a proximity-based intensity. Yellow-green hues need massive rotation to avoid olive; blue/red/purple need only subtle warming.
+The OKLab interpolation distributes the hue rotation continuously across the dark stops — no per-stop easing functions needed.
 
 #### 4. Gamut Safety
 
 Every color is in-gamut for sRGB. When desired chroma exceeds the boundary, chroma is reduced (never lightness). No clipping, ever. Uses culori's `clampChroma` for final safety.
 
-### What Was Removed from v1
+### What Changed from v2
 
-- **Bell curve chroma contouring** — replaced by flat gamut-relative percentage. The gamut boundary provides the shape.
-- **No Muddy Middle opinion** — the gamut-relative approach eliminates muddy middles naturally.
-- **Fixed lookup tables** — replaced by parametric easing curves.
+- **Parametric curves → OKLab interpolation** — L/C/H no longer computed independently. The straight-line OKLab path ties them together, eliminating chroma discontinuities.
+- **Power-curve anchoring → arc-length sampling** — the seed's position is determined by perceptual distance, not a lightness exponent.
+- **Flat gamut-relative chroma → OKLab-distributed chroma** — chroma peaks at the seed and falls off smoothly toward both endpoints via the interpolation path.
+- **Per-stop hue drift → endpoint-encoded drift** — hue shift is in the dark endpoint; OKLab distributes it naturally.
 
 ### Variable Stop Counts
 
@@ -486,7 +485,7 @@ Single container `<div>` with `transform: translate(x, y) scale(z)`. Swatches an
 
 **Purification:** Convert input to OKLCH. Hold H. Find max C at current L. Optionally sweep L for the hue's chroma peak. Neutrals (C < 0.05) bypass purification.
 
-**Ramp generation (v2):** Given seed hue + stop count, compute t (0-1) for each stop. Apply easeInQuad for lightness (0.98 to 0.25). Compute gamut max chroma at each (L, H). Apply flat 92% * seedIntensity. Apply hue drift (target-based toward amber, easeInCubic). Clamp to gamut. Generate parallel dark mode variant.
+**Ramp generation (v3):** Three OKLab anchors: tinted white (L=0.96, gamut-max chroma) → seed → dark (L=0.25, hue-drifted, gamut-max chroma). Both endpoints scaled by seedIntensity. Compute OKLab Euclidean distances for each segment. Sample stops at equal arc-length intervals. Snap nearest stop to seed's exact color. Clamp to gamut. Generate parallel dark mode variant.
 
 **Harmonization:** For selected hues, measure angular distances. Compare to harmonic targets (30/90/120/150/180). Minimize total displacement. Split adjustment evenly (unless one is locked).
 
