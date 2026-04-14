@@ -9,6 +9,7 @@
 
 import type { OklchColor, RampStop, RampConfig, StopPreset } from "../types";
 import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "./gamut";
+import { interpolate, oklch as toOklch, oklab as toOklab } from "culori";
 
 // ---- Stop Presets ----
 
@@ -56,77 +57,6 @@ const L_MIN = 0.25;
  */
 function lightnessAt(t: number): number {
   return L_MAX - (L_MAX - L_MIN) * easeInQuad(t);
-}
-
-/**
- * Seed-anchored lightness curve.
- *
- * Uses a single power curve L = L_MAX - (L_MAX - L_MIN) * t^p where
- * the exponent p is chosen so the anchor stop lands exactly on the
- * seed's lightness. This is a smooth, continuous curve with no kinks —
- * just a gentler or steeper version of the base easeInQuad.
- */
-function lightnessAtAnchored(t: number, exponent: number): number {
-  if (t <= 0) return L_MAX;
-  if (t >= 1) return L_MIN;
-  return L_MAX - (L_MAX - L_MIN) * Math.pow(t, exponent);
-}
-
-/**
- * Find the stop t-value nearest to where the seed's lightness naturally falls,
- * and compute the power exponent that makes the curve pass through seedL there.
- */
-function findAnchorStop(
-  seedL: number,
-  stopCount: number,
-): { tAnchor: number; anchorIndex: number; exponent: number } {
-  // Clamp seedL to valid range
-  const sL = Math.max(L_MIN + 0.01, Math.min(L_MAX - 0.01, seedL));
-
-  // Where seedL falls in the default easeInQuad curve
-  const ratio = (L_MAX - sL) / (L_MAX - L_MIN);
-  const tSeed = Math.sqrt(Math.max(0, Math.min(1, ratio)));
-
-  // Find nearest stop
-  let bestIndex = 0;
-  let bestDist = Infinity;
-  for (let i = 0; i < stopCount; i++) {
-    const t = stopCount > 1 ? i / (stopCount - 1) : 0.5;
-    const dist = Math.abs(t - tSeed);
-    if (dist < bestDist) {
-      bestDist = dist;
-      bestIndex = i;
-    }
-  }
-
-  const tAnchor = stopCount > 1 ? bestIndex / (stopCount - 1) : 0.5;
-
-  // Solve for exponent: sL = L_MAX - (L_MAX - L_MIN) * tAnchor^p
-  // → ratio = tAnchor^p → p = log(ratio) / log(tAnchor)
-  let exponent = 2; // default (matches easeInQuad)
-  if (tAnchor > 0.01 && tAnchor < 0.99 && ratio > 0.001 && ratio < 0.999) {
-    exponent = Math.log(ratio) / Math.log(tAnchor);
-    // Keep exponent reasonable — stay between linear (1) and cubic (3)
-    exponent = Math.max(1.2, Math.min(3.0, exponent));
-  }
-
-  return { tAnchor, anchorIndex: bestIndex, exponent };
-}
-
-// ---- Chroma Curve ----
-
-/**
- * Chroma intensity curve — gamut-relative.
- *
- * Returns a value 0-1 representing what fraction of the gamut
- * maximum to use at this position in the ramp. seedIntensity is
- * the seed's raw gamut-relative chroma ratio, so the ramp naturally
- * reproduces the seed's chroma at its anchor stop.
- */
-function chromaIntensityAt(_t: number, seedIntensity: number): number {
-  // Direct gamut-relative scaling. clampToGamut handles boundary safety.
-  // The gamut boundary itself shapes the curve at extreme lightness.
-  return seedIntensity;
 }
 
 // ---- Hue Drift ----
@@ -228,6 +158,107 @@ function generateNeutralStop(
   return { light, dark };
 }
 
+// ---- OKLab Arc-Length Interpolation ----
+
+/**
+ * Arc-length parameterized 3-point OKLab interpolation.
+ *
+ * Three anchors: tinted white → seed → hue-drifted dark, interpolated
+ * in Cartesian OKLab. Stops are sampled at equal OKLab Euclidean distances
+ * along the two-segment path, giving perceptually even steps.
+ *
+ * The seed naturally falls wherever its OKLab distance from white places it —
+ * light seeds land near the top, dark seeds near the bottom, mid-tones near
+ * the center. No explicit seed classification needed; the geometry adapts.
+ *
+ * The white endpoint is tinted (max gamut chroma at L_MAX, scaled by seed
+ * intensity) so the lightest stop carries the seed's hue character.
+ * The dark endpoint carries the full hue drift (amber warming) and
+ * gamut-relative chroma at L_MIN.
+ */
+function interpolateArcLength(
+  seedL: number,
+  seedC: number,
+  seedH: number,
+  seedIntensity: number,
+  totalStops: number,
+): OklchColor[] {
+  // White endpoint: slightly below L_MAX so the gamut has room for visible
+  // chroma. At L=0.98 most hues get C≈0.009 — invisible. At 0.96, twice that.
+  const whiteL = 0.96;
+  const whiteC = maxChroma(whiteL, seedH) * seedIntensity;
+  const whiteEnd = { mode: "oklch" as const, l: whiteL, c: whiteC, h: seedH };
+
+  const seedPt = { mode: "oklch" as const, l: seedL, c: seedC, h: seedH };
+
+  // Dark endpoint: L_MIN, full hue drift, gamut-relative chroma
+  const fullDrift = hueDriftAt(1.0, seedH);
+  const darkH = (((seedH + fullDrift) % 360) + 360) % 360;
+  const darkC = maxChroma(L_MIN, darkH) * seedIntensity;
+  const darkEnd = { mode: "oklch" as const, l: L_MIN, c: darkC, h: darkH };
+
+  // Convert to OKLab for distance computation
+  const whiteOklab = toOklab(whiteEnd)!;
+  const seedOklab = toOklab(seedPt)!;
+  const darkOklab = toOklab(darkEnd)!;
+
+  // OKLab Euclidean distances for each segment
+  const d1 = Math.sqrt(
+    (whiteOklab.l - seedOklab.l) ** 2 +
+      (whiteOklab.a - seedOklab.a) ** 2 +
+      (whiteOklab.b - seedOklab.b) ** 2,
+  );
+  const d2 = Math.sqrt(
+    (seedOklab.l - darkOklab.l) ** 2 +
+      (seedOklab.a - darkOklab.a) ** 2 +
+      (seedOklab.b - darkOklab.b) ** 2,
+  );
+  const total = d1 + d2;
+
+  // Build segment interpolators
+  const interpLight = interpolate([whiteEnd, seedPt], "oklab");
+  const interpDark = interpolate([seedPt, darkEnd], "oklab");
+
+  // Sample at equal OKLab distance intervals
+  const seedFrac = total > 0 ? d1 / total : 0.5;
+  const results: OklchColor[] = [];
+  let snapIndex = 0;
+  let snapDist = Infinity;
+
+  for (let i = 0; i < totalStops; i++) {
+    const frac = totalStops > 1 ? i / (totalStops - 1) : 0.5;
+    const targetDist = frac * total;
+
+    let color;
+    if (targetDist <= d1) {
+      const segT = d1 > 0 ? targetDist / d1 : 0;
+      color = toOklch(interpLight(segT));
+    } else {
+      const segT = d2 > 0 ? (targetDist - d1) / d2 : 0;
+      color = toOklch(interpDark(segT));
+    }
+
+    results.push(
+      clampToGamut({
+        l: color!.l,
+        c: color!.c ?? 0,
+        h: color!.h ?? seedH,
+      }),
+    );
+
+    // Track which stop is closest to the seed's arc-length position
+    const dist = Math.abs(frac - seedFrac);
+    if (dist < snapDist) {
+      snapDist = dist;
+      snapIndex = i;
+    }
+  }
+
+  // Snap the closest stop to the seed's exact color
+  results[snapIndex] = clampToGamut({ l: seedL, c: seedC, h: seedH });
+  return results;
+}
+
 // ---- Main Generation ----
 
 export function generateRamp(config: RampConfig): RampStop[] {
@@ -247,10 +278,19 @@ export function generateRamp(config: RampConfig): RampStop[] {
     seedIntensity = seedMaxC > 0 ? Math.min(seedChroma / seedMaxC, 1.0) : 1.0;
   }
 
-  // Find anchor stop — the stop whose lightness will exactly match the seed.
-  const hasSeed = seedLightness !== undefined && !isNeutral;
-  const anchor = hasSeed
-    ? findAnchorStop(seedLightness!, labels.length)
+  // Pre-compute OKLab-interpolated stops when we have a seed.
+  const hasSeed =
+    seedLightness !== undefined &&
+    seedChroma !== undefined &&
+    !isNeutral;
+  const interpolated = hasSeed
+    ? interpolateArcLength(
+        seedLightness!,
+        seedChroma!,
+        hue,
+        seedIntensity,
+        labels.length,
+      )
     : null;
 
   return labels.map((label, index) => {
@@ -267,27 +307,19 @@ export function generateRamp(config: RampConfig): RampStop[] {
 
     // ---- Opinionated generation ----
 
-    // Lightness: use seed-anchored power curve when we have a seed
-    const l = anchor
-      ? lightnessAtAnchored(t, anchor.exponent)
-      : lightnessAt(t);
-
-    // Hue drift: suppress at anchor stop, blend in smoothly away from it
-    const rawDrift = hueDriftAt(t, hue);
-    let drift = rawDrift;
-    if (anchor) {
-      // Blend: 0 drift at anchor, full drift at extremes
-      const distFromAnchor = Math.abs(t - anchor.tAnchor);
-      const maxDist = Math.max(anchor.tAnchor, 1 - anchor.tAnchor);
-      const blendFactor = maxDist > 0 ? distFromAnchor / maxDist : 0;
-      drift = rawDrift * blendFactor;
+    // OKLab interpolation: white → seed → dark, seed at center
+    if (interpolated) {
+      const color = interpolated[index];
+      const dark = darkModeAdjust(color.l, color.c, color.h, t);
+      return { index, label, color, darkColor: dark };
     }
-    const h = (((hue + drift) % 360) + 360) % 360;
 
-    // Gamut-relative chroma
+    // Fallback: parametric (no seed provided)
+    const l = lightnessAt(t);
+    const drift = hueDriftAt(t, hue);
+    const h = (((hue + drift) % 360) + 360) % 360;
     const gamutMax = maxChroma(l, h);
-    const intensity = chromaIntensityAt(t, seedIntensity);
-    const c = gamutMax * intensity;
+    const c = gamutMax * seedIntensity;
 
     const light = clampToGamut({ l, c, h });
     const dark = darkModeAdjust(l, c, h, t);
