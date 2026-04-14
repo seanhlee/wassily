@@ -185,17 +185,21 @@ function interpolateArcLength(
 ): OklchColor[] {
   // White endpoint: slightly below L_MAX so the gamut has room for visible
   // chroma. At L=0.98 most hues get C≈0.009 — invisible. At 0.96, twice that.
-  const whiteL = 0.96;
+  // If the seed is lighter, expand to include it (avoids path doubling back).
+  const whiteL = Math.max(0.96, seedL);
   const whiteC = maxChroma(whiteL, seedH) * seedIntensity;
   const whiteEnd = { mode: "oklch" as const, l: whiteL, c: whiteC, h: seedH };
 
   const seedPt = { mode: "oklch" as const, l: seedL, c: seedC, h: seedH };
 
-  // Dark endpoint: L_MIN, full hue drift, gamut-relative chroma
+  // Dark endpoint: L_MIN, full hue drift, gamut-relative chroma.
+  // If the seed is at or below L_MIN, push the dark endpoint further down
+  // so the path doesn't double back or collapse to zero length.
   const fullDrift = hueDriftAt(1.0, seedH);
   const darkH = (((seedH + fullDrift) % 360) + 360) % 360;
-  const darkC = maxChroma(L_MIN, darkH) * seedIntensity;
-  const darkEnd = { mode: "oklch" as const, l: L_MIN, c: darkC, h: darkH };
+  const darkL = L_MIN < seedL ? L_MIN : Math.max(0.05, seedL - 0.05);
+  const darkC = maxChroma(darkL, darkH) * seedIntensity;
+  const darkEnd = { mode: "oklch" as const, l: darkL, c: darkC, h: darkH };
 
   // Convert to OKLab for distance computation
   const whiteOklab = toOklab(whiteEnd)!;
