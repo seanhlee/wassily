@@ -37,6 +37,10 @@ function renderMetric(label: string, value: string): string {
   return `<div class="metric"><span class="metric__label">${label}</span><span class="metric__value">${value}</span></div>`;
 }
 
+function formatSigned(value: number): string {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(3)}`;
+}
+
 function renderHtml(data: ReturnType<typeof buildFamilyProfileBoardData>): string {
   return `<!doctype html>
 <html lang="en">
@@ -349,11 +353,29 @@ function renderHtml(data: ReturnType<typeof buildFamilyProfileBoardData>): strin
                                 <div class="chip">weight · ${reference.weight.toFixed(2)}</div>
                                 <div class="chip">anchor · ${reference.anchorLabel}</div>
                                 <div class="chip">
-                                  shoulders · ${reference.shoulderFit.lightMix.toFixed(3)} / ${reference.shoulderFit.darkMix.toFixed(3)}
+                                  progress · ${reference.shoulderFit.lightProgress.toFixed(3)} / ${reference.shoulderFit.darkProgress.toFixed(3)}
                                 </div>
                               </div>
                             </div>
                             <p>${reference.notes}</p>
+                            <div class="metric-grid">
+                              ${renderMetric(
+                                "light shape",
+                                `P ${reference.shoulderFit.lightProgress.toFixed(3)} · R ${formatSigned(reference.shoulderFit.lightRadial)} · N ${formatSigned(reference.shoulderFit.lightNormal)}`,
+                              )}
+                              ${renderMetric(
+                                "dark shape",
+                                `P ${reference.shoulderFit.darkProgress.toFixed(3)} · R ${formatSigned(reference.shoulderFit.darkRadial)} · N ${formatSigned(reference.shoulderFit.darkNormal)}`,
+                              )}
+                              ${renderMetric(
+                                "light residual",
+                                reference.shoulderFit.lightResidual.toFixed(3),
+                              )}
+                              ${renderMetric(
+                                "dark residual",
+                                reference.shoulderFit.darkResidual.toFixed(3),
+                              )}
+                            </div>
                             ${renderSwatchStrip(reference.swatches, reference.anchorLabel)}
                           </div>
                         `,
@@ -396,12 +418,12 @@ function renderHtml(data: ReturnType<typeof buildFamilyProfileBoardData>): strin
                     <h3>Fit Metadata</h3>
                     <div class="metric-grid">
                       ${renderMetric(
-                        "light shoulder mix",
-                        section.fit.shoulderGeometry.lightMix.toFixed(3),
+                        "light shoulder progress",
+                        section.fit.shoulderGeometry.lightProgress.toFixed(3),
                       )}
                       ${renderMetric(
-                        "dark shoulder mix",
-                        section.fit.shoulderGeometry.darkMix.toFixed(3),
+                        "dark shoulder progress",
+                        section.fit.shoulderGeometry.darkProgress.toFixed(3),
                       )}
                       ${renderMetric(
                         "light residual",
@@ -410,6 +432,14 @@ function renderHtml(data: ReturnType<typeof buildFamilyProfileBoardData>): strin
                       ${renderMetric(
                         "dark residual",
                         section.fit.shoulderGeometry.darkResidualMean.toFixed(3),
+                      )}
+                      ${renderMetric(
+                        "light shoulder offset",
+                        `R ${formatSigned(section.fit.shoulderGeometry.lightRadial)} · N ${formatSigned(section.fit.shoulderGeometry.lightNormal)}`,
+                      )}
+                      ${renderMetric(
+                        "dark shoulder offset",
+                        `R ${formatSigned(section.fit.shoulderGeometry.darkRadial)} · N ${formatSigned(section.fit.shoulderGeometry.darkNormal)}`,
                       )}
                     </div>
                     <div class="profile-grid">

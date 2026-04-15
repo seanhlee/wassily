@@ -3,6 +3,7 @@ import type { OklchColor, RampConfig, RampStop, StopPreset } from "../types";
 import { contrastRatio, BLACK, WHITE } from "./contrast";
 import { isInGamut, maxChroma } from "./gamut";
 import { generateRamp } from "./ramp";
+import { solveV6ResearchRamp, type V6SolveMetadata } from "./v6ResearchSolver";
 
 export interface ResearchSeed {
   id: string;
@@ -123,6 +124,16 @@ export interface RampAnalysis {
 export interface EvaluateSeedOptions {
   stopCount?: StopPreset | number;
   mode?: RampConfig["mode"];
+  engine?: ResearchEngine;
+}
+
+export type ResearchEngine = "v5" | "v6";
+
+export interface SeedEvaluationRun {
+  engine: ResearchEngine;
+  stops: RampStop[];
+  analysis: RampAnalysis;
+  metadata: V6SolveMetadata | null;
 }
 
 export function researchSeedToRampConfig(
@@ -170,8 +181,7 @@ export function evaluateSeed(
   seed: ResearchSeed,
   options: EvaluateSeedOptions = {},
 ): RampAnalysis {
-  const config = researchSeedToRampConfig(seed, options);
-  return analyzeRamp(generateRamp(config), seed);
+  return evaluateSeedRun(seed, options).analysis;
 }
 
 export function evaluateSeedSuite(
@@ -181,6 +191,25 @@ export function evaluateSeedSuite(
   return Object.fromEntries(
     seeds.map((seed) => [seed.id, evaluateSeed(seed, options)]),
   );
+}
+
+export function evaluateSeedRun(
+  seed: ResearchSeed,
+  options: EvaluateSeedOptions = {},
+): SeedEvaluationRun {
+  const config = researchSeedToRampConfig(seed, options);
+  const engine = options.engine ?? "v5";
+  const solved =
+    engine === "v6"
+      ? solveV6ResearchRamp(config)
+      : { stops: generateRamp(config), metadata: null };
+
+  return {
+    engine,
+    stops: solved.stops,
+    analysis: analyzeRamp(solved.stops, seed),
+    metadata: solved.metadata,
+  };
 }
 
 function analyzeVariant(

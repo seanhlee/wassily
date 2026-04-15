@@ -549,16 +549,26 @@ A prototype should be treated as failed if any of the following occur:
   - ultramarine is currently anchored to a blue-side reference rather than a generic blue-purple average
   - cyan is extracted from two distinct bright cyan corpora
   - neutral structure is averaged from gray, slate, and stone references while keeping hue offsets locked to zero
-- The first corpus fit suggests a useful architectural split:
+- The first corpus fit suggested a useful architectural split:
   - endpoint thresholds, hue tendencies, and intensity behavior can be learned from references now
-  - shoulder placement should remain an explicit research problem until there is a dedicated fitter for path geometry
-- A first dedicated shoulder fitter is now in place:
-  - each reference shoulder is projected onto its endpoint-to-seed segment in OKLab
-  - the resulting segment progress is averaged with corpus weights and used as the generated shoulder placement
-  - this is meaningfully better than frozen per-family templates because it is at least learned from reference geometry rather than guessed
-- The projection residuals are now informative:
-  - lime, cyan, and neutrals have low shoulder residuals, so simple segment progress captures a meaningful part of their path structure
-  - ultramarine still shows a noticeably larger light-shoulder residual, which suggests the next fitter probably needs off-axis curve learning rather than only better scalar placement
+  - shoulder placement is really a path-geometry problem, not another surface for taste-driven constants
+- The projection-only and off-axis-bend stages were still valuable:
+  - they confirmed that shoulder geometry carries real family signal
+  - they also exposed the real failure mode: fitting each shoulder independently can leave the exact seed sitting inside a path that is locally incoherent
+- The current model is a seed-centered normalized family path:
+  - for each curated reference, build a shared OKLab frame centered on the seed
+  - use the full light-endpoint ↔ dark-endpoint geometry to define the longitudinal flow axis
+  - express both shoulders relative to the seed in that shared frame as progress plus two transverse offsets
+  - average those coordinates jointly into a family archetype path shape instead of fitting two unrelated shoulders
+  - map that averaged shape back onto the live endpoint / seed geometry at generation time while keeping the existing arc-length spacing model intact
+- Reference alignment now matters more, not less:
+  - chromatic references are rotated so their anchor stop is aligned to the canonical family exemplar before path fitting
+  - this makes the learned archetype about family shape rather than about arbitrary corpus hue placement
+  - neutrals remain unrotated and keep hue offsets pinned to zero
+- Result:
+  - lime now reads much more like a coherent family object around the seed instead of a hot isolated spike; its generated path stays tightly centered around `~121°` through the seed neighborhood and the fitted archetype carries that shape cleanly
+  - ultramarine no longer needs a highlight-side patch; after exemplar alignment and joint path fitting, the generated ramp stays close to the seed-centered blue spine (`~263-265°`) instead of wandering into a violet hump and then recovering
+  - the remaining judgment problem is now the right one: not "how do we patch the seed neighborhood?" but "is this archetype path beautiful enough to deserve being the family prior?"
 
 ### Former bug, now addressed by the probes
 
@@ -630,3 +640,116 @@ A prototype should be treated as failed if any of the following occur:
   - lime, cyan, and neutral families fit cleanly with low projection residuals
   - ultramarine's light shoulder still has a materially larger residual, which is a useful signal that the remaining gap is real curve shape, not just better scalar placement
 - Result: this is a better research baseline because shoulder placement is now learned from the corpus while still keeping the path model simple enough to reason about.
+- Replaced scalar-only shoulder fitting with a local off-axis bend fit.
+- Method:
+  - for each reference shoulder, keep the projected segment progress
+  - measure the residual in a local OKLab frame built from the endpoint-to-seed segment plus two perpendicular bend axes
+  - average those bend coefficients with corpus weights and feed them back into generated shoulder placement
+- Added bend coefficients to the family board and JSON output so the fitted curve shape is inspectable instead of hidden in engine internals.
+- Result:
+  - the global suite still passes, which means the bend fit is compatible with the current ramp invariants
+  - ultramarine now learns the strongest light-shoulder bend, matching the earlier residual warning
+  - neutral bends are intentionally held at zero in synthesis for now because the measured residuals are small and allowing them through slightly degraded neutral hue stability
+- Replaced the independent-shoulder model with a seed-centered normalized family path fit.
+- Method:
+  - build a shared OKLab frame for each reference path with the exact seed at the origin
+  - define the main flow axis from the full light-endpoint ↔ dark-endpoint geometry, then derive two transverse axes
+  - project both shoulders into that frame as one joint local shape
+  - average those seed-relative coordinates with corpus weights
+  - reconstruct the averaged family archetype path on both the averaged reference geometry and the live runtime geometry
+- Tightened corpus alignment so the fitter learns family shape instead of accidental corpus hue placement:
+  - chromatic references are hue-rotated to the canonical family exemplar before control points are fitted
+  - neutral references are left in place
+- Result:
+  - the global suite still passes, which means the seed-centered fit preserves the spacing backbone and monotone runtime behavior
+  - lime's fitted archetype now closely matches the generated seed neighborhood instead of leaving the seed as an isolated chroma spike
+  - ultramarine's generated ramp now stays on a much more convincing blue spine, with highlight-side drift reduced from the earlier violet hump to a tight `~263-265°` band through the seed and dark tail
+  - the research board is now showing the right object: not just shoulder coefficients, but an actual transferable family path archetype
+
+## V6 Status
+
+- `v6` is now a seed-constrained path solver with corpus-conditioned regularization, not just a family-profile variant of `v5`.
+- The important architectural pieces now in play are:
+  - solve a continuous OKLab path first
+  - keep the exact seed as a hard constraint
+  - evaluate path density before stop sampling
+  - sample the ladder from the solved path
+  - regularize the solve against a curated reference corpus instead of hand-authored family constants
+- The solver score is currently made of three layers:
+  - hard validity:
+    - exact seed match
+    - sampled ladder monotonicity
+    - gamut containment pressure
+  - path-quality terms:
+    - curvature and jerk
+    - hue wobble
+    - continuous path density
+    - light-side entrance cadence
+  - corpus regularization:
+    - endpoint reserve
+    - endpoint intensity
+    - seed-tangent behavior
+    - family-conditioned energy targets
+
+### What improved
+
+- The path now wants perceptually smoother density before the ladder is sampled, so cadence comes more from the solved geometry and less from after-the-fact spacing checks.
+- Light-end cadence is now explicitly controlled, so the top of the ramp is less likely to bleach the `50` and then take a conspicuously large first step.
+- Highlight and shadow behavior are less entangled:
+  - the path can leave the seed differently toward light and dark
+  - shadow depth and chroma no longer have to inherit the same local geometry as the light side
+- The soft prior is now seed-position-aware:
+  - each curated reference is aligned to the stop that best matches the live seed
+  - family affinity is then applied on top of that aligned stop so the solver does not regularize cyan toward blue or a neutral toward a chromatic family just because a single stop is locally close
+- The hard monotonicity check now lives on the sampled ladder instead of every intermediate cubic sample, which removes the false "impossible" failure mode for very-light seeds.
+
+### Current reading of the remaining failures
+
+- The remaining misses no longer feel like bad thresholds or missing guardrails.
+- They mostly look like missing continuous priors:
+  - some top-end seeds still want a more beautiful highlight envelope, not merely a safer `50`
+  - some neutrals still feel too scalar or too linear in their chroma progression even when they are technically stable
+  - some chromatic families still need a stronger idea of where color should live along the path, not only how much color the endpoints may keep
+- That is a healthy state for the project. The next gains should come from better family-conditioned path models, not from more isolated patches.
+
+## Next Pushes for V6
+
+1. Add a continuous family-shape prior over the whole path.
+   We already compare endpoint reserve, endpoint intensity, and tangent behavior. The next elegant move is to compare the full solved path, expressed in the same seed-centered frame as the corpus, against a weighted family envelope.
+
+2. Learn chroma distribution along normalized path progress.
+   Right now the solver knows a lot about endpoint chroma but much less about where chroma should accumulate or thin out along the path. A family-conditioned chroma-density prior should help neutrals stay quiet, cyan keep energy in the upper mids, and ultramarine avoid washing out too early.
+
+3. Give the light and dark halves distinct family-conditioned progress priors.
+   The current split handles are a good first move, but the next step is to model highlight and shadow progress as related rather than symmetric subproblems so bright seeds can keep a believable highlight envelope without compromising shadow cadence.
+
+4. Move from single-stop prior alignment to soft stop neighborhoods.
+   The current aligned prior picks the best matching stop per reference ramp. That is already much better than assuming every seed is a reference `500`, but the more continuous version is to softly blend nearby aligned stops so the prior varies smoothly as the seed moves through the ladder.
+
+5. Build a path-beauty board, not just a ramp board.
+   The current research lab shows the solved ramps and metrics. The next useful board should overlay:
+   - the seed-centered family archetype path
+   - the live solved path
+   - local deviation along the path
+   That would let us judge whether a miss comes from the family model, the solver objective, or the sampling stage.
+
+### 2026-04-15
+
+- Built the first full `v6` solver path in `src/engine/v6ResearchSolver.ts`.
+- Added a dedicated side-by-side research lab:
+  - generator: `scripts/generate-research-lab.ts`
+  - command: `npm run research:lab`
+  - outputs:
+    - `docs/generated/research-lab.html`
+    - `docs/generated/research-lab.json`
+- Added a continuous path-density objective so the path itself is encouraged toward uniform perceptual density before the ladder is sampled.
+- Added local light-entrance control so the top of the ladder is judged as an entrance shape rather than only as pairwise spacing.
+- Split seed-exit geometry so the solved path can leave the seed differently toward highlight and shadow.
+- Switched gamut pressure from summed excursion to mean excursion so saturated paths do not self-desaturate just to avoid many tiny out-of-gamut penalties.
+- Added shadow-aware endpoint reserve / intensity pressure.
+- Reworked the soft prior so references are aligned to the seed's best-matching stop instead of assuming the live seed corresponds to every reference `500`.
+- Added family-affinity weighting on top of that aligned-stop match so local similarity does not override family identity.
+- Moved the hard monotonicity penalty onto the sampled ladder rather than every intermediate cubic sample.
+- Result:
+  - the remaining misses are now much more clearly shape-prior problems rather than anchor-selection mistakes or invalidity bugs
+  - the next useful work should focus on continuous family-conditioned path and chroma-distribution priors, not another round of isolated endpoint patches

@@ -16,6 +16,11 @@ import {
 } from "./gamut";
 import { resolveFamilyProfile } from "./familyProfiles";
 import { interpolate, oklch as toOklch, oklab as toOklab } from "culori";
+import {
+  buildSeedCenteredFrame,
+  labVectorToOklch,
+  reconstructShoulderFromSeedFrame,
+} from "./pathGeometry";
 
 // ---- Stop Presets ----
 
@@ -221,8 +226,30 @@ function findDarkEndpointLightness(hue: number, threshold: number): number {
   return hi;
 }
 
-function mix(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
+function buildShoulderPoint(
+  lightEndpoint: OklchColor,
+  seed: OklchColor,
+  darkEndpoint: OklchColor,
+  side: "light" | "dark",
+  progress: number,
+  radial: number,
+  normal: number,
+  fallbackHue: number,
+): OklchColor {
+  const frame = buildSeedCenteredFrame(lightEndpoint, seed, darkEndpoint);
+  const color = labVectorToOklch(
+    reconstructShoulderFromSeedFrame(frame, side, {
+      progress,
+      radial,
+      normal,
+    }),
+    fallbackHue,
+  );
+  return clampToGamut({
+    l: Math.max(L_FLOOR, Math.min(L_CEILING, color.l)),
+    c: Math.max(0, color.c ?? 0),
+    h: color.h ?? fallbackHue,
+  });
 }
 
 function sampleArcLengthPath(
@@ -372,35 +399,27 @@ function interpolateArcLength(
   // Add one shoulder on each side of the seed to test whether path shape,
   // not just endpoints, improves family character while preserving the
   // same arc-length sampling backbone.
-  const lightShoulderH = adjustHue(seedH, profile.lightShoulderHueOffset);
-  const lightShoulderL = mix(whiteL, seedL, profile.lightShoulderMix);
-  const lightShoulderIntensity = applyIntensity(
-    seedIntensity,
-    profile.lightShoulderIntensityScale,
-    profile.lightShoulderIntensityOffset,
+  const lightShoulder = buildShoulderPoint(
+    whiteEnd,
+    seedPt,
+    darkEnd,
+    "light",
+    profile.lightShoulderProgress,
+    profile.lightShoulderRadial,
+    profile.lightShoulderNormal,
+    seedH,
   );
-  const lightShoulderC =
-    maxChroma(lightShoulderL, lightShoulderH) * lightShoulderIntensity;
-  const lightShoulder = {
-    l: lightShoulderL,
-    c: lightShoulderC,
-    h: lightShoulderH,
-  };
 
-  const darkShoulderH = adjustHue(seedH, profile.darkShoulderHueOffset);
-  const darkShoulderL = mix(seedL, darkL, profile.darkShoulderMix);
-  const darkShoulderC =
-    maxChroma(darkShoulderL, darkShoulderH) *
-    applyIntensity(
-      seedIntensity,
-      profile.darkShoulderIntensityScale,
-      profile.darkShoulderIntensityOffset,
-    );
-  const darkShoulder = {
-    l: darkShoulderL,
-    c: darkShoulderC,
-    h: darkShoulderH,
-  };
+  const darkShoulder = buildShoulderPoint(
+    whiteEnd,
+    seedPt,
+    darkEnd,
+    "dark",
+    profile.darkShoulderProgress,
+    profile.darkShoulderRadial,
+    profile.darkShoulderNormal,
+    darkH,
+  );
 
   return sampleArcLengthPath(
     [whiteEnd, lightShoulder, seedPt, darkShoulder, darkEnd],

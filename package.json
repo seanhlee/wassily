@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "research:family-board": "npx --yes tsx scripts/generate-family-profile-board.ts",
+    "research:lab": "npx --yes tsx scripts/generate-research-lab.ts",
     "test": "vitest",
     "test:run": "vitest run"
   },

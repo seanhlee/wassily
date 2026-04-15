@@ -20,9 +20,13 @@ export {
   RESEARCH_SEEDS,
   analyzeRamp,
   evaluateSeed,
+  evaluateSeedRun,
   evaluateSeedSuite,
   researchSeedToRampConfig,
 } from "./research";
+export { buildResearchLabData } from "./researchLab";
+export { solveV6ResearchRamp } from "./v6ResearchSolver";
+export { compareToV6SoftPrior } from "./v6SoftPriors";
 export {
   checkContrast,
   contrastRatio,

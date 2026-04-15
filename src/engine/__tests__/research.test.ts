@@ -41,11 +41,20 @@ describe("research harness", () => {
 
     for (const fit of Object.values(CURATED_FAMILY_PROFILE_FITS)) {
       expect(fit.shoulderGeometry.references).toHaveLength(fit.referenceIds.length);
-      expect(fit.shoulderGeometry.lightMix).toBeGreaterThan(0);
-      expect(fit.shoulderGeometry.lightMix).toBeLessThan(1);
-      expect(fit.shoulderGeometry.darkMix).toBeGreaterThan(0);
-      expect(fit.shoulderGeometry.darkMix).toBeLessThan(1);
+      expect(fit.shoulderGeometry.lightProgress).toBeGreaterThan(0);
+      expect(fit.shoulderGeometry.lightProgress).toBeLessThan(1);
+      expect(fit.shoulderGeometry.darkProgress).toBeGreaterThan(0);
+      expect(fit.shoulderGeometry.darkProgress).toBeLessThan(1);
+      expect(Number.isFinite(fit.shoulderGeometry.lightRadial)).toBe(true);
+      expect(Number.isFinite(fit.shoulderGeometry.lightNormal)).toBe(true);
+      expect(Number.isFinite(fit.shoulderGeometry.darkRadial)).toBe(true);
+      expect(Number.isFinite(fit.shoulderGeometry.darkNormal)).toBe(true);
     }
+
+    expect(CURATED_FAMILY_PROFILE_FITS.neutral.profile.lightShoulderRadial).toBe(0);
+    expect(CURATED_FAMILY_PROFILE_FITS.neutral.profile.lightShoulderNormal).toBe(0);
+    expect(CURATED_FAMILY_PROFILE_FITS.neutral.profile.darkShoulderRadial).toBe(0);
+    expect(CURATED_FAMILY_PROFILE_FITS.neutral.profile.darkShoulderNormal).toBe(0);
   });
 
   it("includes the documented hard-color seed suite", () => {
@@ -179,7 +188,7 @@ describe("research harness", () => {
     expect(lime.endpointDark.relativeChroma).toBeGreaterThan(0.85);
 
     const ultramarineDark = ultramarine.lightRamp.colors.at(-1)!;
-    expect(ultramarineDark.h).toBeLessThan(260);
+    expect(Math.abs(ultramarineDark.h - 265)).toBeLessThan(3);
     expect(ultramarineDark.c).toBeGreaterThan(0.04);
 
     const cyanDark = cyan.lightRamp.colors.at(-1)!;

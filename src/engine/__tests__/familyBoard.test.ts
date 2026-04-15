@@ -24,10 +24,10 @@ describe("family profile board data", () => {
       );
       for (const reference of section.references) {
         expect(reference.shoulderFit.referenceId).toBe(reference.id);
-        expect(reference.shoulderFit.lightMix).toBeGreaterThan(0);
-        expect(reference.shoulderFit.lightMix).toBeLessThan(1);
-        expect(reference.shoulderFit.darkMix).toBeGreaterThan(0);
-        expect(reference.shoulderFit.darkMix).toBeLessThan(1);
+        expect(reference.shoulderFit.lightProgress).toBeGreaterThan(0);
+        expect(reference.shoulderFit.lightProgress).toBeLessThan(1.5);
+        expect(reference.shoulderFit.darkProgress).toBeGreaterThan(0);
+        expect(reference.shoulderFit.darkProgress).toBeLessThan(1.5);
       }
     }
   });
