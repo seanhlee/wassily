@@ -25,6 +25,12 @@ export interface SeedFrameCoordinates {
   normal: number;
 }
 
+export interface SeedFramePointCoordinates {
+  flow: number;
+  radial: number;
+  normal: number;
+}
+
 export type SeedFrameSide = "light" | "dark";
 
 export function toLabVector(color: OklchColor): LabVector {
@@ -175,14 +181,30 @@ export function projectShoulderToSeedFrame(
   shoulder: OklchColor,
   side: SeedFrameSide,
 ): SeedFrameCoordinates {
-  const offset = subtractLab(toLabVector(shoulder), frame.origin);
-  const signedLongitudinal = dotLab(offset, frame.flowAxis);
+  const projected = projectPointToSeedFrame(frame, shoulder);
 
   return {
-    progress:
-      side === "light"
-        ? signedLongitudinal / frame.lightExtent
-        : -signedLongitudinal / frame.darkExtent,
+    progress: side === "light" ? projected.flow : -projected.flow,
+    radial: projected.radial,
+    normal: projected.normal,
+  };
+}
+
+export function projectPointToSeedFrame(
+  frame: SeedCenteredFrame,
+  point: OklchColor | LabVector,
+): SeedFramePointCoordinates {
+  const vector =
+    "a" in point && "b" in point
+      ? point
+      : toLabVector(point);
+  const offset = subtractLab(vector, frame.origin);
+  const signedLongitudinal = dotLab(offset, frame.flowAxis);
+  const extent =
+    signedLongitudinal >= 0 ? frame.lightExtent : frame.darkExtent;
+
+  return {
+    flow: signedLongitudinal / Math.max(extent, EPSILON),
     radial: dotLab(offset, frame.radialAxis) / frame.transverseScale,
     normal: dotLab(offset, frame.normalAxis) / frame.transverseScale,
   };
@@ -193,10 +215,21 @@ export function reconstructShoulderFromSeedFrame(
   side: SeedFrameSide,
   coordinates: SeedFrameCoordinates,
 ): LabVector {
+  return reconstructPointFromSeedFrame(frame, {
+    flow: side === "light" ? coordinates.progress : -coordinates.progress,
+    radial: coordinates.radial,
+    normal: coordinates.normal,
+  });
+}
+
+export function reconstructPointFromSeedFrame(
+  frame: SeedCenteredFrame,
+  coordinates: SeedFramePointCoordinates,
+): LabVector {
   const longitudinal =
-    side === "light"
-      ? coordinates.progress * frame.lightExtent
-      : -coordinates.progress * frame.darkExtent;
+    coordinates.flow >= 0
+      ? coordinates.flow * frame.lightExtent
+      : coordinates.flow * frame.darkExtent;
 
   return addLab(
     frame.origin,

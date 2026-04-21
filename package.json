@@ -9,8 +9,8 @@
     "deadcode": "knip",
     "lint": "eslint .",
     "preview": "vite preview",
-    "research:family-board": "npx --yes tsx scripts/generate-family-profile-board.ts",
-    "research:lab": "npx --yes tsx scripts/generate-research-lab.ts",
+    "research:family-board": "node node_modules/vite-node/vite-node.mjs --script scripts/generate-family-profile-board.ts",
+    "research:lab": "node node_modules/vite-node/vite-node.mjs --script scripts/generate-research-lab.ts",
     "test": "vitest",
     "test:run": "vitest run"
   },

@@ -2,8 +2,11 @@ import { oklab as toOklab } from "culori";
 import type { OklchColor, RampConfig, RampStop, StopPreset } from "../types";
 import { contrastRatio, BLACK, WHITE } from "./contrast";
 import { isInGamut, maxChroma } from "./gamut";
-import { generateRamp } from "./ramp";
-import { solveV6ResearchRamp, type V6SolveMetadata } from "./v6ResearchSolver";
+import {
+  solveV6ArchetypeRamp,
+  solveV6ResearchRamp,
+  type V6SolveMetadata,
+} from "./v6ResearchSolver";
 
 export interface ResearchSeed {
   id: string;
@@ -82,6 +85,9 @@ export interface DistanceStats {
   min: number;
   max: number;
   coefficientOfVariation: number;
+  worstAdjacentRatio: number;
+  worstThreeStepRatio: number;
+  lightEntranceRatio: number;
 }
 
 export interface LightnessStats {
@@ -115,6 +121,7 @@ export interface RampAnalysis {
   labels: string[];
   seedStopIndex: number | null;
   seedDelta: number | null;
+  seedPlacementImbalance: number | null;
   endpointLight: EndpointStats;
   endpointDark: EndpointStats;
   lightRamp: RampVariantAnalysis;
@@ -127,7 +134,7 @@ export interface EvaluateSeedOptions {
   engine?: ResearchEngine;
 }
 
-export type ResearchEngine = "v5" | "v6";
+export type ResearchEngine = "v6-archetype" | "v6";
 
 export interface SeedEvaluationRun {
   engine: ResearchEngine;
@@ -157,6 +164,8 @@ export function analyzeRamp(
   const seedMeta = seed && "color" in seed ? seed : null;
   const lightColors = stops.map((stop) => stop.color);
   const darkColors = stops.map((stop) => stop.darkColor);
+  const lightRamp = analyzeVariant(lightColors, seedColor);
+  const darkRamp = analyzeVariant(darkColors, seedColor);
 
   const seedStopIndex =
     seedColor === null ? null : findNearestColorIndex(lightColors, seedColor);
@@ -170,10 +179,14 @@ export function analyzeRamp(
     labels: stops.map((stop) => stop.label),
     seedStopIndex,
     seedDelta,
+    seedPlacementImbalance:
+      seedStopIndex === null
+        ? null
+        : computeSeedPlacementImbalance(lightRamp.adjacentDistance.values, seedStopIndex),
     endpointLight: analyzeEndpoint(lightColors[0]),
     endpointDark: analyzeEndpoint(lightColors[lightColors.length - 1]),
-    lightRamp: analyzeVariant(lightColors, seedColor),
-    darkRamp: analyzeVariant(darkColors, seedColor),
+    lightRamp,
+    darkRamp,
   };
 }
 
@@ -198,11 +211,11 @@ export function evaluateSeedRun(
   options: EvaluateSeedOptions = {},
 ): SeedEvaluationRun {
   const config = researchSeedToRampConfig(seed, options);
-  const engine = options.engine ?? "v5";
+  const engine = options.engine ?? "v6";
   const solved =
     engine === "v6"
       ? solveV6ResearchRamp(config)
-      : { stops: generateRamp(config), metadata: null };
+      : solveV6ArchetypeRamp(config);
 
   return {
     engine,
@@ -250,6 +263,9 @@ function computeDistanceStats(colors: OklchColor[]): DistanceStats {
     min: values.length === 0 ? 0 : Math.min(...values),
     max: values.length === 0 ? 0 : Math.max(...values),
     coefficientOfVariation: mean > 0 ? Math.sqrt(variance) / mean : 0,
+    worstAdjacentRatio: worstStepRatio(values, 2),
+    worstThreeStepRatio: worstStepRatio(values, 3),
+    lightEntranceRatio: computeLightEntranceRatio(values),
   };
 }
 
@@ -276,6 +292,50 @@ function pairwiseDistances(colors: OklchColor[]): number[] {
     distances.push(oklabDistance(colors[i - 1], colors[i]));
   }
   return distances;
+}
+
+function worstStepRatio(values: readonly number[], windowSize: number): number {
+  if (values.length === 0) return 1;
+  if (windowSize <= 1) return 1;
+  if (values.length < windowSize) {
+    return Math.max(...values) / Math.max(Math.min(...values), 1e-9);
+  }
+
+  let worst = 1;
+  for (let index = 0; index <= values.length - windowSize; index++) {
+    const window = values.slice(index, index + windowSize);
+    worst = Math.max(worst, Math.max(...window) / Math.max(Math.min(...window), 1e-9));
+  }
+  return worst;
+}
+
+function computeLightEntranceRatio(values: readonly number[]): number {
+  if (values.length === 0) return 1;
+  const frontDistances = values.slice(0, Math.min(2, values.length));
+  const referenceWindow = values.slice(
+    frontDistances.length,
+    Math.min(frontDistances.length + 4, values.length),
+  );
+  const baseline = average(
+    referenceWindow.length > 0 ? [...referenceWindow] : [...values],
+  );
+  if (baseline <= 1e-9) return 1;
+  return Math.max(...frontDistances.map((value) => value / baseline), 1);
+}
+
+function computeSeedPlacementImbalance(
+  distances: readonly number[],
+  seedStopIndex: number,
+): number {
+  if (distances.length === 0) return 0;
+  const left = distances.slice(0, seedStopIndex);
+  const right = distances.slice(seedStopIndex);
+  if (left.length === 0 || right.length === 0) return 0;
+
+  const mean = average([...distances]);
+  if (mean <= 1e-9) return 0;
+
+  return Math.abs(average([...left]) - average([...right])) / mean;
 }
 
 function oklabDistance(a: OklchColor, b: OklchColor): number {

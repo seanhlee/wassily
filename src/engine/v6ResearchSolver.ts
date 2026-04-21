@@ -2,19 +2,23 @@ import type { OklchColor, RampConfig, RampStop, StopPreset } from "../types";
 import { clampToGamut, isInGamut, maxChroma } from "./gamut";
 import {
   addLab,
+  buildSeedCenteredFrame,
   distanceLab,
   dotLab,
   labVectorToOklch,
   normalizeLab,
+  reconstructPointFromSeedFrame,
   scaleLab,
   subtractLab,
   toLabVector,
   type LabVector,
 } from "./pathGeometry";
 import {
+  buildV6SoftPrior,
   compareToV6SoftPrior,
   type V6SoftPriorComparison,
 } from "./v6SoftPriors";
+import { buildPathProfileFromSidePolylines } from "./v6PathProfiles";
 
 const STOP_PRESETS: Record<StopPreset, string[]> = {
   3: ["200", "500", "800"],
@@ -41,13 +45,25 @@ const L_FLOOR = 0.05;
 const L_CEILING = 1.0;
 const EPSILON = 1e-6;
 const SOFT_PRIOR_WEIGHTS = {
-  endpointReserve: 0.45,
-  darkEndpointReserve: 1.35,
-  endpointHueDrift: 0.35,
-  lightEndpointIntensity: 0.55,
-  darkEndpointIntensity: 0.85,
-  seedTangentBias: 0.3,
+  endpointReserve: 0.18,
+  darkEndpointReserve: 0.5,
+  endpointHueDrift: 0.12,
+  lightEndpointIntensity: 0.18,
+  darkEndpointIntensity: 0.28,
+  seedTangentBias: 0.12,
+  fullPathShape: 0.42,
+  chromaDistribution: 0.24,
+  energyTargets: 0.24,
 } as const;
+
+const DEFAULT_ARCHETYPE_CURVE: V6CurveParameters = {
+  seedTangentRadial: 0,
+  seedTangentNormal: 0,
+  lightSeedHandleScale: 0.24,
+  darkSeedHandleScale: 0.24,
+  lightHandleScale: 0.34,
+  darkHandleScale: 0.34,
+};
 
 export interface V6EndpointCandidate {
   color: OklchColor;
@@ -81,7 +97,14 @@ export interface V6EnergyBreakdown {
   hueWobble: number;
   continuousSpacingDistortion: number;
   spacingDistortion: number;
+  seedStopTargetPenalty: number;
+  lightEdgeParityPenalty: number;
+  darkEdgeParityPenalty: number;
+  worstAdjacentStepPenalty: number;
+  worstThreeStepWindowPenalty: number;
+  localStepSpreadPenalty: number;
   lightEntrancePenalty: number;
+  seedPlacementPenalty: number;
   seedNeighborhoodAsymmetry: number;
   endpointHuePenalty: number;
   occupancyReward: number;
@@ -94,12 +117,15 @@ export interface V6EnergyBreakdown {
   darkEndpointIntensityPriorPenalty: number;
   endpointHueDriftPriorPenalty: number;
   seedTangentBiasPriorPenalty: number;
+  fullPathPriorPenalty: number;
+  chromaDistributionPriorPenalty: number;
+  energyTargetPriorPenalty: number;
   selectedSoftPriorPenalty: number;
   total: number;
 }
 
 export interface V6SolveMetadata {
-  solver: "v6";
+  solver: "v6" | "v6-archetype";
   score: number;
   lightBudget: number;
   darkBudget: number;
@@ -135,6 +161,7 @@ interface V6EndpointGeometryCandidate {
 interface PathSolution {
   colors: OklchColor[];
   metadata: BaseV6SolveMetadata;
+  softPrior: V6SoftPriorComparison;
 }
 
 interface V6ParameterVector {
@@ -155,6 +182,7 @@ interface PathMetrics {
   seedIndex: number;
   seedFraction: number;
   breakdown: V6EnergyBreakdown;
+  softPrior: V6SoftPriorComparison;
 }
 
 interface FinePathPoint {
@@ -163,7 +191,23 @@ interface FinePathPoint {
   distance: number;
 }
 
+interface SamplingPlan {
+  seedIndex: number;
+  lightIntervals: number[];
+  darkIntervals: number[];
+}
+
+interface SampledPath {
+  colors: OklchColor[];
+  seedIndex: number;
+  lightBudget: number;
+  darkBudget: number;
+  totalBudget: number;
+  seedFraction: number;
+}
+
 const CACHE = new Map<string, V6SolveResult>();
+const ARCHETYPE_CACHE = new Map<string, V6SolveResult>();
 
 function normalizeHue(hue: number): number {
   return ((hue % 360) + 360) % 360;
@@ -513,6 +557,35 @@ function buildFinePath(
   return { points, seedPointIndex };
 }
 
+function buildFinePathFromLabs(
+  labs: readonly LabVector[],
+  fallbackHue: number,
+): { points: FinePathPoint[]; seedPointIndex: number } {
+  const points: FinePathPoint[] = [];
+  let cumulative = 0;
+
+  for (let index = 0; index < labs.length; index++) {
+    if (index > 0) {
+      cumulative += distanceLab(labs[index - 1], labs[index]);
+    }
+    const color = labVectorToOklch(labs[index], fallbackHue);
+    points.push({
+      lab: labs[index],
+      color: {
+        l: clamp(color.l, L_FLOOR, L_CEILING),
+        c: Math.max(0, color.c ?? 0),
+        h: color.h ?? fallbackHue,
+      },
+      distance: cumulative,
+    });
+  }
+
+  return {
+    points,
+    seedPointIndex: Math.floor(labs.length / 2),
+  };
+}
+
 function interpolateFinePath(points: FinePathPoint[], targetDistance: number): OklchColor {
   if (targetDistance <= 0) return points[0].color;
   if (targetDistance >= points[points.length - 1].distance) {
@@ -559,47 +632,101 @@ function deriveSeedIndex(
   };
 }
 
+function stopFractionForIndex(seedIndex: number, totalStops: number): number {
+  if (totalStops <= 1) return 0.5;
+  return clamp(seedIndex, 0, totalStops - 1) / (totalStops - 1);
+}
+
+function uniformIntervals(count: number): number[] {
+  if (count <= 0) return [];
+  return Array.from({ length: count }, () => 1 / count);
+}
+
+function normalizeIntervals(intervals: readonly number[], count: number): number[] {
+  if (count <= 0) return [];
+  const values =
+    intervals.length === count
+      ? intervals.map((value) => Math.max(value, 0))
+      : uniformIntervals(count);
+  const sum = values.reduce((total, value) => total + value, 0);
+  if (sum <= EPSILON) return uniformIntervals(count);
+  return values.map((value) => value / sum);
+}
+
+function buildSamplingPlan(
+  lightBudget: number,
+  darkBudget: number,
+  totalStops: number,
+  seedIndex?: number,
+): SamplingPlan {
+  const derived =
+    seedIndex === undefined
+      ? deriveSeedIndex(lightBudget, darkBudget, totalStops).index
+      : clamp(seedIndex, 0, Math.max(totalStops - 1, 0));
+  return {
+    seedIndex: derived,
+    lightIntervals: uniformIntervals(derived),
+    darkIntervals: uniformIntervals(totalStops - derived - 1),
+  };
+}
+
 function sampleSolvedPath(
   seed: OklchColor,
   points: FinePathPoint[],
   seedPointIndex: number,
   labels: string[],
-): { colors: OklchColor[]; seedIndex: number; lightBudget: number; darkBudget: number; totalBudget: number; seedFraction: number } {
+  plan?: SamplingPlan,
+): SampledPath {
   const lightBudget = points[seedPointIndex].distance;
   const totalBudget = points[points.length - 1].distance;
   const darkBudget = Math.max(totalBudget - lightBudget, 0);
-  const { index: seedIndex, fraction: seedFraction } = deriveSeedIndex(
+  const { fraction: seedFraction } = deriveSeedIndex(
     lightBudget,
     darkBudget,
     labels.length,
   );
+  const resolvedPlan =
+    plan === undefined
+      ? buildSamplingPlan(lightBudget, darkBudget, labels.length)
+      : {
+          seedIndex: clamp(plan.seedIndex, 0, Math.max(labels.length - 1, 0)),
+          lightIntervals: plan.lightIntervals,
+          darkIntervals: plan.darkIntervals,
+        };
+  const seedIndex = resolvedPlan.seedIndex;
+  const lightIntervals = normalizeIntervals(resolvedPlan.lightIntervals, seedIndex);
+  const darkIntervals = normalizeIntervals(
+    resolvedPlan.darkIntervals,
+    labels.length - seedIndex - 1,
+  );
 
+  const lightTargets =
+    seedIndex <= 0
+      ? []
+      : (() => {
+          const targets = [0];
+          let cumulative = 0;
+          for (let index = 0; index < seedIndex - 1; index++) {
+            cumulative += lightIntervals[index] * lightBudget;
+            targets.push(cumulative);
+          }
+          return targets;
+        })();
   const lightColors =
     seedIndex === 0
       ? [seed]
-      : Array.from({ length: seedIndex + 1 }, (_, index) =>
-          index === seedIndex
-            ? seed
-            : sanitizeSolvedColor(
-                interpolateFinePath(points, (lightBudget * index) / seedIndex),
-              ),
-        );
+      : [
+          ...lightTargets.map((distance) =>
+            sanitizeSolvedColor(interpolateFinePath(points, distance)),
+          ),
+          seed,
+        ];
 
-  const darkSteps = labels.length - seedIndex - 1;
-  const darkColors =
-    darkSteps <= 0
-      ? []
-      : Array.from({ length: darkSteps }, (_, index) => {
-          const stepIndex = index + 1;
-          return stepIndex === darkSteps
-            ? sanitizeSolvedColor(points[points.length - 1].color)
-            : sanitizeSolvedColor(
-                interpolateFinePath(
-                  points,
-                  lightBudget + (darkBudget * stepIndex) / darkSteps,
-                ),
-              );
-        });
+  let darkCumulative = 0;
+  const darkColors = darkIntervals.map((interval) => {
+    darkCumulative += interval * darkBudget;
+    return sanitizeSolvedColor(interpolateFinePath(points, lightBudget + darkCumulative));
+  });
 
   return {
     colors: [...lightColors, ...darkColors].map((color, index) =>
@@ -685,7 +812,7 @@ function lightEntranceDistortion(distances: readonly number[]): number {
   );
   if (baseline <= EPSILON) return 0;
 
-  const allowances = [1.02, 1.05];
+  const allowances = [1.01, 1.03];
   return rmsPenalty(
     frontDistances.map((distance, index) =>
       Math.max(
@@ -696,9 +823,88 @@ function lightEntranceDistortion(distances: readonly number[]): number {
   );
 }
 
+function stepPairRatio(a: number, b: number): number {
+  return Math.max(a, b) / Math.max(Math.min(a, b), EPSILON);
+}
+
+function edgeParityPenalty(
+  distances: readonly number[],
+  side: "light" | "dark",
+  allowance: number,
+): number {
+  if (distances.length < 2) return 0;
+  const first =
+    side === "light" ? distances[0] : distances[Math.max(distances.length - 2, 0)];
+  const second =
+    side === "light" ? distances[1] : distances[Math.max(distances.length - 1, 0)];
+  return stepRatioPenalty(stepPairRatio(first, second), allowance);
+}
+
+function worstStepRatio(distances: readonly number[], windowSize: number): number {
+  if (distances.length === 0) return 1;
+  if (windowSize <= 1) return 1;
+  if (distances.length < windowSize) {
+    return Math.max(...distances) / Math.max(Math.min(...distances), EPSILON);
+  }
+
+  let worst = 1;
+  for (let index = 0; index <= distances.length - windowSize; index++) {
+    const window = distances.slice(index, index + windowSize);
+    worst = Math.max(
+      worst,
+      Math.max(...window) / Math.max(Math.min(...window), EPSILON),
+    );
+  }
+  return worst;
+}
+
+function stepRatioPenalty(ratio: number, allowance: number): number {
+  return Math.max(0, ratio - allowance);
+}
+
+function localStepSpreadPenalty(
+  worstAdjacentRatio: number,
+  worstThreeStepRatio: number,
+): number {
+  return (
+    stepRatioPenalty(worstAdjacentRatio, 1.04) * 1.1 +
+    stepRatioPenalty(worstThreeStepRatio, 1.06)
+  );
+}
+
+function seedPlacementPenalty(
+  distances: readonly number[],
+  seedIndex: number,
+): number {
+  if (distances.length === 0) return 0;
+  const left = distances.slice(0, seedIndex);
+  const right = distances.slice(seedIndex);
+  if (left.length === 0 || right.length === 0) return 0;
+  const mean = average([...distances]);
+  if (mean <= EPSILON) return 0;
+  const imbalance = Math.abs(average([...left]) - average([...right])) / mean;
+  return Math.max(0, imbalance - 0.03);
+}
+
+function seedStopTargetPenalty(
+  seedFraction: number,
+  seedIndex: number,
+  totalStops: number,
+): number {
+  return Math.max(0, Math.abs(seedFraction - stopFractionForIndex(seedIndex, totalStops)) - 0.001);
+}
+
 function minimumLightReserve(seed: OklchColor): number {
   if (seed.l >= 0.97) return 0.01;
   return clamp(Math.min(L_MAX - seed.l, 0.08) * 0.75 + seed.c * 0.08, 0.03, 0.09);
+}
+
+function samplingLightnessPenalty(colors: readonly OklchColor[]): number {
+  const penalty = colors.slice(1).reduce((sum, color, index) => {
+    const delta = color.l - colors[index].l;
+    return delta > 1e-4 ? sum + delta - 1e-4 : sum;
+  }, 0);
+  return penalty > 0 ? 1_000_000 + penalty * 10_000 : 0;
 }
 
 function rmsPenalty(values: readonly number[]): number {
@@ -718,13 +924,204 @@ function unwrapHueSequence(colors: OklchColor[]): number[] {
   return result;
 }
 
-function computePathScore(
+function samplingObjective(sampled: SampledPath, labels: string[]): number {
+  const distances = pairwiseDistances(sampled.colors);
+  const lightStops = sampled.seedIndex;
+  const darkStops = labels.length - sampled.seedIndex - 1;
+  const lightEdgePenalty = edgeParityPenalty(
+    distances,
+    "light",
+    lightStops <= 2 ? 1.008 : 1.015,
+  );
+  const darkEdgePenalty = edgeParityPenalty(
+    distances,
+    "dark",
+    darkStops <= 2 ? 1.008 : 1.015,
+  );
+
+  return (
+    samplingLightnessPenalty(sampled.colors) +
+    seedStopTargetPenalty(sampled.seedFraction, sampled.seedIndex, labels.length) * 180 +
+    coefficientOfVariation(distances) * 36 +
+    stepRatioPenalty(worstStepRatio(distances, 2), 1.025) * 120 +
+    stepRatioPenalty(worstStepRatio(distances, 3), 1.04) * 92 +
+    seedPlacementPenalty(distances, sampled.seedIndex) * 88 +
+    lightEdgePenalty * 170 +
+    darkEdgePenalty * 136 +
+    lightEntranceDistortion(distances) * 48
+  );
+}
+
+function evaluateSamplingPlan(
+  seed: OklchColor,
+  points: FinePathPoint[],
+  seedPointIndex: number,
+  labels: string[],
+  plan: SamplingPlan,
+): { plan: SamplingPlan; sampled: SampledPath; objective: number } {
+  const sampled = sampleSolvedPath(seed, points, seedPointIndex, labels, plan);
+  return {
+    plan,
+    sampled,
+    objective: samplingObjective(sampled, labels),
+  };
+}
+
+function candidateSeedIndices(
+  lightBudget: number,
+  darkBudget: number,
+  totalStops: number,
+): number[] {
+  const { index: baseIndex, fraction } = deriveSeedIndex(lightBudget, darkBudget, totalStops);
+  const rawIndex = fraction * Math.max(totalStops - 1, 1);
+  const candidates = new Set<number>([
+    baseIndex,
+    Math.floor(rawIndex),
+    Math.ceil(rawIndex),
+    baseIndex - 2,
+    baseIndex - 1,
+    baseIndex + 1,
+    baseIndex + 2,
+  ]);
+
+  if (baseIndex <= 2) {
+    candidates.add(0);
+    candidates.add(1);
+    candidates.add(2);
+  }
+  if (baseIndex >= totalStops - 3) {
+    candidates.add(totalStops - 1);
+    candidates.add(totalStops - 2);
+    candidates.add(totalStops - 3);
+  }
+
+  return [...candidates]
+    .filter((value) => Number.isFinite(value))
+    .map((value) => clamp(Math.round(value), 0, Math.max(totalStops - 1, 0)))
+    .sort((a, b) => a - b)
+    .filter((value, index, values) => index === 0 || value !== values[index - 1]);
+}
+
+function minimumIntervalShare(count: number): number {
+  return count <= 1 ? 1 : 0.18 / count;
+}
+
+function transferSamplingPlan(
+  plan: SamplingPlan,
+  side: "light" | "dark",
+  from: number,
+  to: number,
+  delta: number,
+): SamplingPlan | null {
+  const current = side === "light" ? plan.lightIntervals : plan.darkIntervals;
+  if (current.length < 2 || from === to) return null;
+  if (from < 0 || from >= current.length || to < 0 || to >= current.length) return null;
+  const minShare = minimumIntervalShare(current.length);
+  if (current[from] - delta < minShare) return null;
+
+  const updated = [...current];
+  updated[from] -= delta;
+  updated[to] += delta;
+
+  return side === "light"
+    ? { ...plan, lightIntervals: updated }
+    : { ...plan, darkIntervals: updated };
+}
+
+function repairSamplingPlan(
+  seed: OklchColor,
+  points: FinePathPoint[],
+  seedPointIndex: number,
+  labels: string[],
+  startPlan: SamplingPlan,
+): SamplingPlan {
+  let best = evaluateSamplingPlan(seed, points, seedPointIndex, labels, startPlan);
+  const deltas = [0.08, 0.04, 0.02, 0.01, 0.005];
+
+  for (const delta of deltas) {
+    let improved = true;
+    while (improved) {
+      improved = false;
+      for (const side of ["light", "dark"] as const) {
+        const intervals =
+          side === "light" ? best.plan.lightIntervals : best.plan.darkIntervals;
+        if (intervals.length < 2) continue;
+
+        for (let index = 0; index < intervals.length - 1; index++) {
+          for (const [from, to] of [
+            [index, index + 1],
+            [index + 1, index],
+          ] as const) {
+            const candidatePlan = transferSamplingPlan(best.plan, side, from, to, delta);
+            if (!candidatePlan) continue;
+            const candidate = evaluateSamplingPlan(
+              seed,
+              points,
+              seedPointIndex,
+              labels,
+              candidatePlan,
+            );
+            if (candidate.objective + 1e-9 < best.objective) {
+              best = candidate;
+              improved = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return best.plan;
+}
+
+function buildOptimizedSamplingPlan(
+  seed: OklchColor,
+  points: FinePathPoint[],
+  seedPointIndex: number,
+  labels: string[],
+): SamplingPlan {
+  const lightBudget = points[seedPointIndex].distance;
+  const totalBudget = points[points.length - 1].distance;
+  const darkBudget = Math.max(totalBudget - lightBudget, 0);
+  const seedIndices = candidateSeedIndices(lightBudget, darkBudget, labels.length);
+
+  let best:
+    | { plan: SamplingPlan; sampled: SampledPath; objective: number }
+    | null = null;
+
+  for (const seedIndex of seedIndices) {
+    const basePlan = buildSamplingPlan(lightBudget, darkBudget, labels.length, seedIndex);
+    const repairedPlan = repairSamplingPlan(
+      seed,
+      points,
+      seedPointIndex,
+      labels,
+      basePlan,
+    );
+    const candidate = evaluateSamplingPlan(
+      seed,
+      points,
+      seedPointIndex,
+      labels,
+      repairedPlan,
+    );
+    if (!best || candidate.objective + 1e-9 < best.objective) {
+      best = candidate;
+    }
+  }
+
+  return best?.plan ?? buildSamplingPlan(lightBudget, darkBudget, labels.length);
+}
+
+function computePathMetrics(
   seed: OklchColor,
   params: V6SolverParameters,
   labels: string[],
+  points: FinePathPoint[],
+  seedPointIndex: number,
+  samplingPlan?: SamplingPlan,
 ): { colors: OklchColor[]; metrics: PathMetrics } {
-  const { points, seedPointIndex } = buildFinePath(seed, params);
-  const sampled = sampleSolvedPath(seed, points, seedPointIndex, labels);
+  const sampled = sampleSolvedPath(seed, points, seedPointIndex, labels, samplingPlan);
   const colors = sampled.colors;
 
   const gamutPenalty = average(
@@ -776,7 +1173,34 @@ function computePathScore(
   const pathDensityDistortion = continuousSpacingDistortion(points, seedPointIndex);
   const sampledDistances = pairwiseDistances(colors);
   const discreteSpacing = coefficientOfVariation(sampledDistances);
+  const seedStopTargetPenaltyValue = seedStopTargetPenalty(
+    sampled.seedFraction,
+    sampled.seedIndex,
+    labels.length,
+  );
+  const lightEdgeParityPenalty = edgeParityPenalty(
+    sampledDistances,
+    "light",
+    sampled.seedIndex <= 2 ? 1.008 : 1.015,
+  );
+  const darkEdgeParityPenalty = edgeParityPenalty(
+    sampledDistances,
+    "dark",
+    labels.length - sampled.seedIndex - 1 <= 2 ? 1.008 : 1.015,
+  );
+  const worstAdjacentStepRatio = worstStepRatio(sampledDistances, 2);
+  const worstThreeStepRatio = worstStepRatio(sampledDistances, 3);
+  const worstAdjacentStepPenalty = stepRatioPenalty(worstAdjacentStepRatio, 1.04);
+  const worstThreeStepWindowPenalty = stepRatioPenalty(worstThreeStepRatio, 1.06);
+  const worstLocalStepSpread = localStepSpreadPenalty(
+    worstAdjacentStepRatio,
+    worstThreeStepRatio,
+  );
   const lightEntrancePenalty = lightEntranceDistortion(sampledDistances);
+  const discreteSeedPlacementPenalty = seedPlacementPenalty(
+    sampledDistances,
+    sampled.seedIndex,
+  );
   const occupancy = average(
     points.map((point) => {
       const localMax = maxChroma(point.color.l, point.color.h);
@@ -803,6 +1227,13 @@ function computePathScore(
   const endpointHuePenalty =
     Math.abs(hueDelta(seed.h, params.lightEndpoint.color.h)) * 0.5 +
     Math.abs(hueDelta(seed.h, params.darkEndpoint.color.h)) * 0.35;
+  const pathProfile = buildPathProfileFromSidePolylines(
+    seed,
+    params.lightEndpoint.color,
+    params.darkEndpoint.color,
+    points.slice(0, seedPointIndex + 1).map((point) => point.color).reverse(),
+    points.slice(seedPointIndex).map((point) => point.color),
+  );
   const softPrior = compareToV6SoftPrior(
     seed,
     {
@@ -826,6 +1257,7 @@ function computePathScore(
       endpointOccupancyReward: endpointOccupancy,
       spanReward,
     },
+    pathProfile,
   );
   const endpointReservePriorPenalty = rmsPenalty([
     softPrior.parameterDeltas.lightLightness.normalized,
@@ -852,29 +1284,42 @@ function computePathScore(
     softPrior.parameterDeltas.seedTangentRadial.normalized,
     softPrior.parameterDeltas.seedTangentNormal.normalized,
   ]);
+  const fullPathPriorPenalty = softPrior.pathPenalty;
+  const chromaDistributionPriorPenalty = softPrior.chromaDistributionPenalty;
+  const energyTargetPriorPenalty = softPrior.energyPenalty;
   const selectedSoftPriorPenalty =
     endpointReservePriorPenalty * SOFT_PRIOR_WEIGHTS.endpointReserve +
     darkEndpointReservePriorPenalty * SOFT_PRIOR_WEIGHTS.darkEndpointReserve +
     endpointHueDriftPriorPenalty * SOFT_PRIOR_WEIGHTS.endpointHueDrift +
     lightEndpointIntensityPriorPenalty * SOFT_PRIOR_WEIGHTS.lightEndpointIntensity +
     darkEndpointIntensityPriorPenalty * SOFT_PRIOR_WEIGHTS.darkEndpointIntensity +
-    seedTangentBiasPriorPenalty * SOFT_PRIOR_WEIGHTS.seedTangentBias;
+    seedTangentBiasPriorPenalty * SOFT_PRIOR_WEIGHTS.seedTangentBias +
+    fullPathPriorPenalty * SOFT_PRIOR_WEIGHTS.fullPathShape +
+    chromaDistributionPriorPenalty * SOFT_PRIOR_WEIGHTS.chromaDistribution +
+    energyTargetPriorPenalty * SOFT_PRIOR_WEIGHTS.energyTargets;
 
   const score =
     gamutPenalty * 400 +
     hardLightnessPenalty +
     lightReservePenalty * 150 +
-    curvature * 4 +
-    jerk * 6 +
-    hueWobble * 0.08 +
-    pathDensityDistortion * 18 +
-    discreteSpacing * 4 +
-    lightEntrancePenalty * 28 +
-    localSeedAsymmetry * 8 -
-    endpointOccupancy * 6 +
-    occupancy * 4 -
-    spanReward * 2 +
-    endpointHuePenalty +
+    curvature * 1.4 +
+    jerk * 2.4 +
+    hueWobble * 0.04 +
+    pathDensityDistortion * 10 +
+    discreteSpacing * 24 +
+    seedStopTargetPenaltyValue * 90 +
+    lightEdgeParityPenalty * 132 +
+    darkEdgeParityPenalty * 108 +
+    worstAdjacentStepPenalty * 110 +
+    worstThreeStepWindowPenalty * 80 +
+    worstLocalStepSpread * 28 +
+    lightEntrancePenalty * 44 +
+    discreteSeedPlacementPenalty * 68 +
+    localSeedAsymmetry * 18 -
+    endpointOccupancy * 2 +
+    occupancy * 1.5 -
+    spanReward * 1 +
+    endpointHuePenalty * 0.35 +
     selectedSoftPriorPenalty;
 
   const breakdown: V6EnergyBreakdown = {
@@ -886,7 +1331,14 @@ function computePathScore(
     hueWobble,
     continuousSpacingDistortion: pathDensityDistortion,
     spacingDistortion: discreteSpacing,
+    seedStopTargetPenalty: seedStopTargetPenaltyValue,
+    lightEdgeParityPenalty,
+    darkEdgeParityPenalty,
+    worstAdjacentStepPenalty,
+    worstThreeStepWindowPenalty,
+    localStepSpreadPenalty: worstLocalStepSpread,
     lightEntrancePenalty,
+    seedPlacementPenalty: discreteSeedPlacementPenalty,
     seedNeighborhoodAsymmetry: localSeedAsymmetry,
     endpointHuePenalty,
     occupancyReward: occupancy,
@@ -899,6 +1351,9 @@ function computePathScore(
     darkEndpointIntensityPriorPenalty,
     endpointHueDriftPriorPenalty,
     seedTangentBiasPriorPenalty,
+    fullPathPriorPenalty,
+    chromaDistributionPriorPenalty,
+    energyTargetPriorPenalty,
     selectedSoftPriorPenalty,
     total: score,
   };
@@ -913,7 +1368,132 @@ function computePathScore(
       seedIndex: sampled.seedIndex,
       seedFraction: sampled.seedFraction,
       breakdown,
+      softPrior,
     },
+  };
+}
+
+function computePathScore(
+  seed: OklchColor,
+  params: V6SolverParameters,
+  labels: string[],
+): { colors: OklchColor[]; metrics: PathMetrics } {
+  const { points, seedPointIndex } = buildFinePath(seed, params);
+  return computePathMetrics(seed, params, labels, points, seedPointIndex);
+}
+
+function samplingHardeningRank(metrics: PathMetrics): number {
+  const { breakdown } = metrics;
+  const invalidPenalty =
+    Number.isFinite(metrics.score) &&
+    Number.isFinite(breakdown.total) &&
+    Number.isFinite(breakdown.lightEntrancePenalty) &&
+    Number.isFinite(breakdown.worstAdjacentStepPenalty) &&
+    Number.isFinite(breakdown.worstThreeStepWindowPenalty) &&
+    Number.isFinite(breakdown.seedPlacementPenalty) &&
+    Number.isFinite(breakdown.seedStopTargetPenalty)
+      ? 0
+      : 1_000_000_000;
+
+  return (
+    invalidPenalty +
+    breakdown.lightnessPenalty * 1000 +
+    breakdown.lightEntrancePenalty * 320 +
+    breakdown.lightEdgeParityPenalty * 280 +
+    breakdown.darkEdgeParityPenalty * 220 +
+    breakdown.worstAdjacentStepPenalty * 240 +
+    breakdown.worstThreeStepWindowPenalty * 180 +
+    breakdown.localStepSpreadPenalty * 120 +
+    breakdown.seedPlacementPenalty * 160 +
+    breakdown.seedStopTargetPenalty * 150 +
+    breakdown.spacingDistortion * 64 +
+    breakdown.continuousSpacingDistortion * 28 +
+    metrics.score
+  );
+}
+
+function computeFinalPathScore(
+  seed: OklchColor,
+  params: V6SolverParameters,
+  labels: string[],
+  points: FinePathPoint[],
+  seedPointIndex: number,
+): { colors: OklchColor[]; metrics: PathMetrics } {
+  const baseline = computePathMetrics(seed, params, labels, points, seedPointIndex);
+  const optimizedPlan = buildOptimizedSamplingPlan(
+    seed,
+    points,
+    seedPointIndex,
+    labels,
+  );
+  const optimized = computePathMetrics(
+    seed,
+    params,
+    labels,
+    points,
+    seedPointIndex,
+    optimizedPlan,
+  );
+  return samplingHardeningRank(optimized.metrics) <= samplingHardeningRank(baseline.metrics)
+    ? optimized
+    : baseline;
+}
+
+function archetypeVectorFromPrior(seed: OklchColor): V6ParameterVector {
+  const prior = buildV6SoftPrior(seed).prior;
+  return clampParameterVector({
+    lightHueOffset: prior.parameters.lightHueOffset.mean,
+    lightLightness: prior.parameters.lightLightness.mean,
+    lightIntensity: prior.parameters.lightIntensity.mean,
+    darkHueOffset: prior.parameters.darkHueOffset.mean,
+    darkLightness: prior.parameters.darkLightness.mean,
+    darkIntensity: prior.parameters.darkIntensity.mean,
+    curve: {
+      ...DEFAULT_ARCHETYPE_CURVE,
+      seedTangentRadial: prior.parameters.seedTangentRadial.mean,
+      seedTangentNormal: prior.parameters.seedTangentNormal.mean,
+    },
+  });
+}
+
+function buildArchetypeFinePath(
+  seed: OklchColor,
+  params: V6SolverParameters,
+): { points: FinePathPoint[]; seedPointIndex: number } {
+  const prior = buildV6SoftPrior(seed).prior;
+  const frame = buildSeedCenteredFrame(
+    params.lightEndpoint.color,
+    seed,
+    params.darkEndpoint.color,
+  );
+  const lightInteriorLabs = prior.path.light
+    .slice(1, -1)
+    .map((sample) =>
+      reconstructPointFromSeedFrame(frame, {
+        flow: sample.flow.mean,
+        radial: sample.radial.mean,
+        normal: sample.normal.mean,
+      }),
+    )
+    .reverse();
+  const darkInteriorLabs = prior.path.dark.slice(1, -1).map((sample) =>
+    reconstructPointFromSeedFrame(frame, {
+      flow: sample.flow.mean,
+      radial: sample.radial.mean,
+      normal: sample.normal.mean,
+    }),
+  );
+  const labs = [
+    toLabVector(params.lightEndpoint.color),
+    ...lightInteriorLabs,
+    toLabVector(seed),
+    ...darkInteriorLabs,
+    toLabVector(params.darkEndpoint.color),
+  ];
+  const seedPointIndex = 1 + lightInteriorLabs.length;
+  return {
+    ...buildFinePathFromLabs(labs, seed.h),
+    seedPointIndex,
   };
 }
 
@@ -1160,8 +1740,15 @@ function solvePath(
           hueWobble: 0,
           continuousSpacingDistortion: 0,
           spacingDistortion: 0,
+          seedStopTargetPenalty: 0,
+          lightEdgeParityPenalty: 0,
+          darkEdgeParityPenalty: 0,
+          localStepSpreadPenalty: 0,
           lightEntrancePenalty: 0,
+          worstAdjacentStepPenalty: 0,
+          worstThreeStepWindowPenalty: 0,
           seedNeighborhoodAsymmetry: 0,
+          seedPlacementPenalty: 0,
           endpointHuePenalty: 0,
           occupancyReward: 0,
           endpointOccupancyReward: 0,
@@ -1173,10 +1760,38 @@ function solvePath(
           darkEndpointIntensityPriorPenalty: 0,
           endpointHueDriftPriorPenalty: 0,
           seedTangentBiasPriorPenalty: 0,
+          fullPathPriorPenalty: 0,
+          chromaDistributionPriorPenalty: 0,
+          energyTargetPriorPenalty: 0,
           selectedSoftPriorPenalty: 0,
           total: Number.POSITIVE_INFINITY,
         },
       },
+      softPrior: compareToV6SoftPrior(
+        seed,
+        {
+          lightHueOffset: 0,
+          lightLightness: seed.l,
+          lightIntensity: 0,
+          darkHueOffset: 0,
+          darkLightness: seed.l,
+          darkIntensity: 0,
+          seedTangentRadial: 0,
+          seedTangentNormal: 0,
+        },
+        {
+          curvature: 0,
+          jerk: 0,
+          hueWobble: 0,
+          spacingDistortion: 0,
+          seedNeighborhoodAsymmetry: 0,
+          endpointHuePenalty: 0,
+          occupancyReward: 0,
+          endpointOccupancyReward: 0,
+          spanReward: 0,
+        },
+        buildPathProfileFromSidePolylines(seed, seed, seed, [seed], [seed]),
+      ),
     };
   }
 
@@ -1185,19 +1800,71 @@ function solvePath(
     best = refined;
   }
 
+  const { points, seedPointIndex } = buildFinePath(seed, best.parameters);
+  const finalized = computeFinalPathScore(
+    seed,
+    best.parameters,
+    labels,
+    points,
+    seedPointIndex,
+  );
+
   return {
-    colors: best.colors,
+    colors: finalized.colors,
     metadata: {
       solver: "v6",
-      score: best.metrics.score,
-      lightBudget: best.metrics.lightBudget,
-      darkBudget: best.metrics.darkBudget,
-      totalBudget: best.metrics.totalBudget,
-      seedIndex: best.metrics.seedIndex,
-      seedFraction: best.metrics.seedFraction,
+      score: finalized.metrics.score,
+      lightBudget: finalized.metrics.lightBudget,
+      darkBudget: finalized.metrics.darkBudget,
+      totalBudget: finalized.metrics.totalBudget,
+      seedIndex: finalized.metrics.seedIndex,
+      seedFraction: finalized.metrics.seedFraction,
       parameters: best.parameters,
-      breakdown: best.metrics.breakdown,
+      breakdown: finalized.metrics.breakdown,
     },
+    softPrior: finalized.metrics.softPrior,
+  };
+}
+
+function solveArchetypePath(
+  seed: OklchColor,
+  labels: string[],
+): PathSolution {
+  const context: EndpointSearchContext = {
+    seed,
+    seedLab: toLabVector(seed),
+    seedIntensity: chromaIntensity(seed),
+  };
+  const vector = archetypeVectorFromPrior(seed);
+  const parameters = buildParametersFromVector(context, vector);
+
+  if (!parameters) {
+    return solvePath(seed, labels);
+  }
+
+  const { points, seedPointIndex } = buildArchetypeFinePath(seed, parameters);
+  const scored = computeFinalPathScore(
+    seed,
+    parameters,
+    labels,
+    points,
+    seedPointIndex,
+  );
+
+  return {
+    colors: scored.colors,
+    metadata: {
+      solver: "v6-archetype",
+      score: scored.metrics.score,
+      lightBudget: scored.metrics.lightBudget,
+      darkBudget: scored.metrics.darkBudget,
+      totalBudget: scored.metrics.totalBudget,
+      seedIndex: scored.metrics.seedIndex,
+      seedFraction: scored.metrics.seedFraction,
+      parameters,
+      breakdown: scored.metrics.breakdown,
+    },
+    softPrior: scored.metrics.softPrior,
   };
 }
 
@@ -1219,33 +1886,6 @@ export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
 
   const solution = solvePath(seed, labels);
 
-  const softPrior = compareToV6SoftPrior(
-    seed,
-    {
-      lightHueOffset: solution.metadata.parameters.lightEndpoint.hueOffset,
-      lightLightness: solution.metadata.parameters.lightEndpoint.lightness,
-      lightIntensity: solution.metadata.parameters.lightEndpoint.intensity,
-      darkHueOffset: solution.metadata.parameters.darkEndpoint.hueOffset,
-      darkLightness: solution.metadata.parameters.darkEndpoint.lightness,
-      darkIntensity: solution.metadata.parameters.darkEndpoint.intensity,
-      seedTangentRadial: solution.metadata.parameters.curve.seedTangentRadial,
-      seedTangentNormal: solution.metadata.parameters.curve.seedTangentNormal,
-    },
-    {
-      curvature: solution.metadata.breakdown.curvature,
-      jerk: solution.metadata.breakdown.jerk,
-      hueWobble: solution.metadata.breakdown.hueWobble,
-      spacingDistortion: solution.metadata.breakdown.spacingDistortion,
-      seedNeighborhoodAsymmetry:
-        solution.metadata.breakdown.seedNeighborhoodAsymmetry,
-      endpointHuePenalty: solution.metadata.breakdown.endpointHuePenalty,
-      occupancyReward: solution.metadata.breakdown.occupancyReward,
-      endpointOccupancyReward:
-        solution.metadata.breakdown.endpointOccupancyReward,
-      spanReward: solution.metadata.breakdown.spanReward,
-    },
-  );
-
   const result: V6SolveResult = {
     stops: labels.map((label, index) => {
       const color =
@@ -1262,10 +1902,52 @@ export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
     }),
     metadata: {
       ...solution.metadata,
-      softPrior,
+      softPrior: solution.softPrior,
     },
   };
 
   CACHE.set(cacheKey, result);
+  return result;
+}
+
+export function solveV6ArchetypeRamp(config: RampConfig): V6SolveResult {
+  const labels = resolveLabels(config.stopCount);
+  const seed: OklchColor = {
+    l: clamp(config.seedLightness ?? 0.62, L_FLOOR, L_CEILING),
+    c: Math.max(0, config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue) * 0.55)),
+    h: normalizeHue(config.hue),
+  };
+  const cacheKey = [
+    "archetype",
+    normalizeHue(config.hue).toFixed(3),
+    (config.seedChroma ?? -1).toFixed(4),
+    (config.seedLightness ?? -1).toFixed(4),
+    labels.join(","),
+  ].join("|");
+  const cached = ARCHETYPE_CACHE.get(cacheKey);
+  if (cached) return cached;
+
+  const solution = solveArchetypePath(seed, labels);
+  const result: V6SolveResult = {
+    stops: labels.map((label, index) => {
+      const color =
+        index === solution.metadata.seedIndex
+          ? seed
+          : sanitizeSolvedColor(solution.colors[index]);
+      const t = labels.length > 1 ? index / (labels.length - 1) : 0.5;
+      return {
+        index,
+        label,
+        color,
+        darkColor: darkModeAdjust(color.l, color.c, color.h, t),
+      };
+    }),
+    metadata: {
+      ...solution.metadata,
+      softPrior: solution.softPrior,
+    },
+  };
+
+  ARCHETYPE_CACHE.set(cacheKey, result);
   return result;
 }

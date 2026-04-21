@@ -1,6 +1,7 @@
 import type { OklchColor } from "../types";
 import {
   CURATED_REFERENCE_CORPUS,
+  FAMILY_EXEMPLARS,
   familyAffinityForSeed,
   type ReferenceRamp,
 } from "./familyProfiles";
@@ -13,6 +14,12 @@ import {
   toLabVector,
 } from "./pathGeometry";
 import { maxChroma } from "./gamut";
+import {
+  PATH_SAMPLE_PROGRESS,
+  buildReferencePathProfile,
+  type V6PathProfile,
+  type V6PathProfileSample,
+} from "./v6PathProfiles";
 
 const REFERENCE_LABELS = [
   "50",
@@ -32,6 +39,9 @@ const ENDPOINT_LIGHTNESS_FLOOR = 0.02;
 const ENDPOINT_INTENSITY_FLOOR = 0.08;
 const HUE_OFFSET_FLOOR = 2;
 const TANGENT_FLOOR = 0.06;
+const PATH_FLOW_FLOOR = 0.06;
+const PATH_OFFSET_FLOOR = 0.05;
+const OCCUPANCY_FLOOR = 0.06;
 
 const ENERGY_FLOORS = {
   curvature: 0.02,
@@ -78,6 +88,29 @@ export interface V6SoftPriorTarget {
   deviation: number;
 }
 
+export interface V6SoftPriorDeviation {
+  value: number;
+  mean: number;
+  delta: number;
+  normalized: number;
+}
+
+export interface V6SoftPriorPathSnapshotSample {
+  progress: number;
+  flow: V6SoftPriorTarget;
+  radial: V6SoftPriorTarget;
+  normal: V6SoftPriorTarget;
+  occupancy: V6SoftPriorTarget;
+}
+
+export interface V6SoftPriorPathDeviationSample {
+  progress: number;
+  flow: V6SoftPriorDeviation;
+  radial: V6SoftPriorDeviation;
+  normal: V6SoftPriorDeviation;
+  occupancy: V6SoftPriorDeviation;
+}
+
 export interface V6SoftPriorSnapshot {
   parameters: {
     lightHueOffset: V6SoftPriorTarget;
@@ -100,24 +133,24 @@ export interface V6SoftPriorSnapshot {
     endpointOccupancyReward: V6SoftPriorTarget;
     spanReward: V6SoftPriorTarget;
   };
+  path: {
+    light: V6SoftPriorPathSnapshotSample[];
+    dark: V6SoftPriorPathSnapshotSample[];
+  };
 }
 
 export interface V6SoftPriorContributor {
   referenceId: string;
   source: string;
+  anchorLabel: (typeof REFERENCE_LABELS)[number];
   normalizedWeight: number;
-}
-
-export interface V6SoftPriorDeviation {
-  value: number;
-  mean: number;
-  delta: number;
-  normalized: number;
 }
 
 export interface V6SoftPriorComparison {
   parameterPenalty: number;
   energyPenalty: number;
+  pathPenalty: number;
+  chromaDistributionPenalty: number;
   prior: V6SoftPriorSnapshot;
   contributors: V6SoftPriorContributor[];
   parameterDeltas: {
@@ -141,6 +174,10 @@ export interface V6SoftPriorComparison {
     endpointOccupancyReward: V6SoftPriorDeviation;
     spanReward: V6SoftPriorDeviation;
   };
+  pathDeltas: {
+    light: V6SoftPriorPathDeviationSample[];
+    dark: V6SoftPriorPathDeviationSample[];
+  };
 }
 
 interface ReferencePriorExample {
@@ -151,9 +188,15 @@ interface ReferencePriorExample {
   seed: OklchColor;
   parameters: V6SoftPriorParameterValues;
   energy: V6SoftPriorEnergyValues;
+  path: V6PathProfile;
 }
 
-const ALIGNED_REFERENCE_CACHE = new Map<string, readonly ReferencePriorExample[]>();
+interface V6SoftPriorBundle {
+  prior: V6SoftPriorSnapshot;
+  contributors: V6SoftPriorContributor[];
+}
+
+const PRIOR_CACHE = new Map<string, V6SoftPriorBundle>();
 
 function normalizeHue(hue: number): number {
   return ((hue % 360) + 360) % 360;
@@ -168,6 +211,13 @@ function hueDelta(from: number, to: number): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function rotateHue(color: OklchColor, offset: number): OklchColor {
+  return {
+    ...color,
+    h: normalizeHue(color.h + offset),
+  };
 }
 
 function average(values: readonly number[]): number {
@@ -319,45 +369,41 @@ function referenceMatchWeight(seed: OklchColor, stop: OklchColor): number {
   );
 }
 
-function buildAlignedReferencePrior(
+function buildAlignedReferenceExample(
   seed: OklchColor,
   reference: ReferenceRamp,
+  anchorIndex: number,
 ): ReferencePriorExample {
-  const colors = REFERENCE_LABELS.map((label) => reference.stops[label]);
-  let anchorLabel: (typeof REFERENCE_LABELS)[number] = REFERENCE_LABELS[0];
-  let anchorIndex = 0;
-  let bestWeight = -1;
-
-  for (const [index, label] of REFERENCE_LABELS.entries()) {
-    const matchWeight = referenceMatchWeight(seed, reference.stops[label]);
-    if (matchWeight > bestWeight) {
-      bestWeight = matchWeight;
-      anchorLabel = label;
-      anchorIndex = index;
-    }
-  }
-
-  const alignedSeed = reference.stops[anchorLabel];
-  const lightEndpoint = reference.stops["50"];
-  const darkEndpoint = reference.stops["950"];
-  const lightShoulder =
-    reference.stops[REFERENCE_LABELS[Math.max(anchorIndex - 1, 0)]];
+  const rawColors = REFERENCE_LABELS.map((label) => reference.stops[label]);
+  const anchorLabel = REFERENCE_LABELS[anchorIndex];
+  const anchorStop = rawColors[anchorIndex];
+  const rotationOffset =
+    reference.family === "neutral"
+      ? 0
+      : hueDelta(anchorStop.h, FAMILY_EXEMPLARS[reference.family].h);
+  const alignedColors =
+    rotationOffset === 0
+      ? rawColors
+      : rawColors.map((color) => rotateHue(color, rotationOffset));
+  const alignedSeed = alignedColors[anchorIndex];
+  const lightEndpoint = alignedColors[0];
+  const darkEndpoint = alignedColors[alignedColors.length - 1];
+  const lightShoulder = alignedColors[Math.max(anchorIndex - 1, 0)];
   const darkShoulder =
-    reference.stops[
-      REFERENCE_LABELS[Math.min(anchorIndex + 1, REFERENCE_LABELS.length - 1)]
-    ];
+    alignedColors[Math.min(anchorIndex + 1, alignedColors.length - 1)];
   const frame = buildSeedCenteredFrame(lightEndpoint, alignedSeed, darkEndpoint);
   const lightProjection = projectShoulderToSeedFrame(frame, lightShoulder, "light");
   const darkProjection = projectShoulderToSeedFrame(frame, darkShoulder, "dark");
+  const weight =
+    reference.weight *
+    familyAffinityForSeed(seed.h, seed.c, reference.family) *
+    Math.max(referenceMatchWeight(seed, anchorStop), 0);
 
   return {
     referenceId: reference.id,
     source: reference.source,
     anchorLabel,
-    weight:
-      reference.weight *
-      familyAffinityForSeed(seed.h, seed.c, reference.family) *
-      Math.max(bestWeight, 0),
+    weight,
     seed: alignedSeed,
     parameters: {
       lightHueOffset: hueDelta(alignedSeed.h, lightEndpoint.h),
@@ -377,40 +423,17 @@ function buildAlignedReferencePrior(
         0.24,
       ),
     },
-    energy: computeReferenceEnergy(colors, anchorIndex),
+    energy: computeReferenceEnergy(alignedColors, anchorIndex),
+    path: buildReferencePathProfile(alignedColors, anchorIndex),
   };
 }
 
-function alignedReferencePriors(seed: OklchColor): readonly ReferencePriorExample[] {
-  const cacheKey = seedCacheKey(seed);
-  const cached = ALIGNED_REFERENCE_CACHE.get(cacheKey);
-  if (cached) return cached;
-
-  const raw = CURATED_REFERENCE_CORPUS.map((reference) =>
-    buildAlignedReferencePrior(seed, reference),
+function alignedReferenceExamples(seed: OklchColor): readonly ReferencePriorExample[] {
+  return CURATED_REFERENCE_CORPUS.flatMap((reference) =>
+    REFERENCE_LABELS.map((_, anchorIndex) =>
+      buildAlignedReferenceExample(seed, reference, anchorIndex),
+    ),
   );
-  const weightSum = raw.reduce((total, reference) => total + reference.weight, 0);
-  const normalized =
-    weightSum > EPSILON
-      ? raw.map((reference) => ({
-          ...reference,
-          weight: reference.weight / weightSum,
-        }))
-      : raw.map((reference, index) => ({
-          ...reference,
-          weight:
-            CURATED_REFERENCE_CORPUS[index].weight /
-            Math.max(
-              CURATED_REFERENCE_CORPUS.reduce(
-                (total, candidate) => total + candidate.weight,
-                0,
-              ),
-              EPSILON,
-            ),
-        }));
-
-  ALIGNED_REFERENCE_CACHE.set(cacheKey, normalized);
-  return normalized;
 }
 
 function target(
@@ -442,87 +465,206 @@ function rmsPenalty(values: readonly number[]): number {
   return Math.sqrt(average(values.map((value) => value ** 2)));
 }
 
-export function compareToV6SoftPrior(
-  seed: OklchColor,
-  parameters: V6SoftPriorParameterValues,
-  energy: V6SoftPriorEnergyValues,
-): V6SoftPriorComparison {
-  const references = alignedReferencePriors(seed);
-  const weights = references.map((reference) => reference.weight);
+function buildPathSnapshot(
+  references: readonly ReferencePriorExample[],
+  weights: readonly number[],
+): V6SoftPriorSnapshot["path"] {
+  const snapshotForSide = (
+    side: keyof V6PathProfile,
+  ): V6SoftPriorPathSnapshotSample[] =>
+    PATH_SAMPLE_PROGRESS.map((progress, index) => ({
+      progress,
+      flow: target(
+        references.map((reference) => reference.path[side][index].flow),
+        weights,
+      ),
+      radial: target(
+        references.map((reference) => reference.path[side][index].radial),
+        weights,
+      ),
+      normal: target(
+        references.map((reference) => reference.path[side][index].normal),
+        weights,
+      ),
+      occupancy: target(
+        references.map((reference) => reference.path[side][index].occupancy),
+        weights,
+      ),
+    }));
+
+  return {
+    light: snapshotForSide("light"),
+    dark: snapshotForSide("dark"),
+  };
+}
+
+function buildSoftPriorBundle(seed: OklchColor): V6SoftPriorBundle {
+  const cacheKey = seedCacheKey(seed);
+  const cached = PRIOR_CACHE.get(cacheKey);
+  if (cached) return cached;
+
+  const rawReferences = alignedReferenceExamples(seed).filter(
+    (reference) => reference.weight > EPSILON,
+  );
+  const normalizedReferences =
+    rawReferences.length > 0
+      ? (() => {
+          const weightSum = rawReferences.reduce(
+            (sum, reference) => sum + reference.weight,
+            0,
+          );
+          return rawReferences.map((reference) => ({
+            ...reference,
+            weight: reference.weight / Math.max(weightSum, EPSILON),
+          }));
+        })()
+      : CURATED_REFERENCE_CORPUS.flatMap((reference) =>
+          REFERENCE_LABELS.map((_, anchorIndex) => {
+            const example = buildAlignedReferenceExample(seed, reference, anchorIndex);
+            return {
+              ...example,
+              weight:
+                1 /
+                (CURATED_REFERENCE_CORPUS.length * REFERENCE_LABELS.length),
+            };
+          }),
+        );
+  const weights = normalizedReferences.map((reference) => reference.weight);
+
   const prior: V6SoftPriorSnapshot = {
     parameters: {
       lightHueOffset: target(
-        references.map((reference) => reference.parameters.lightHueOffset),
+        normalizedReferences.map((reference) => reference.parameters.lightHueOffset),
         weights,
       ),
       lightLightness: target(
-        references.map((reference) => reference.parameters.lightLightness),
+        normalizedReferences.map((reference) => reference.parameters.lightLightness),
         weights,
       ),
       lightIntensity: target(
-        references.map((reference) => reference.parameters.lightIntensity),
+        normalizedReferences.map((reference) => reference.parameters.lightIntensity),
         weights,
       ),
       darkHueOffset: target(
-        references.map((reference) => reference.parameters.darkHueOffset),
+        normalizedReferences.map((reference) => reference.parameters.darkHueOffset),
         weights,
       ),
       darkLightness: target(
-        references.map((reference) => reference.parameters.darkLightness),
+        normalizedReferences.map((reference) => reference.parameters.darkLightness),
         weights,
       ),
       darkIntensity: target(
-        references.map((reference) => reference.parameters.darkIntensity),
+        normalizedReferences.map((reference) => reference.parameters.darkIntensity),
         weights,
       ),
       seedTangentRadial: target(
-        references.map((reference) => reference.parameters.seedTangentRadial),
+        normalizedReferences.map((reference) => reference.parameters.seedTangentRadial),
         weights,
       ),
       seedTangentNormal: target(
-        references.map((reference) => reference.parameters.seedTangentNormal),
+        normalizedReferences.map((reference) => reference.parameters.seedTangentNormal),
         weights,
       ),
     },
     energy: {
       curvature: target(
-        references.map((reference) => reference.energy.curvature),
+        normalizedReferences.map((reference) => reference.energy.curvature),
         weights,
       ),
       jerk: target(
-        references.map((reference) => reference.energy.jerk),
+        normalizedReferences.map((reference) => reference.energy.jerk),
         weights,
       ),
       hueWobble: target(
-        references.map((reference) => reference.energy.hueWobble),
+        normalizedReferences.map((reference) => reference.energy.hueWobble),
         weights,
       ),
       spacingDistortion: target(
-        references.map((reference) => reference.energy.spacingDistortion),
+        normalizedReferences.map((reference) => reference.energy.spacingDistortion),
         weights,
       ),
       seedNeighborhoodAsymmetry: target(
-        references.map((reference) => reference.energy.seedNeighborhoodAsymmetry),
+        normalizedReferences.map((reference) => reference.energy.seedNeighborhoodAsymmetry),
         weights,
       ),
       endpointHuePenalty: target(
-        references.map((reference) => reference.energy.endpointHuePenalty),
+        normalizedReferences.map((reference) => reference.energy.endpointHuePenalty),
         weights,
       ),
       occupancyReward: target(
-        references.map((reference) => reference.energy.occupancyReward),
+        normalizedReferences.map((reference) => reference.energy.occupancyReward),
         weights,
       ),
       endpointOccupancyReward: target(
-        references.map((reference) => reference.energy.endpointOccupancyReward),
+        normalizedReferences.map(
+          (reference) => reference.energy.endpointOccupancyReward,
+        ),
         weights,
       ),
       spanReward: target(
-        references.map((reference) => reference.energy.spanReward),
+        normalizedReferences.map((reference) => reference.energy.spanReward),
         weights,
       ),
     },
+    path: buildPathSnapshot(normalizedReferences, weights),
   };
+
+  const bundle: V6SoftPriorBundle = {
+    prior,
+    contributors: normalizedReferences
+      .map((reference, index) => ({
+        referenceId: reference.referenceId,
+        source: reference.source,
+        anchorLabel: reference.anchorLabel,
+        normalizedWeight: weights[index],
+      }))
+      .sort((a, b) => b.normalizedWeight - a.normalizedWeight)
+      .slice(0, 5),
+  };
+  PRIOR_CACHE.set(cacheKey, bundle);
+  return bundle;
+}
+
+function comparePathSide(
+  samples: readonly V6PathProfileSample[],
+  prior: readonly V6SoftPriorPathSnapshotSample[],
+): V6SoftPriorPathDeviationSample[] {
+  return prior.map((targetSample, index) => {
+    const sample = samples[index] ?? samples[samples.length - 1];
+    return {
+      progress: targetSample.progress,
+      flow: normalizeComparison(sample.flow, targetSample.flow, PATH_FLOW_FLOOR),
+      radial: normalizeComparison(sample.radial, targetSample.radial, PATH_OFFSET_FLOOR),
+      normal: normalizeComparison(sample.normal, targetSample.normal, PATH_OFFSET_FLOOR),
+      occupancy: normalizeComparison(
+        sample.occupancy,
+        targetSample.occupancy,
+        OCCUPANCY_FLOOR,
+      ),
+    };
+  });
+}
+
+function interiorPathDeltas(
+  deltas: readonly V6SoftPriorPathDeviationSample[],
+): V6SoftPriorPathDeviationSample[] {
+  return deltas.filter(
+    (entry) => entry.progress > EPSILON && entry.progress < 1 - EPSILON,
+  );
+}
+
+export function buildV6SoftPrior(seed: OklchColor): V6SoftPriorBundle {
+  return buildSoftPriorBundle(seed);
+}
+
+export function compareToV6SoftPrior(
+  seed: OklchColor,
+  parameters: V6SoftPriorParameterValues,
+  energy: V6SoftPriorEnergyValues,
+  path: V6PathProfile,
+): V6SoftPriorComparison {
+  const bundle = buildSoftPriorBundle(seed);
+  const { prior, contributors } = bundle;
 
   const parameterDeltas = {
     lightHueOffset: normalizeComparison(
@@ -573,11 +715,7 @@ export function compareToV6SoftPrior(
       prior.energy.curvature,
       ENERGY_FLOORS.curvature,
     ),
-    jerk: normalizeComparison(
-      energy.jerk,
-      prior.energy.jerk,
-      ENERGY_FLOORS.jerk,
-    ),
+    jerk: normalizeComparison(energy.jerk, prior.energy.jerk, ENERGY_FLOORS.jerk),
     hueWobble: normalizeComparison(
       energy.hueWobble,
       prior.energy.hueWobble,
@@ -615,6 +753,15 @@ export function compareToV6SoftPrior(
     ),
   };
 
+  const pathDeltas = {
+    light: comparePathSide(path.light, prior.path.light),
+    dark: comparePathSide(path.dark, prior.path.dark),
+  };
+  const interior = [
+    ...interiorPathDeltas(pathDeltas.light),
+    ...interiorPathDeltas(pathDeltas.dark),
+  ];
+
   return {
     parameterPenalty: rmsPenalty(
       Object.values(parameterDeltas).map((entry) => entry.normalized),
@@ -622,15 +769,20 @@ export function compareToV6SoftPrior(
     energyPenalty: rmsPenalty(
       Object.values(energyDeltas).map((entry) => entry.normalized),
     ),
+    pathPenalty: rmsPenalty(
+      interior.flatMap((entry) => [
+        entry.flow.normalized,
+        entry.radial.normalized,
+        entry.normal.normalized,
+      ]),
+    ),
+    chromaDistributionPenalty: rmsPenalty(
+      interior.map((entry) => entry.occupancy.normalized),
+    ),
     prior,
-    contributors: references.map((reference, index) => ({
-      referenceId: reference.referenceId,
-      source: reference.source,
-      normalizedWeight: weights[index],
-    }))
-      .sort((a, b) => b.normalizedWeight - a.normalizedWeight)
-      .slice(0, 3),
+    contributors,
     parameterDeltas,
     energyDeltas,
+    pathDeltas,
   };
 }

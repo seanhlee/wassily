@@ -10,7 +10,14 @@ import {
   toLabVector,
 } from "./pathGeometry";
 
-export type RampFamily = "generic" | "lime" | "ultramarine" | "cyan" | "neutral";
+export type RampFamily =
+  | "generic"
+  | "lime"
+  | "phthalo-green"
+  | "cyan"
+  | "ultramarine"
+  | "violet"
+  | "neutral";
 
 export interface FamilyProfile {
   lightEndpointThreshold: number;
@@ -113,22 +120,28 @@ const STOP_LABELS: StopLabel[] = [
 
 const CHROMATIC_FAMILIES: readonly ChromaticFamily[] = [
   "lime",
+  "phthalo-green",
   "cyan",
   "ultramarine",
+  "violet",
 ];
 
 const GENERIC_BLEND_WEIGHT = 0.25;
 const CHROMATIC_BLEND_EXPONENT = 2;
 const FAMILY_BLEND_SIGMAS: Record<ChromaticFamily, number> = {
   lime: 30,
+  "phthalo-green": 24,
   cyan: 28,
   ultramarine: 32,
+  violet: 28,
 };
 
-const FAMILY_EXEMPLARS: Record<DerivedFamily, OklchColor> = {
+export const FAMILY_EXEMPLARS: Record<DerivedFamily, OklchColor> = {
   lime: { l: 0.931, c: 0.223, h: 121.082 },
+  "phthalo-green": { l: 0.52, c: 0.16, h: 165 },
   ultramarine: { l: 0.47, c: 0.18, h: 265 },
   cyan: { l: 0.78, c: 0.14, h: 210 },
+  violet: { l: 0.62, c: 0.21, h: 315 },
   neutral: { l: 0.62, c: 0.018, h: 70 },
 };
 
@@ -175,6 +188,46 @@ export const CURATED_REFERENCE_CORPUS: readonly ReferenceRamp[] = [
       "800": stop(0.476, 0.103, 61.9),
       "900": stop(0.421, 0.09, 57.7),
       "950": stop(0.286, 0.064, 53.8),
+    },
+  },
+  {
+    id: "tw-emerald-v3",
+    family: "phthalo-green",
+    source: "Tailwind CSS v3 emerald",
+    notes: "Cool deep green reference close to the canonical phthalo seed.",
+    weight: 0.6,
+    stops: {
+      "50": stop(0.979, 0.021, 166.1),
+      "100": stop(0.95, 0.051, 163.1),
+      "200": stop(0.905, 0.089, 164.2),
+      "300": stop(0.845, 0.13, 165),
+      "400": stop(0.773, 0.153, 163.2),
+      "500": stop(0.696, 0.149, 162.5),
+      "600": stop(0.596, 0.127, 163.2),
+      "700": stop(0.508, 0.105, 165.6),
+      "800": stop(0.432, 0.086, 166.9),
+      "900": stop(0.378, 0.073, 168.9),
+      "950": stop(0.262, 0.049, 172.6),
+    },
+  },
+  {
+    id: "tw-teal-v3",
+    family: "phthalo-green",
+    source: "Tailwind CSS v3 teal",
+    notes: "Blue-green counterweight so the family can stay cool in the shadows.",
+    weight: 0.4,
+    stops: {
+      "50": stop(0.984, 0.014, 180.7),
+      "100": stop(0.953, 0.05, 180.8),
+      "200": stop(0.91, 0.093, 180.4),
+      "300": stop(0.855, 0.125, 181.1),
+      "400": stop(0.785, 0.133, 181.9),
+      "500": stop(0.704, 0.123, 182.5),
+      "600": stop(0.6, 0.104, 184.7),
+      "700": stop(0.511, 0.086, 186.4),
+      "800": stop(0.437, 0.071, 188.2),
+      "900": stop(0.386, 0.059, 188.4),
+      "950": stop(0.277, 0.045, 192.5),
     },
   },
   {
@@ -235,6 +288,46 @@ export const CURATED_REFERENCE_CORPUS: readonly ReferenceRamp[] = [
       "800": stop(0.45, 0.077, 224.3),
       "900": stop(0.398, 0.066, 227.4),
       "950": stop(0.302, 0.054, 229.7),
+    },
+  },
+  {
+    id: "tw-violet-v3",
+    family: "violet",
+    source: "Tailwind CSS v3 violet",
+    notes: "Blue-violet reference that keeps the upper mids saturated without drifting magenta.",
+    weight: 0.45,
+    stops: {
+      "50": stop(0.969, 0.016, 293.8),
+      "100": stop(0.943, 0.028, 294.6),
+      "200": stop(0.894, 0.055, 293.3),
+      "300": stop(0.811, 0.101, 293.6),
+      "400": stop(0.709, 0.159, 293.5),
+      "500": stop(0.606, 0.219, 292.7),
+      "600": stop(0.541, 0.247, 293),
+      "700": stop(0.491, 0.241, 292.6),
+      "800": stop(0.432, 0.211, 292.8),
+      "900": stop(0.38, 0.178, 293.7),
+      "950": stop(0.283, 0.135, 291.1),
+    },
+  },
+  {
+    id: "tw-fuchsia-v3",
+    family: "violet",
+    source: "Tailwind CSS v3 fuchsia",
+    notes: "Magenta-side counterweight so violet ramps can hold the seed's red bias.",
+    weight: 0.55,
+    stops: {
+      "50": stop(0.977, 0.017, 320.1),
+      "100": stop(0.952, 0.036, 318.9),
+      "200": stop(0.903, 0.073, 319.6),
+      "300": stop(0.833, 0.132, 321.4),
+      "400": stop(0.748, 0.207, 322.2),
+      "500": stop(0.667, 0.259, 322.1),
+      "600": stop(0.591, 0.257, 322.9),
+      "700": stop(0.518, 0.226, 323.9),
+      "800": stop(0.452, 0.192, 324.6),
+      "900": stop(0.401, 0.16, 325.6),
+      "950": stop(0.293, 0.131, 325.7),
     },
   },
   {
@@ -702,16 +795,20 @@ export const GENERIC_FAMILY_PROFILE: FamilyProfile = {
 
 export const CURATED_FAMILY_PROFILE_FITS: Record<DerivedFamily, FamilyFitReport> = {
   lime: deriveFamilyProfile("lime"),
+  "phthalo-green": deriveFamilyProfile("phthalo-green"),
   ultramarine: deriveFamilyProfile("ultramarine"),
   cyan: deriveFamilyProfile("cyan"),
+  violet: deriveFamilyProfile("violet"),
   neutral: deriveFamilyProfile("neutral"),
 };
 
 export const FAMILY_PROFILES: Record<RampFamily, FamilyProfile> = {
   generic: GENERIC_FAMILY_PROFILE,
   lime: CURATED_FAMILY_PROFILE_FITS.lime.profile,
+  "phthalo-green": CURATED_FAMILY_PROFILE_FITS["phthalo-green"].profile,
   ultramarine: CURATED_FAMILY_PROFILE_FITS.ultramarine.profile,
   cyan: CURATED_FAMILY_PROFILE_FITS.cyan.profile,
+  violet: CURATED_FAMILY_PROFILE_FITS.violet.profile,
   neutral: CURATED_FAMILY_PROFILE_FITS.neutral.profile,
 };
 

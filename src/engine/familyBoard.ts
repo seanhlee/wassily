@@ -53,10 +53,21 @@ export interface FamilyProfileBoardData {
 
 const FAMILY_EXEMPLAR_IDS: Record<DerivedFamily, string> = {
   lime: "bright-lime",
-  ultramarine: "ultramarine",
+  "phthalo-green": "phthalo-green",
   cyan: "cyan",
+  ultramarine: "ultramarine",
+  violet: "violet",
   neutral: "warm-neutral",
 };
+
+const FAMILY_ORDER: DerivedFamily[] = [
+  "lime",
+  "phthalo-green",
+  "cyan",
+  "ultramarine",
+  "violet",
+  "neutral",
+];
 
 const CONTROL_POINT_LABELS = [
   "light endpoint",
@@ -122,8 +133,7 @@ function getExemplarSeed(family: DerivedFamily): ResearchSeed {
 }
 
 export function buildFamilyProfileBoardData(): FamilyProfileBoardData {
-  const families = (Object.keys(CURATED_FAMILY_PROFILE_FITS) as DerivedFamily[]).map(
-    (family) => {
+  const families = FAMILY_ORDER.map((family) => {
       const exemplarSeed = getExemplarSeed(family);
       const fit = CURATED_FAMILY_PROFILE_FITS[family];
       const references = CURATED_REFERENCE_CORPUS.filter(
@@ -147,8 +157,7 @@ export function buildFamilyProfileBoardData(): FamilyProfileBoardData {
         generatedRamp: ramp.map((stop) => toBoardSwatch(stop.label, stop.color)),
         analysis,
       };
-    },
-  );
+    });
 
   return {
     generatedAt: new Date().toISOString(),

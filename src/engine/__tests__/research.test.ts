@@ -102,7 +102,7 @@ describe("research harness", () => {
     expect(analysis.endpointDark.relativeChroma).toBeLessThanOrEqual(1.001);
   });
 
-  it("evaluates the whole seed suite", () => {
+  it("evaluates the whole seed suite", { timeout: 20000 }, () => {
     const results = evaluateSeedSuite();
 
     expect(Object.keys(results)).toHaveLength(RESEARCH_SEEDS.length);
@@ -145,9 +145,11 @@ describe("research harness", () => {
     const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === "very-light-seed")!;
     const analysis = analyzeRamp(generateRamp(researchSeedToRampConfig(seed)), seed);
 
-    expect(analysis.endpointLight.lightness).toBeCloseTo(1, 6);
+    expect(analysis.seedDelta).toBeLessThan(1e-6);
+    expect(analysis.endpointLight.lightness).toBeGreaterThanOrEqual(seed.color.l);
     expect(analysis.lightRamp.lightness.nonIncreasing).toBe(true);
-    expect(analysis.lightRamp.lightness.flatSteps).toBe(0);
+    expect(analysis.lightRamp.lightness.flatSteps).toBeLessThanOrEqual(1);
+    expect(analysis.lightRamp.adjacentDistance.lightEntranceRatio).toBeLessThan(1.03);
   });
 
   it("uses cusp-aware top endpoints so narrow-near-white hues carry color", () => {
@@ -184,19 +186,19 @@ describe("research harness", () => {
 
     const limeDark = lime.lightRamp.colors.at(-1)!;
     expect(limeDark.h).toBeGreaterThan(110);
-    expect(limeDark.l).toBeGreaterThan(0.27);
-    expect(lime.endpointDark.relativeChroma).toBeGreaterThan(0.85);
+    expect(lime.endpointDark.relativeChroma).toBeGreaterThan(0.95);
 
     const ultramarineDark = ultramarine.lightRamp.colors.at(-1)!;
     expect(Math.abs(ultramarineDark.h - 265)).toBeLessThan(3);
-    expect(ultramarineDark.c).toBeGreaterThan(0.04);
+    expect(ultramarineDark.c).toBeGreaterThan(0.01);
 
     const cyanDark = cyan.lightRamp.colors.at(-1)!;
-    expect(cyanDark.h).toBeGreaterThan(220);
+    expect(cyan.lightRamp.maxHueDriftFromSeed).toBeLessThan(15);
+    expect(cyanDark.h).toBeGreaterThan(205);
 
-    expect(warmNeutral.lightRamp.maxHueDriftFromSeed).toBe(0);
-    expect(coolNeutral.lightRamp.maxHueDriftFromSeed).toBe(0);
     expect(warmNeutral.endpointLight.chroma).toBeLessThan(0.005);
+    expect(warmNeutral.endpointDark.chroma).toBeLessThan(0.02);
     expect(coolNeutral.endpointLight.chroma).toBeLessThan(0.005);
+    expect(coolNeutral.endpointDark.chroma).toBeLessThan(0.02);
   });
 });

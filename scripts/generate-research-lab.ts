@@ -6,9 +6,11 @@ const OUTPUT_DIR = path.resolve("docs/generated");
 const HTML_PATH = path.join(OUTPUT_DIR, "research-lab.html");
 const JSON_PATH = path.join(OUTPUT_DIR, "research-lab.json");
 
+type MetricTone = "ok" | "warn" | "bad" | "neutral";
+
 function renderSwatches(
   swatches: Array<{ label: string; hex: string; textHex: string; oklch: string }>,
-  seedLabel: string | undefined,
+  seedLabel: string | null,
 ): string {
   return `
     <div class="swatches">
@@ -27,8 +29,50 @@ function renderSwatches(
   `;
 }
 
-function metric(label: string, value: string): string {
-  return `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`;
+function engineLabel(engine: string): string {
+  switch (engine) {
+    case "v6-archetype":
+      return "V6 Archetype";
+    case "v6":
+      return "V6 Solver";
+    default:
+      return engine.toUpperCase();
+  }
+}
+
+function gateLabel(gate: "pass" | "tighten" | "fail"): string {
+  switch (gate) {
+    case "pass":
+      return "Pass";
+    case "tighten":
+      return "Tighten";
+    default:
+      return "Fail";
+  }
+}
+
+function metric(label: string, value: string, tone: MetricTone = "neutral"): string {
+  return `
+    <div class="metric metric--${tone}">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
+}
+
+function classify(
+  value: number | null,
+  passThreshold: number,
+  failThreshold: number,
+): MetricTone {
+  if (value === null || Number.isNaN(value)) return "bad";
+  if (value > failThreshold) return "bad";
+  if (value > passThreshold) return "warn";
+  return "ok";
+}
+
+function monotoneTone(value: boolean): MetricTone {
+  return value ? "ok" : "bad";
 }
 
 function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
@@ -40,46 +84,61 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
     <title>Wassily Research Lab</title>
     <style>
       :root {
-        --bg: #f3eee6;
-        --surface: rgba(255,255,255,0.82);
-        --line: rgba(17,17,17,0.1);
+        --bg: #f4efe8;
+        --surface: rgba(255,255,255,0.9);
+        --surface-strong: rgba(255,255,255,0.96);
+        --line: rgba(31, 25, 20, 0.08);
         --text: #1d1916;
-        --muted: #695f56;
-        --accent: #9b6f41;
+        --muted: #685d54;
+        --accent: #8a5d2d;
+        --ok-bg: rgba(43, 122, 68, 0.09);
+        --ok-line: rgba(43, 122, 68, 0.22);
+        --ok-text: #245236;
+        --warn-bg: rgba(191, 125, 32, 0.11);
+        --warn-line: rgba(191, 125, 32, 0.22);
+        --warn-text: #81520f;
+        --bad-bg: rgba(162, 54, 42, 0.11);
+        --bad-line: rgba(162, 54, 42, 0.22);
+        --bad-text: #7e261d;
       }
 
       * { box-sizing: border-box; }
+
       body {
         margin: 0;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-        background:
-          radial-gradient(circle at top left, rgba(255,255,255,0.9), transparent 40%),
-          linear-gradient(180deg, #faf7f2 0%, var(--bg) 100%);
         color: var(--text);
+        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(255,255,255,0.9), transparent 38%),
+          linear-gradient(180deg, #fbf8f4 0%, var(--bg) 100%);
       }
 
       main {
-        max-width: 1480px;
+        max-width: 1500px;
         margin: 0 auto;
         padding: 40px 24px 72px;
       }
 
       h1, h2, h3 {
         margin: 0;
-        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
         letter-spacing: -0.02em;
       }
 
       h1 {
-        font-size: clamp(2.4rem, 5vw, 4rem);
+        font-size: clamp(2.5rem, 5vw, 4rem);
         line-height: 0.95;
-        margin-bottom: 12px;
       }
 
       p {
         margin: 0;
+        line-height: 1.6;
         color: var(--muted);
-        line-height: 1.55;
+      }
+
+      code,
+      .mono {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
       }
 
       .hero {
@@ -88,15 +147,31 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
         margin-bottom: 28px;
       }
 
-      .seed {
+      .hero__pillars {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 6px;
+      }
+
+      .pillar {
+        padding: 9px 12px;
+        border-radius: 999px;
         border: 1px solid var(--line);
+        background: rgba(255,255,255,0.74);
+        font-size: 0.84rem;
+        color: var(--accent);
+      }
+
+      .seed {
+        margin-top: 24px;
+        padding: 22px;
         border-radius: 24px;
+        border: 1px solid var(--line);
         background: var(--surface);
         box-shadow: 0 24px 64px rgba(28, 20, 14, 0.08);
-        padding: 22px;
         display: grid;
         gap: 18px;
-        margin-top: 24px;
       }
 
       .seed__header {
@@ -108,16 +183,15 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
-        font-size: 0.82rem;
-        color: var(--accent);
+        font-size: 0.8rem;
       }
 
       .chip {
-        padding: 7px 10px;
-        border: 1px solid var(--line);
+        padding: 8px 11px;
         border-radius: 999px;
-        background: rgba(255,255,255,0.68);
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.72);
+        color: var(--accent);
       }
 
       .engine-grid {
@@ -127,35 +201,126 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
       }
 
       .engine {
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        padding: 18px;
-        background: rgba(255,255,255,0.88);
         display: grid;
         gap: 16px;
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: var(--surface-strong);
+      }
+
+      .engine__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .engine__header p {
+        font-size: 0.9rem;
+      }
+
+      .gate {
+        padding: 7px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        font-size: 0.76rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .gate--pass {
+        background: var(--ok-bg);
+        border-color: var(--ok-line);
+        color: var(--ok-text);
+      }
+
+      .gate--tighten {
+        background: var(--warn-bg);
+        border-color: var(--warn-line);
+        color: var(--warn-text);
+      }
+
+      .gate--fail {
+        background: var(--bad-bg);
+        border-color: var(--bad-line);
+        color: var(--bad-text);
       }
 
       .metric-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
         gap: 10px;
       }
 
       .metric {
         display: grid;
         gap: 4px;
-        padding: 10px 12px;
+        padding: 11px 12px;
         border-radius: 14px;
-        background: rgba(248, 245, 240, 0.95);
-        border: 1px solid rgba(17,17,17,0.06);
-        font-size: 0.9rem;
+        border: 1px solid rgba(31, 25, 20, 0.06);
+        background: rgba(248, 245, 240, 0.92);
       }
 
       .metric span {
-        color: var(--muted);
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .metric strong {
+        font-size: 0.96rem;
+      }
+
+      .metric--ok {
+        background: var(--ok-bg);
+        border-color: var(--ok-line);
+      }
+
+      .metric--ok strong {
+        color: var(--ok-text);
+      }
+
+      .metric--warn {
+        background: var(--warn-bg);
+        border-color: var(--warn-line);
+      }
+
+      .metric--warn strong {
+        color: var(--warn-text);
+      }
+
+      .metric--bad {
+        background: var(--bad-bg);
+        border-color: var(--bad-line);
+      }
+
+      .metric--bad strong {
+        color: var(--bad-text);
+      }
+
+      .reasons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .reason {
+        padding: 6px 9px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(247, 243, 237, 0.95);
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+
+      .reason--pass {
+        color: var(--ok-text);
+        border-color: var(--ok-line);
+        background: var(--ok-bg);
       }
 
       .swatches {
@@ -165,16 +330,16 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
       }
 
       .swatch {
-        min-height: 110px;
-        border-radius: 14px;
+        min-height: 112px;
         padding: 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 25, 20, 0.08);
         display: grid;
         align-content: space-between;
-        border: 1px solid rgba(17,17,17,0.08);
       }
 
       .swatch--seed {
-        outline: 2px solid rgba(155, 111, 65, 0.5);
+        outline: 2px solid rgba(138, 93, 45, 0.52);
         outline-offset: 2px;
       }
 
@@ -192,7 +357,7 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
 
       .swatch__oklch,
       .swatch__hex {
-        font-size: 0.7rem;
+        font-size: 0.69rem;
         line-height: 1.45;
       }
     </style>
@@ -201,7 +366,13 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
     <main>
       <section class="hero">
         <h1>Wassily Research Lab</h1>
-        <p>Side-by-side evaluation board for the current <code>v5</code> family-profile engine and the experimental <code>v6</code> seed-constrained perceptual path solver.</p>
+        <p>Strict evaluation board for the real bar: exact anchor truth, correct seed placement, and perceptually even travel from <code>50</code> through <code>950</code> with no visible jumps.</p>
+        <div class="hero__pillars">
+          <div class="pillar mono">Exact seed lock</div>
+          <div class="pillar mono">Proper stop placement</div>
+          <div class="pillar mono">No local step spikes</div>
+          <div class="pillar mono">Monotone 50 → 950</div>
+        </div>
         <p>Generated ${new Date(data.generatedAt).toLocaleString()}</p>
       </section>
       ${data.seeds
@@ -212,122 +383,77 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
                 <h2>${section.seed.label}</h2>
                 <p>${section.seed.note}</p>
                 <div class="seed__meta">
-                  <div class="chip">${`oklch(${section.seed.color.l.toFixed(3)} ${section.seed.color.c.toFixed(3)} ${section.seed.color.h.toFixed(1)})`}</div>
+                  <div class="chip mono">${`oklch(${section.seed.color.l.toFixed(3)} ${section.seed.color.c.toFixed(3)} ${section.seed.color.h.toFixed(1)})`}</div>
                 </div>
               </div>
               <div class="engine-grid">
                 ${section.engines
-                  .map((engine) => {
-                    const seedLabel =
-                      engine.run.analysis.seedStopIndex === null
-                        ? undefined
-                        : engine.run.analysis.labels[engine.run.analysis.seedStopIndex];
-                    return `
+                  .map(
+                    (engine) => `
                       <article class="engine">
-                        <div>
-                          <h3>${engine.engine.toUpperCase()}</h3>
+                        <div class="engine__header">
+                          <div>
+                            <h3>${engineLabel(engine.engine)}</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--${engine.focus.gate}">${gateLabel(engine.focus.gate)}</div>
                         </div>
                         <div class="metric-grid">
-                          ${metric(
-                            "Seed Stop",
-                            seedLabel ?? "n/a",
-                          )}
+                          ${metric("Seed Stop", engine.focus.seedStopLabel ?? "n/a")}
                           ${metric(
                             "Seed Delta",
-                            engine.run.analysis.seedDelta?.toFixed(4) ?? "n/a",
+                            engine.focus.seedDelta === null
+                              ? "n/a"
+                              : engine.focus.seedDelta.toFixed(4),
+                            classify(engine.focus.seedDelta, 1e-6, 1e-4),
+                          )}
+                          ${metric(
+                            "Split Balance",
+                            engine.focus.seedPlacementImbalance === null
+                              ? "n/a"
+                              : engine.focus.seedPlacementImbalance.toFixed(3),
+                            classify(engine.focus.seedPlacementImbalance, 0.04, 0.08),
+                          )}
+                          ${metric(
+                            "Worst Adj",
+                            `${engine.focus.worstAdjacentRatio.toFixed(3)}x`,
+                            classify(engine.focus.worstAdjacentRatio, 1.04, 1.08),
+                          )}
+                          ${metric(
+                            "Worst 3-Step",
+                            `${engine.focus.worstThreeStepRatio.toFixed(3)}x`,
+                            classify(engine.focus.worstThreeStepRatio, 1.05, 1.1),
+                          )}
+                          ${metric(
+                            "Light Edge",
+                            `${engine.focus.lightEntranceRatio.toFixed(3)}x`,
+                            classify(engine.focus.lightEntranceRatio, 1.04, 1.08),
                           )}
                           ${metric(
                             "Distance CV",
-                            engine.run.analysis.lightRamp.adjacentDistance.coefficientOfVariation.toFixed(3),
-                          )}
-                          ${metric(
-                            "Hue Drift",
-                            `${engine.run.analysis.lightRamp.maxHueDriftFromSeed.toFixed(1)}°`,
-                          )}
-                          ${metric(
-                            "Endpoint Light",
-                            `${engine.run.analysis.endpointLight.lightness.toFixed(3)} / ${engine.run.analysis.endpointLight.chroma.toFixed(3)}`,
-                          )}
-                          ${metric(
-                            "Endpoint Dark",
-                            `${engine.run.analysis.endpointDark.lightness.toFixed(3)} / ${engine.run.analysis.endpointDark.chroma.toFixed(3)}`,
+                            engine.focus.spacingCv.toFixed(3),
+                            classify(engine.focus.spacingCv, 0.02, 0.05),
                           )}
                           ${metric(
                             "Monotone",
-                            engine.run.analysis.lightRamp.lightness.nonIncreasing ? "yes" : "no",
+                            engine.focus.monotone ? "yes" : "no",
+                            monotoneTone(engine.focus.monotone),
                           )}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Solved Seed Split",
-                                `${engine.run.metadata.seedIndex} @ ${(engine.run.metadata.seedFraction * 100).toFixed(1)}%`,
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Solver Score",
-                                engine.run.metadata.score.toFixed(2),
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Path Density",
-                                engine.run.metadata.breakdown.continuousSpacingDistortion.toFixed(3),
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Discrete Spacing",
-                                engine.run.metadata.breakdown.spacingDistortion.toFixed(3),
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Light Entrance",
-                                engine.run.metadata.breakdown.lightEntrancePenalty.toFixed(3),
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Hue Wobble",
-                                engine.run.metadata.breakdown.hueWobble.toFixed(3),
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Curvature",
-                                engine.run.metadata.breakdown.curvature.toFixed(3),
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Soft Prior Obj",
-                                engine.run.metadata.breakdown.selectedSoftPriorPenalty.toFixed(2),
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Prior Energy Δ",
-                                engine.run.metadata.softPrior.energyPenalty.toFixed(2),
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Prior Param Δ",
-                                engine.run.metadata.softPrior.parameterPenalty.toFixed(2),
-                              )
-                            : ""}
-                          ${engine.run.metadata
-                            ? metric(
-                                "Top Prior",
-                                engine.run.metadata.softPrior.contributors[0]?.referenceId ??
-                                  "n/a",
-                              )
-                            : ""}
+                          ${metric("Solved Split", engine.focus.seedSplitLabel ?? "n/a")}
                         </div>
-                        ${renderSwatches(engine.swatches, seedLabel)}
+                        <div class="reasons">
+                          ${
+                            engine.focus.reasons.length === 0
+                              ? `<span class="reason reason--pass">meets the current high bar</span>`
+                              : engine.focus.reasons
+                                  .map((reason) => `<span class="reason">${reason}</span>`)
+                                  .join("")
+                          }
+                        </div>
+                        ${renderSwatches(engine.swatches, engine.focus.seedStopLabel)}
                       </article>
-                    `;
-                  })
+                    `,
+                  )
                   .join("")}
               </div>
             </section>
