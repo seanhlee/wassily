@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { RESEARCH_SEEDS, analyzeRamp, researchSeedToRampConfig } from "../research";
-import { isInGamut, maxChroma } from "../gamut";
-import { solveV6ResearchRamp } from "../v6ResearchSolver";
+import { clampToGamut, isInGamut, maxChroma } from "../gamut";
+import { solveV6ArchetypeRamp, solveV6ResearchRamp } from "../v6ResearchSolver";
 
 describe("v6 research solver", () => {
   function createSeededRandom(seed: number): () => number {
@@ -17,11 +17,15 @@ describe("v6 research solver", () => {
       const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
       const solved = solveV6ResearchRamp(researchSeedToRampConfig(seed));
       const analysis = analyzeRamp(solved.stops, seed);
-      const expectedGamutViolations = isInGamut(seed.color) ? 0 : 1;
+      const displaySeed = clampToGamut(seed.color);
 
       expect(analysis.seedStopIndex).not.toBeNull();
-      expect(analysis.seedDelta).toBeLessThan(1e-6);
-      expect(analysis.lightRamp.gamutViolations).toBe(expectedGamutViolations);
+      if (isInGamut(seed.color)) {
+        expect(analysis.seedDelta).toBeLessThan(1e-6);
+      } else {
+        expect(solved.stops[solved.metadata.seedIndex].color).toEqual(displaySeed);
+      }
+      expect(analysis.lightRamp.gamutViolations).toBe(0);
       expect(analysis.lightRamp.lightness.nonIncreasing).toBe(true);
       expect(solved.metadata.seedIndex).toBe(analysis.seedStopIndex);
       expect(Number.isFinite(solved.metadata.breakdown.total)).toBe(true);
@@ -128,6 +132,35 @@ describe("v6 research solver", () => {
       expect(analysis.lightRamp.adjacentDistance.worstThreeStepRatio).toBeLessThan(1.05);
       expect(analysis.seedPlacementImbalance).not.toBeNull();
       expect(analysis.seedPlacementImbalance!).toBeLessThan(0.05);
+    }
+  });
+
+  it("sanitizes out-of-gamut snapped seeds in both v6 result builders", () => {
+    const config = {
+      hue: 10,
+      seedLightness: 0.78,
+      seedChroma: 0.14,
+      stopCount: 11 as const,
+      mode: "opinionated" as const,
+    };
+    const rawSeed = {
+      l: config.seedLightness,
+      c: config.seedChroma,
+      h: config.hue,
+    };
+    const expectedSeed = clampToGamut(rawSeed);
+
+    expect(isInGamut(rawSeed)).toBe(false);
+
+    for (const solved of [solveV6ResearchRamp(config), solveV6ArchetypeRamp(config)]) {
+      const seedStop = solved.stops[solved.metadata.seedIndex];
+
+      for (const stop of solved.stops) {
+        expect(isInGamut(stop.color)).toBe(true);
+        expect(isInGamut(stop.darkColor)).toBe(true);
+      }
+
+      expect(seedStop.color).toEqual(expectedSeed);
     }
   });
 

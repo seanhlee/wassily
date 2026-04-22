@@ -1,7 +1,7 @@
 import { oklab as toOklab } from "culori";
 import type { OklchColor, RampConfig, RampStop, StopPreset } from "../types";
 import { contrastRatio, BLACK, WHITE } from "./contrast";
-import { isInGamut, maxChroma } from "./gamut";
+import { clampToGamut, isInGamut, maxChroma } from "./gamut";
 import {
   solveV6ArchetypeRamp,
   solveV6ResearchRamp,
@@ -161,18 +161,19 @@ export function analyzeRamp(
   seed?: OklchColor | ResearchSeed,
 ): RampAnalysis {
   const seedColor = seed ? ("color" in seed ? seed.color : seed) : null;
+  const displaySeedColor = seedColor === null ? null : clampToGamut(seedColor);
   const seedMeta = seed && "color" in seed ? seed : null;
   const lightColors = stops.map((stop) => stop.color);
   const darkColors = stops.map((stop) => stop.darkColor);
-  const lightRamp = analyzeVariant(lightColors, seedColor);
-  const darkRamp = analyzeVariant(darkColors, seedColor);
+  const lightRamp = analyzeVariant(lightColors, displaySeedColor);
+  const darkRamp = analyzeVariant(darkColors, displaySeedColor);
 
   const seedStopIndex =
-    seedColor === null ? null : findNearestColorIndex(lightColors, seedColor);
+    displaySeedColor === null ? null : findNearestColorIndex(lightColors, displaySeedColor);
   const seedDelta =
-    seedColor === null || seedStopIndex === null
+    displaySeedColor === null || seedStopIndex === null
       ? null
-      : oklabDistance(lightColors[seedStopIndex], seedColor);
+      : oklabDistance(lightColors[seedStopIndex], displaySeedColor);
 
   return {
     seed: seedMeta,

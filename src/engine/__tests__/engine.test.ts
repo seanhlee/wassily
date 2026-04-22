@@ -157,6 +157,18 @@ describe("ramp generation", () => {
     }
   });
 
+  it("preserves legacy custom labels for one- and two-stop ramps in both modes", () => {
+    for (const mode of ["opinionated", "pure"] as const) {
+      expect(generateRamp({ hue: 180, stopCount: 1, mode }).map((stop) => stop.label)).toEqual([
+        "500",
+      ]);
+      expect(generateRamp({ hue: 180, stopCount: 2, mode }).map((stop) => stop.label)).toEqual([
+        "200",
+        "800",
+      ]);
+    }
+  });
+
   it("all ramp colors are in gamut", { timeout: 20000 }, () => {
     for (let h = 0; h < 360; h += 60) {
       const stops = generateRamp({
@@ -185,10 +197,16 @@ describe("ramp generation", () => {
   it("opinionated mode routes through the seeded v6 path", () => {
     for (const seedId of ["bright-lime", "cyan", "very-light-seed"] as const) {
       const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
-      const analysis = analyzeRamp(generateRamp(researchSeedToRampConfig(seed)), seed);
+      const stops = generateRamp(researchSeedToRampConfig(seed));
+      const analysis = analyzeRamp(stops, seed);
 
       expect(analysis.seedStopIndex).not.toBeNull();
-      expect(analysis.seedDelta).toBeLessThan(1e-6);
+      if (isInGamut(seed.color)) {
+        expect(analysis.seedDelta).toBeLessThan(1e-6);
+      } else {
+        expect(stops[analysis.seedStopIndex!].color).toEqual(clampToGamut(seed.color));
+      }
+      expect(analysis.lightRamp.gamutViolations).toBe(0);
       expect(analysis.lightRamp.lightness.nonIncreasing).toBe(true);
     }
   });

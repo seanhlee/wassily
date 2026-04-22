@@ -267,6 +267,9 @@ function darkModeAdjust(
 }
 
 function generateCustomLabels(count: number): string[] {
+  if (count <= 1) return ["500"];
+  if (count === 2) return ["200", "800"];
+
   const labels: string[] = [];
   for (let i = 0; i < count; i++) {
     const raw = 50 + (900 * i) / Math.max(count - 1, 1);
@@ -1870,11 +1873,12 @@ function solveArchetypePath(
 
 export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
   const labels = resolveLabels(config.stopCount);
-  const seed: OklchColor = {
+  const rawSeed: OklchColor = {
     l: clamp(config.seedLightness ?? 0.62, L_FLOOR, L_CEILING),
     c: Math.max(0, config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue) * 0.55)),
     h: normalizeHue(config.hue),
   };
+  const sanitizedSeed = sanitizeSolvedColor(rawSeed);
   const cacheKey = [
     normalizeHue(config.hue).toFixed(3),
     (config.seedChroma ?? -1).toFixed(4),
@@ -1884,13 +1888,13 @@ export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
   const cached = CACHE.get(cacheKey);
   if (cached) return cached;
 
-  const solution = solvePath(seed, labels);
+  const solution = solvePath(sanitizedSeed, labels);
 
   const result: V6SolveResult = {
     stops: labels.map((label, index) => {
       const color =
         index === solution.metadata.seedIndex
-          ? seed
+          ? sanitizedSeed
           : sanitizeSolvedColor(solution.colors[index]);
       const t = labels.length > 1 ? index / (labels.length - 1) : 0.5;
       return {
@@ -1912,11 +1916,12 @@ export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
 
 export function solveV6ArchetypeRamp(config: RampConfig): V6SolveResult {
   const labels = resolveLabels(config.stopCount);
-  const seed: OklchColor = {
+  const rawSeed: OklchColor = {
     l: clamp(config.seedLightness ?? 0.62, L_FLOOR, L_CEILING),
     c: Math.max(0, config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue) * 0.55)),
     h: normalizeHue(config.hue),
   };
+  const sanitizedSeed = sanitizeSolvedColor(rawSeed);
   const cacheKey = [
     "archetype",
     normalizeHue(config.hue).toFixed(3),
@@ -1927,12 +1932,12 @@ export function solveV6ArchetypeRamp(config: RampConfig): V6SolveResult {
   const cached = ARCHETYPE_CACHE.get(cacheKey);
   if (cached) return cached;
 
-  const solution = solveArchetypePath(seed, labels);
+  const solution = solveArchetypePath(sanitizedSeed, labels);
   const result: V6SolveResult = {
     stops: labels.map((label, index) => {
       const color =
         index === solution.metadata.seedIndex
-          ? seed
+          ? sanitizedSeed
           : sanitizeSolvedColor(solution.colors[index]);
       const t = labels.length > 1 ? index / (labels.length - 1) : 0.5;
       return {
