@@ -1,0 +1,3233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wassily Research Lab</title>
+    <style>
+      :root {
+        --bg: #f4efe8;
+        --surface: rgba(255,255,255,0.9);
+        --surface-strong: rgba(255,255,255,0.96);
+        --line: rgba(31, 25, 20, 0.08);
+        --text: #1d1916;
+        --muted: #685d54;
+        --accent: #8a5d2d;
+        --ok-bg: rgba(43, 122, 68, 0.09);
+        --ok-line: rgba(43, 122, 68, 0.22);
+        --ok-text: #245236;
+        --warn-bg: rgba(191, 125, 32, 0.11);
+        --warn-line: rgba(191, 125, 32, 0.22);
+        --warn-text: #81520f;
+        --bad-bg: rgba(162, 54, 42, 0.11);
+        --bad-line: rgba(162, 54, 42, 0.22);
+        --bad-text: #7e261d;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(255,255,255,0.9), transparent 38%),
+          linear-gradient(180deg, #fbf8f4 0%, var(--bg) 100%);
+      }
+
+      main {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 40px 24px 72px;
+      }
+
+      h1, h2, h3 {
+        margin: 0;
+        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+        letter-spacing: -0.02em;
+      }
+
+      h1 {
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        line-height: 0.95;
+      }
+
+      p {
+        margin: 0;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      code,
+      .mono {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .hero {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 28px;
+      }
+
+      .hero__pillars {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 6px;
+      }
+
+      .pillar {
+        padding: 9px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.74);
+        font-size: 0.84rem;
+        color: var(--accent);
+      }
+
+      .seed {
+        margin-top: 24px;
+        padding: 22px;
+        border-radius: 24px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        box-shadow: 0 24px 64px rgba(28, 20, 14, 0.08);
+        display: grid;
+        gap: 18px;
+      }
+
+      .seed__header {
+        display: grid;
+        gap: 8px;
+      }
+
+      .seed__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 0.8rem;
+      }
+
+      .chip {
+        padding: 8px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.72);
+        color: var(--accent);
+      }
+
+      .engine-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+        gap: 18px;
+      }
+
+      .engine {
+        display: grid;
+        gap: 16px;
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: var(--surface-strong);
+      }
+
+      .engine__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .engine__header p {
+        font-size: 0.9rem;
+      }
+
+      .gate {
+        padding: 7px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        font-size: 0.76rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .gate--pass {
+        background: var(--ok-bg);
+        border-color: var(--ok-line);
+        color: var(--ok-text);
+      }
+
+      .gate--tighten {
+        background: var(--warn-bg);
+        border-color: var(--warn-line);
+        color: var(--warn-text);
+      }
+
+      .gate--fail {
+        background: var(--bad-bg);
+        border-color: var(--bad-line);
+        color: var(--bad-text);
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        display: grid;
+        gap: 4px;
+        padding: 11px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 25, 20, 0.06);
+        background: rgba(248, 245, 240, 0.92);
+      }
+
+      .metric span {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .metric strong {
+        font-size: 0.96rem;
+      }
+
+      .metric--ok {
+        background: var(--ok-bg);
+        border-color: var(--ok-line);
+      }
+
+      .metric--ok strong {
+        color: var(--ok-text);
+      }
+
+      .metric--warn {
+        background: var(--warn-bg);
+        border-color: var(--warn-line);
+      }
+
+      .metric--warn strong {
+        color: var(--warn-text);
+      }
+
+      .metric--bad {
+        background: var(--bad-bg);
+        border-color: var(--bad-line);
+      }
+
+      .metric--bad strong {
+        color: var(--bad-text);
+      }
+
+      .reasons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .reason {
+        padding: 6px 9px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(247, 243, 237, 0.95);
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+
+      .reason--pass {
+        color: var(--ok-text);
+        border-color: var(--ok-line);
+        background: var(--ok-bg);
+      }
+
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+        gap: 10px;
+      }
+
+      .swatch {
+        min-height: 112px;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 25, 20, 0.08);
+        display: grid;
+        align-content: space-between;
+      }
+
+      .swatch--seed {
+        outline: 2px solid rgba(138, 93, 45, 0.52);
+        outline-offset: 2px;
+      }
+
+      .swatch__label,
+      .swatch__oklch,
+      .swatch__hex {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .swatch__label {
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .swatch__oklch,
+      .swatch__hex {
+        font-size: 0.69rem;
+        line-height: 1.45;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <h1>Wassily Research Lab</h1>
+        <p>Strict evaluation board for the real bar: exact anchor truth, correct seed placement, and perceptually even travel from <code>50</code> through <code>950</code> with no visible jumps.</p>
+        <div class="hero__pillars">
+          <div class="pillar mono">Exact seed lock</div>
+          <div class="pillar mono">Proper stop placement</div>
+          <div class="pillar mono">No local step spikes</div>
+          <div class="pillar mono">Monotone 50 → 950</div>
+        </div>
+        <p>Generated 4/21/2026, 4:04:10 PM</p>
+      </section>
+      
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Bright Lime</h2>
+                <p>Canonical hard case: luminous yellow-green seed with extreme high-lightness chroma.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.931 0.223 121.1)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--fail">Fail</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>200</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Split Balance</span>
+      <strong>0.101</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Worst Adj</span>
+      <strong>1.069x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Worst 3-Step</span>
+      <strong>1.105x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Light Edge</span>
+      <strong>1.059x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Distance CV</span>
+      <strong>0.060</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>2 @ 21.7%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason">worst adj 1.069x</span><span class="reason">worst 3-step 1.105x</span><span class="reason">light edge 1.059x</span><span class="reason">split balance 0.101</span><span class="reason">distance cv 0.060</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F6FDDC; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.044 116.7)</div>
+              <div class="swatch__hex">#F6FDDC</div>
+            </div>
+          
+            <div class="swatch" style="background:#E5FF95; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.958 0.134 120.1)</div>
+              <div class="swatch__hex">#E5FF95</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#D3FD05; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.931 0.223 121.1)</div>
+              <div class="swatch__hex">#D3FD05</div>
+            </div>
+          
+            <div class="swatch" style="background:#B8DF00; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.846 0.204 121.5)</div>
+              <div class="swatch__hex">#B8DF00</div>
+            </div>
+          
+            <div class="swatch" style="background:#9FC200; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.760 0.184 121.6)</div>
+              <div class="swatch__hex">#9FC200</div>
+            </div>
+          
+            <div class="swatch" style="background:#89A500; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.676 0.163 121.2)</div>
+              <div class="swatch__hex">#89A500</div>
+            </div>
+          
+            <div class="swatch" style="background:#728800; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.589 0.141 120.5)</div>
+              <div class="swatch__hex">#728800</div>
+            </div>
+          
+            <div class="swatch" style="background:#5D6E00; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.506 0.120 119.7)</div>
+              <div class="swatch__hex">#5D6E00</div>
+            </div>
+          
+            <div class="swatch" style="background:#495600; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.427 0.100 119.2)</div>
+              <div class="swatch__hex">#495600</div>
+            </div>
+          
+            <div class="swatch" style="background:#364000; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.351 0.083 119.0)</div>
+              <div class="swatch__hex">#364000</div>
+            </div>
+          
+            <div class="swatch" style="background:#262C01; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.276 0.062 117.3)</div>
+              <div class="swatch__hex">#262C01</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>100</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.008</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.008x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.008x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.008x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.002</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>1 @ 10.2%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#EFFF98; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.965 0.129 116.1)</div>
+              <div class="swatch__hex">#EFFF98</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#D3FD05; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.931 0.223 121.1)</div>
+              <div class="swatch__hex">#D3FD05</div>
+            </div>
+          
+            <div class="swatch" style="background:#B0DC04; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.832 0.203 122.9)</div>
+              <div class="swatch__hex">#B0DC04</div>
+            </div>
+          
+            <div class="swatch" style="background:#91BB03; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.734 0.182 124.3)</div>
+              <div class="swatch__hex">#91BB03</div>
+            </div>
+          
+            <div class="swatch" style="background:#759A03; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.636 0.159 125.1)</div>
+              <div class="swatch__hex">#759A03</div>
+            </div>
+          
+            <div class="swatch" style="background:#5C7B02; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.538 0.135 125.4)</div>
+              <div class="swatch__hex">#5C7B02</div>
+            </div>
+          
+            <div class="swatch" style="background:#445C01; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.441 0.111 125.3)</div>
+              <div class="swatch__hex">#445C01</div>
+            </div>
+          
+            <div class="swatch" style="background:#2F4001; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.343 0.085 124.8)</div>
+              <div class="swatch__hex">#2F4001</div>
+            </div>
+          
+            <div class="swatch" style="background:#1B2500; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.245 0.060 123.9)</div>
+              <div class="swatch__hex">#1B2500</div>
+            </div>
+          
+            <div class="swatch" style="background:#080D00; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.148 0.036 122.5)</div>
+              <div class="swatch__hex">#080D00</div>
+            </div>
+          
+            <div class="swatch" style="background:#000000; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.050 0.011 121.1)</div>
+              <div class="swatch__hex">#000000</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Cadmium Yellow</h2>
+                <p>Bright yellow that stresses high-lightness chroma and warm shadow shaping.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.900 0.165 98.0)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>200</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.021</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.034x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.038x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.014x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.016</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>2 @ 20.7%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#FDF9E6; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.026 96.9)</div>
+              <div class="swatch__hex">#FDF9E6</div>
+            </div>
+          
+            <div class="swatch" style="background:#FFF0A0; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.949 0.100 98.6)</div>
+              <div class="swatch__hex">#FFF0A0</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#FBDE46; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.900 0.165 98.0)</div>
+              <div class="swatch__hex">#FBDE46</div>
+            </div>
+          
+            <div class="swatch" style="background:#E2C300; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.820 0.169 97.6)</div>
+              <div class="swatch__hex">#E2C300</div>
+            </div>
+          
+            <div class="swatch" style="background:#C7AB00; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.743 0.153 97.0)</div>
+              <div class="swatch__hex">#C7AB00</div>
+            </div>
+          
+            <div class="swatch" style="background:#AD9200; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.664 0.136 95.9)</div>
+              <div class="swatch__hex">#AD9200</div>
+            </div>
+          
+            <div class="swatch" style="background:#937A00; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.585 0.120 94.4)</div>
+              <div class="swatch__hex">#937A00</div>
+            </div>
+          
+            <div class="swatch" style="background:#7A6300; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.507 0.104 92.7)</div>
+              <div class="swatch__hex">#7A6300</div>
+            </div>
+          
+            <div class="swatch" style="background:#624D00; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.430 0.088 91.2)</div>
+              <div class="swatch__hex">#624D00</div>
+            </div>
+          
+            <div class="swatch" style="background:#4A3900; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.354 0.072 90.5)</div>
+              <div class="swatch__hex">#4A3900</div>
+            </div>
+          
+            <div class="swatch" style="background:#342602; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.278 0.055 88.3)</div>
+              <div class="swatch__hex">#342602</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>100</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.005</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.005x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.005x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.005x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.001</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>1 @ 10.2%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#FEEFAF; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.950 0.082 96.5)</div>
+              <div class="swatch__hex">#FEEFAF</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#FBDE46; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.900 0.165 98.0)</div>
+              <div class="swatch__hex">#FBDE46</div>
+            </div>
+          
+            <div class="swatch" style="background:#DABF2F; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.805 0.154 98.1)</div>
+              <div class="swatch__hex">#DABF2F</div>
+            </div>
+          
+            <div class="swatch" style="background:#B9A11D; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.710 0.140 98.1)</div>
+              <div class="swatch__hex">#B9A11D</div>
+            </div>
+          
+            <div class="swatch" style="background:#988510; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.615 0.123 98.1)</div>
+              <div class="swatch__hex">#988510</div>
+            </div>
+          
+            <div class="swatch" style="background:#796907; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.521 0.105 98.2)</div>
+              <div class="swatch__hex">#796907</div>
+            </div>
+          
+            <div class="swatch" style="background:#5B4F04; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.427 0.086 98.1)</div>
+              <div class="swatch__hex">#5B4F04</div>
+            </div>
+          
+            <div class="swatch" style="background:#3F3603; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.332 0.067 98.1)</div>
+              <div class="swatch__hex">#3F3603</div>
+            </div>
+          
+            <div class="swatch" style="background:#251F01; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.238 0.047 98.1)</div>
+              <div class="swatch__hex">#251F01</div>
+            </div>
+          
+            <div class="swatch" style="background:#0D0A00; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.144 0.028 98.0)</div>
+              <div class="swatch__hex">#0D0A00</div>
+            </div>
+          
+            <div class="swatch" style="background:#010000; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.050 0.010 98.0)</div>
+              <div class="swatch__hex">#010000</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Cyan</h2>
+                <p>High-energy cyan where gamut geometry shifts quickly between highlights and shadows.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.780 0.140 210.0)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--tighten">Tighten</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>300</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.012</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Worst Adj</span>
+      <strong>1.043x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Worst 3-Step</span>
+      <strong>1.085x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.005x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Distance CV</span>
+      <strong>0.025</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>3 @ 30.5%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason">worst adj 1.043x</span><span class="reason">worst 3-step 1.085x</span><span class="reason">distance cv 0.025</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#E2FCFE; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.973 0.027 201.4)</div>
+              <div class="swatch__hex">#E2FCFE</div>
+            </div>
+          
+            <div class="swatch" style="background:#A0F5FF; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.919 0.083 205.2)</div>
+              <div class="swatch__hex">#A0F5FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#43E8FC; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.858 0.133 207.0)</div>
+              <div class="swatch__hex">#43E8FC</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#00CFE8; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.780 0.140 210.0)</div>
+              <div class="swatch__hex">#00CFE8</div>
+            </div>
+          
+            <div class="swatch" style="background:#00B2CB; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.701 0.122 212.2)</div>
+              <div class="swatch__hex">#00B2CB</div>
+            </div>
+          
+            <div class="swatch" style="background:#0097AF; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.623 0.110 214.4)</div>
+              <div class="swatch__hex">#0097AF</div>
+            </div>
+          
+            <div class="swatch" style="background:#007E95; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.547 0.097 215.9)</div>
+              <div class="swatch__hex">#007E95</div>
+            </div>
+          
+            <div class="swatch" style="background:#00677B; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.475 0.085 216.6)</div>
+              <div class="swatch__hex">#00677B</div>
+            </div>
+          
+            <div class="swatch" style="background:#005160; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.400 0.071 216.9)</div>
+              <div class="swatch__hex">#005160</div>
+            </div>
+          
+            <div class="swatch" style="background:#003A46; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.322 0.058 217.4)</div>
+              <div class="swatch__hex">#003A46</div>
+            </div>
+          
+            <div class="swatch" style="background:#03252F; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.245 0.042 221.3)</div>
+              <div class="swatch__hex">#03252F</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>200</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.005</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.008x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.009x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.009x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.003</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>2 @ 20.1%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#BAFDFF; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.950 0.067 198.0)</div>
+              <div class="swatch__hex">#BAFDFF</div>
+            </div>
+          
+            <div class="swatch" style="background:#73E7F6; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.866 0.107 206.1)</div>
+              <div class="swatch__hex">#73E7F6</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#00CFE8; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.780 0.140 210.0)</div>
+              <div class="swatch__hex">#00CFE8</div>
+            </div>
+          
+            <div class="swatch" style="background:#00AEC8; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.690 0.121 213.5)</div>
+              <div class="swatch__hex">#00AEC8</div>
+            </div>
+          
+            <div class="swatch" style="background:#108FA7; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.599 0.103 216.0)</div>
+              <div class="swatch__hex">#108FA7</div>
+            </div>
+          
+            <div class="swatch" style="background:#107186; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.507 0.087 217.5)</div>
+              <div class="swatch__hex">#107186</div>
+            </div>
+          
+            <div class="swatch" style="background:#0A5565; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.416 0.071 217.8)</div>
+              <div class="swatch__hex">#0A5565</div>
+            </div>
+          
+            <div class="swatch" style="background:#043B46; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.324 0.055 217.0)</div>
+              <div class="swatch__hex">#043B46</div>
+            </div>
+          
+            <div class="swatch" style="background:#012229; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.233 0.040 215.2)</div>
+              <div class="swatch__hex">#012229</div>
+            </div>
+          
+            <div class="swatch" style="background:#000C0F; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.141 0.024 212.5)</div>
+              <div class="swatch__hex">#000C0F</div>
+            </div>
+          
+            <div class="swatch" style="background:#000101; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.050 0.008 210.0)</div>
+              <div class="swatch__hex">#000101</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Violet</h2>
+                <p>Mid-dark vivid violet that often wants richer mids and inkier shadows.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.620 0.210 315.0)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--fail">Fail</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>500</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Split Balance</span>
+      <strong>0.178</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Worst Adj</span>
+      <strong>1.082x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Worst 3-Step</span>
+      <strong>1.143x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.023x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Distance CV</span>
+      <strong>0.096</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>5 @ 54.6%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason">worst adj 1.082x</span><span class="reason">worst 3-step 1.143x</span><span class="reason">split balance 0.178</span><span class="reason">distance cv 0.096</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#FAF3FF; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.974 0.017 313.4)</div>
+              <div class="swatch__hex">#FAF3FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#EFD5FF; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.907 0.063 312.9)</div>
+              <div class="swatch__hex">#EFD5FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#E5B5FF; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.841 0.113 313.6)</div>
+              <div class="swatch__hex">#E5B5FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#DB92FF; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.773 0.168 314.1)</div>
+              <div class="swatch__hex">#DB92FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#CC6EF5; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.699 0.206 314.5)</div>
+              <div class="swatch__hex">#CC6EF5</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#B453DB; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.620 0.210 315.0)</div>
+              <div class="swatch__hex">#B453DB</div>
+            </div>
+          
+            <div class="swatch" style="background:#9E38C4; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.548 0.215 315.3)</div>
+              <div class="swatch__hex">#9E38C4</div>
+            </div>
+          
+            <div class="swatch" style="background:#8725A8; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.480 0.202 315.8)</div>
+              <div class="swatch__hex">#8725A8</div>
+            </div>
+          
+            <div class="swatch" style="background:#701B8C; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.418 0.179 316.2)</div>
+              <div class="swatch__hex">#701B8C</div>
+            </div>
+          
+            <div class="swatch" style="background:#591170; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.353 0.155 316.1)</div>
+              <div class="swatch__hex">#591170</div>
+            </div>
+          
+            <div class="swatch" style="background:#420755; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.288 0.131 315.8)</div>
+              <div class="swatch__hex">#420755</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>400</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.005</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.008x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.008x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.004x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.003</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>4 @ 40.1%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#FCF6FF; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.013 315.0)</div>
+              <div class="swatch__hex">#FCF6FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#ECCFFA; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.892 0.066 315.2)</div>
+              <div class="swatch__hex">#ECCFFA</div>
+            </div>
+          
+            <div class="swatch" style="background:#DDA7F5; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.805 0.122 315.3)</div>
+              <div class="swatch__hex">#DDA7F5</div>
+            </div>
+          
+            <div class="swatch" style="background:#CB7EEC; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.716 0.172 315.2)</div>
+              <div class="swatch__hex">#CB7EEC</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#B453DB; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.620 0.210 315.0)</div>
+              <div class="swatch__hex">#B453DB</div>
+            </div>
+          
+            <div class="swatch" style="background:#952ABD; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.519 0.221 314.8)</div>
+              <div class="swatch__hex">#952ABD</div>
+            </div>
+          
+            <div class="swatch" style="background:#730895; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.419 0.201 314.7)</div>
+              <div class="swatch__hex">#730895</div>
+            </div>
+          
+            <div class="swatch" style="background:#50006A; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.325 0.160 314.7)</div>
+              <div class="swatch__hex">#50006A</div>
+            </div>
+          
+            <div class="swatch" style="background:#300241; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.235 0.111 314.7)</div>
+              <div class="swatch__hex">#300241</div>
+            </div>
+          
+            <div class="swatch" style="background:#13011B; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.144 0.062 314.8)</div>
+              <div class="swatch__hex">#13011B</div>
+            </div>
+          
+            <div class="swatch" style="background:#010002; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.050 0.023 315.0)</div>
+              <div class="swatch__hex">#010002</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Ultramarine</h2>
+                <p>Deep vivid blue seed that tests dark retention and blue highlight presence.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.470 0.180 265.0)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--fail">Fail</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>600</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Split Balance</span>
+      <strong>0.064</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Worst Adj</span>
+      <strong>1.066x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Worst 3-Step</span>
+      <strong>1.136x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.000x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Distance CV</span>
+      <strong>0.061</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>6 @ 62.7%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason">worst adj 1.066x</span><span class="reason">worst 3-step 1.136x</span><span class="reason">split balance 0.064</span><span class="reason">distance cv 0.061</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#EBF4FE; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.963 0.017 252.6)</div>
+              <div class="swatch__hex">#EBF4FE</div>
+            </div>
+          
+            <div class="swatch" style="background:#C7DCFF; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.891 0.053 260.1)</div>
+              <div class="swatch__hex">#C7DCFF</div>
+            </div>
+          
+            <div class="swatch" style="background:#A1C5FF; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.817 0.092 260.0)</div>
+              <div class="swatch__hex">#A1C5FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#7AAAFF; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.739 0.134 261.3)</div>
+              <div class="swatch__hex">#7AAAFF</div>
+            </div>
+          
+            <div class="swatch" style="background:#538BFF; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.657 0.182 262.9)</div>
+              <div class="swatch__hex">#538BFF</div>
+            </div>
+          
+            <div class="swatch" style="background:#396BE2; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.561 0.190 264.2)</div>
+              <div class="swatch__hex">#396BE2</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#274FBE; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.470 0.180 265.0)</div>
+              <div class="swatch__hex">#274FBE</div>
+            </div>
+          
+            <div class="swatch" style="background:#19379A; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.386 0.166 265.8)</div>
+              <div class="swatch__hex">#19379A</div>
+            </div>
+          
+            <div class="swatch" style="background:#0C2277; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.306 0.146 265.8)</div>
+              <div class="swatch__hex">#0C2277</div>
+            </div>
+          
+            <div class="swatch" style="background:#031053; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.226 0.121 265.5)</div>
+              <div class="swatch__hex">#031053</div>
+            </div>
+          
+            <div class="swatch" style="background:#091128; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.184 0.049 266.8)</div>
+              <div class="swatch__hex">#091128</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>500</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.007</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.011x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.011x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.003x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.004</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>5 @ 50.1%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#D9E5FE; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.920 0.037 265.0)</div>
+              <div class="swatch__hex">#D9E5FE</div>
+            </div>
+          
+            <div class="swatch" style="background:#B3C7F3; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.830 0.065 265.3)</div>
+              <div class="swatch__hex">#B3C7F3</div>
+            </div>
+          
+            <div class="swatch" style="background:#8FAAE6; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.740 0.093 265.7)</div>
+              <div class="swatch__hex">#8FAAE6</div>
+            </div>
+          
+            <div class="swatch" style="background:#6C8CD9; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.650 0.122 265.7)</div>
+              <div class="swatch__hex">#6C8CD9</div>
+            </div>
+          
+            <div class="swatch" style="background:#496ECC; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.560 0.151 265.5)</div>
+              <div class="swatch__hex">#496ECC</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#274FBE; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.470 0.180 265.0)</div>
+              <div class="swatch__hex">#274FBE</div>
+            </div>
+          
+            <div class="swatch" style="background:#0A2FA5; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.377 0.192 264.5)</div>
+              <div class="swatch__hex">#0A2FA5</div>
+            </div>
+          
+            <div class="swatch" style="background:#01177A; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.288 0.165 264.3)</div>
+              <div class="swatch__hex">#01177A</div>
+            </div>
+          
+            <div class="swatch" style="background:#010D4B; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.208 0.114 264.3)</div>
+              <div class="swatch__hex">#010D4B</div>
+            </div>
+          
+            <div class="swatch" style="background:#01051F; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.132 0.059 264.6)</div>
+              <div class="swatch__hex">#01051F</div>
+            </div>
+          
+            <div class="swatch" style="background:#000001; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.050 0.013 265.0)</div>
+              <div class="swatch__hex">#000001</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Phthalo Green</h2>
+                <p>Cool deep green between green and cyan; useful for path-family blending pressure.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.520 0.160 165.0)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--fail">Fail</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>700</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Split Balance</span>
+      <strong>0.220</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Worst Adj</span>
+      <strong>1.077x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Worst 3-Step</span>
+      <strong>1.145x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.009x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Distance CV</span>
+      <strong>0.111</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>7 @ 64.9%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason">worst adj 1.077x</span><span class="reason">worst 3-step 1.145x</span><span class="reason">split balance 0.220</span><span class="reason">distance cv 0.111</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#EEFDF5; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.019 163.5)</div>
+              <div class="swatch__hex">#EEFDF5</div>
+            </div>
+          
+            <div class="swatch" style="background:#B8FFDC; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.943 0.086 162.7)</div>
+              <div class="swatch__hex">#B8FFDC</div>
+            </div>
+          
+            <div class="swatch" style="background:#76F8C0; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.891 0.142 162.8)</div>
+              <div class="swatch__hex">#76F8C0</div>
+            </div>
+          
+            <div class="swatch" style="background:#26E7A5; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.824 0.171 163.1)</div>
+              <div class="swatch__hex">#26E7A5</div>
+            </div>
+          
+            <div class="swatch" style="background:#00CD91; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.751 0.162 163.3)</div>
+              <div class="swatch__hex">#00CD91</div>
+            </div>
+          
+            <div class="swatch" style="background:#00B27E; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.677 0.145 163.7)</div>
+              <div class="swatch__hex">#00B27E</div>
+            </div>
+          
+            <div class="swatch" style="background:#00976B; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.598 0.127 164.3)</div>
+              <div class="swatch__hex">#00976B</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#008451; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.520 0.160 165.0)</div>
+              <div class="swatch__hex">#008451</div>
+            </div>
+          
+            <div class="swatch" style="background:#00674A; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.457 0.095 165.6)</div>
+              <div class="swatch__hex">#00674A</div>
+            </div>
+          
+            <div class="swatch" style="background:#004A35; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.362 0.074 167.0)</div>
+              <div class="swatch__hex">#004A35</div>
+            </div>
+          
+            <div class="swatch" style="background:#042D23; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.267 0.049 172.0)</div>
+              <div class="swatch__hex">#042D23</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>500</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.012</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.018x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.034x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.000x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.013</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>5 @ 49.9%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#EDFDF5; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.019 165.0)</div>
+              <div class="swatch__hex">#EDFDF5</div>
+            </div>
+          
+            <div class="swatch" style="background:#B6E8D4; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.890 0.058 168.8)</div>
+              <div class="swatch__hex">#B6E8D4</div>
+            </div>
+          
+            <div class="swatch" style="background:#73D4B5; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.801 0.103 170.4)</div>
+              <div class="swatch__hex">#73D4B5</div>
+            </div>
+          
+            <div class="swatch" style="background:#00BC95; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.709 0.140 170.5)</div>
+              <div class="swatch__hex">#00BC95</div>
+            </div>
+          
+            <div class="swatch" style="background:#009A77; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.611 0.122 169.2)</div>
+              <div class="swatch__hex">#009A77</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#008451; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.520 0.160 165.0)</div>
+              <div class="swatch__hex">#008451</div>
+            </div>
+          
+            <div class="swatch" style="background:#00623C; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.438 0.102 158.1)</div>
+              <div class="swatch__hex">#00623C</div>
+            </div>
+          
+            <div class="swatch" style="background:#00441F; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.337 0.088 152.2)</div>
+              <div class="swatch__hex">#00441F</div>
+            </div>
+          
+            <div class="swatch" style="background:#002710; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.240 0.061 153.3)</div>
+              <div class="swatch__hex">#002710</div>
+            </div>
+          
+            <div class="swatch" style="background:#000E06; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.145 0.033 159.4)</div>
+              <div class="swatch__hex">#000E06</div>
+            </div>
+          
+            <div class="swatch" style="background:#000100; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.050 0.010 165.0)</div>
+              <div class="swatch__hex">#000100</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Warm Neutral</h2>
+                <p>Warm gray / bone family for neutral-specific behavior and temperature handling.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.620 0.018 70.0)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--fail">Fail</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>400</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Split Balance</span>
+      <strong>0.135</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Worst Adj</span>
+      <strong>1.062x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Worst 3-Step</span>
+      <strong>1.101x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Light Edge</span>
+      <strong>1.072x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Distance CV</span>
+      <strong>0.071</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>4 @ 43.3%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason">worst adj 1.062x</span><span class="reason">worst 3-step 1.101x</span><span class="reason">light edge 1.072x</span><span class="reason">split balance 0.135</span><span class="reason">distance cv 0.071</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F8F8F8; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.000 82.0)</div>
+              <div class="swatch__hex">#F8F8F8</div>
+            </div>
+          
+            <div class="swatch" style="background:#E0D9D2; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.889 0.013 68.2)</div>
+              <div class="swatch__hex">#E0D9D2</div>
+            </div>
+          
+            <div class="swatch" style="background:#C4BCB3; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.799 0.016 67.5)</div>
+              <div class="swatch__hex">#C4BCB3</div>
+            </div>
+          
+            <div class="swatch" style="background:#A89F95; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.707 0.017 68.3)</div>
+              <div class="swatch__hex">#A89F95</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#8D847B; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.620 0.018 70.0)</div>
+              <div class="swatch__hex">#8D847B</div>
+            </div>
+          
+            <div class="swatch" style="background:#756C62; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.536 0.018 70.8)</div>
+              <div class="swatch__hex">#756C62</div>
+            </div>
+          
+            <div class="swatch" style="background:#5E564C; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.457 0.018 70.9)</div>
+              <div class="swatch__hex">#5E564C</div>
+            </div>
+          
+            <div class="swatch" style="background:#494139; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.381 0.017 69.1)</div>
+              <div class="swatch__hex">#494139</div>
+            </div>
+          
+            <div class="swatch" style="background:#352D27; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.304 0.016 64.6)</div>
+              <div class="swatch__hex">#352D27</div>
+            </div>
+          
+            <div class="swatch" style="background:#211B14; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.225 0.015 67.7)</div>
+              <div class="swatch__hex">#211B14</div>
+            </div>
+          
+            <div class="swatch" style="background:#0C0A09; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.147 0.004 57.1)</div>
+              <div class="swatch__hex">#0C0A09</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>400</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.002</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.002x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.003x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.002x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.001</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>4 @ 40.1%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F8F8F8; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.000 70.0)</div>
+              <div class="swatch__hex">#F8F8F8</div>
+            </div>
+          
+            <div class="swatch" style="background:#DFDAD4; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.890 0.009 70.0)</div>
+              <div class="swatch__hex">#DFDAD4</div>
+            </div>
+          
+            <div class="swatch" style="background:#C7BCB0; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.800 0.020 70.0)</div>
+              <div class="swatch__hex">#C7BCB0</div>
+            </div>
+          
+            <div class="swatch" style="background:#AC9F90; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.710 0.026 70.0)</div>
+              <div class="swatch__hex">#AC9F90</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#8D847B; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.620 0.018 70.0)</div>
+              <div class="swatch__hex">#8D847B</div>
+            </div>
+          
+            <div class="swatch" style="background:#6E6B69; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.531 0.005 70.0)</div>
+              <div class="swatch__hex">#6E6B69</div>
+            </div>
+          
+            <div class="swatch" style="background:#525353; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.441 0.001 250.0)</div>
+              <div class="swatch__hex">#525353</div>
+            </div>
+          
+            <div class="swatch" style="background:#3A3B3B; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.351 0.001 250.0)</div>
+              <div class="swatch__hex">#3A3B3B</div>
+            </div>
+          
+            <div class="swatch" style="background:#242424; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.260 0.001 70.0)</div>
+              <div class="swatch__hex">#242424</div>
+            </div>
+          
+            <div class="swatch" style="background:#100F0E; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.170 0.003 70.0)</div>
+              <div class="swatch__hex">#100F0E</div>
+            </div>
+          
+            <div class="swatch" style="background:#020201; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.080 0.002 70.0)</div>
+              <div class="swatch__hex">#020201</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Cool Neutral</h2>
+                <p>Cool gray / slate family for neutral-specific behavior and temperature handling.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.620 0.018 255.0)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--fail">Fail</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>400</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Split Balance</span>
+      <strong>0.136</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Worst Adj</span>
+      <strong>1.067x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Worst 3-Step</span>
+      <strong>1.111x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Light Edge</span>
+      <strong>1.093x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--bad">
+      <span>Distance CV</span>
+      <strong>0.070</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>4 @ 43.3%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason">worst adj 1.067x</span><span class="reason">worst 3-step 1.111x</span><span class="reason">light edge 1.093x</span><span class="reason">split balance 0.136</span><span class="reason">distance cv 0.070</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F4F6F9; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.972 0.004 253.0)</div>
+              <div class="swatch__hex">#F4F6F9</div>
+            </div>
+          
+            <div class="swatch" style="background:#D7D8DA; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.883 0.003 250.7)</div>
+              <div class="swatch__hex">#D7D8DA</div>
+            </div>
+          
+            <div class="swatch" style="background:#B7BCC2; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.793 0.010 253.5)</div>
+              <div class="swatch__hex">#B7BCC2</div>
+            </div>
+          
+            <div class="swatch" style="background:#9AA1A9; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.705 0.015 254.5)</div>
+              <div class="swatch__hex">#9AA1A9</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#7F8791; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.620 0.018 255.0)</div>
+              <div class="swatch__hex">#7F8791</div>
+            </div>
+          
+            <div class="swatch" style="background:#67707C; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.541 0.022 255.2)</div>
+              <div class="swatch__hex">#67707C</div>
+            </div>
+          
+            <div class="swatch" style="background:#505A67; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.464 0.024 255.5)</div>
+              <div class="swatch__hex">#505A67</div>
+            </div>
+          
+            <div class="swatch" style="background:#3C4552; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.389 0.025 255.8)</div>
+              <div class="swatch__hex">#3C4552</div>
+            </div>
+          
+            <div class="swatch" style="background:#29313D; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.312 0.024 257.7)</div>
+              <div class="swatch__hex">#29313D</div>
+            </div>
+          
+            <div class="swatch" style="background:#181E29; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.234 0.023 261.4)</div>
+              <div class="swatch__hex">#181E29</div>
+            </div>
+          
+            <div class="swatch" style="background:#060D18; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.157 0.027 259.7)</div>
+              <div class="swatch__hex">#060D18</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>400</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.001</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.001x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.001x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.000x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>4 @ 40.0%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F7F8FA; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.003 255.0)</div>
+              <div class="swatch__hex">#F7F8FA</div>
+            </div>
+          
+            <div class="swatch" style="background:#D8DBE0; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.890 0.007 256.7)</div>
+              <div class="swatch__hex">#D8DBE0</div>
+            </div>
+          
+            <div class="swatch" style="background:#B9BEC6; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.800 0.012 257.7)</div>
+              <div class="swatch__hex">#B9BEC6</div>
+            </div>
+          
+            <div class="swatch" style="background:#9BA2AC; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.710 0.016 257.3)</div>
+              <div class="swatch__hex">#9BA2AC</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#7F8791; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.620 0.018 255.0)</div>
+              <div class="swatch__hex">#7F8791</div>
+            </div>
+          
+            <div class="swatch" style="background:#646D76; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.530 0.018 252.6)</div>
+              <div class="swatch__hex">#646D76</div>
+            </div>
+          
+            <div class="swatch" style="background:#4C535C; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.440 0.017 251.7)</div>
+              <div class="swatch__hex">#4C535C</div>
+            </div>
+          
+            <div class="swatch" style="background:#353B43; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.350 0.016 252.0)</div>
+              <div class="swatch__hex">#353B43</div>
+            </div>
+          
+            <div class="swatch" style="background:#1F252B; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.260 0.014 253.0)</div>
+              <div class="swatch__hex">#1F252B</div>
+            </div>
+          
+            <div class="swatch" style="background:#0C1015; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.170 0.012 254.3)</div>
+              <div class="swatch__hex">#0C1015</div>
+            </div>
+          
+            <div class="swatch" style="background:#010203; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.080 0.011 255.0)</div>
+              <div class="swatch__hex">#010203</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Very Light Seed</h2>
+                <p>Extreme top-end seed to catch endpoint collapse and seed-placement issues.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.980 0.072 280.0)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--tighten">Tighten</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>50</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Worst Adj</span>
+      <strong>1.057x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Worst 3-Step</span>
+      <strong>1.057x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Light Edge</span>
+      <strong>1.041x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--warn">
+      <span>Distance CV</span>
+      <strong>0.023</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>0 @ 7.3%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason">worst adj 1.057x</span><span class="reason">worst 3-step 1.057x</span><span class="reason">light edge 1.041x</span><span class="reason">distance cv 0.023</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch swatch--seed" style="background:#EEF4FF; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.072 280.0)</div>
+              <div class="swatch__hex">#EEF4FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#D8DBFF; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.899 0.050 281.8)</div>
+              <div class="swatch__hex">#D8DBFF</div>
+            </div>
+          
+            <div class="swatch" style="background:#BDBEFF; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.824 0.090 283.4)</div>
+              <div class="swatch__hex">#BDBEFF</div>
+            </div>
+          
+            <div class="swatch" style="background:#A7A3FF; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.755 0.131 284.7)</div>
+              <div class="swatch__hex">#A7A3FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#9185F8; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.679 0.164 285.7)</div>
+              <div class="swatch__hex">#9185F8</div>
+            </div>
+          
+            <div class="swatch" style="background:#7B6BDE; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.599 0.169 286.1)</div>
+              <div class="swatch__hex">#7B6BDE</div>
+            </div>
+          
+            <div class="swatch" style="background:#6453BE; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.516 0.161 286.4)</div>
+              <div class="swatch__hex">#6453BE</div>
+            </div>
+          
+            <div class="swatch" style="background:#4F3F9B; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.437 0.144 286.5)</div>
+              <div class="swatch__hex">#4F3F9B</div>
+            </div>
+          
+            <div class="swatch" style="background:#3B2D79; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.359 0.124 286.7)</div>
+              <div class="swatch__hex">#3B2D79</div>
+            </div>
+          
+            <div class="swatch" style="background:#291E57; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.283 0.099 287.2)</div>
+              <div class="swatch__hex">#291E57</div>
+            </div>
+          
+            <div class="swatch" style="background:#181134; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.210 0.066 288.3)</div>
+              <div class="swatch__hex">#181134</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>100</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.010</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.039x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.039x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.029x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.009</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>1 @ 10.3%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F8F8F8; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.980 0.000 280.0)</div>
+              <div class="swatch__hex">#F8F8F8</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#EEF4FF; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.980 0.072 280.0)</div>
+              <div class="swatch__hex">#EEF4FF</div>
+            </div>
+          
+            <div class="swatch" style="background:#E4DDFF; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.913 0.047 295.0)</div>
+              <div class="swatch__hex">#E4DDFF</div>
+            </div>
+          
+            <div class="swatch" style="background:#D6C4E1; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.845 0.043 312.9)</div>
+              <div class="swatch__hex">#D6C4E1</div>
+            </div>
+          
+            <div class="swatch" style="background:#C3AEC3; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.775 0.038 326.1)</div>
+              <div class="swatch__hex">#C3AEC3</div>
+            </div>
+          
+            <div class="swatch" style="background:#AC98AB; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.704 0.036 328.7)</div>
+              <div class="swatch__hex">#AC98AB</div>
+            </div>
+          
+            <div class="swatch" style="background:#938497; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.633 0.033 320.2)</div>
+              <div class="swatch__hex">#938497</div>
+            </div>
+          
+            <div class="swatch" style="background:#7A7185; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.562 0.033 305.1)</div>
+              <div class="swatch__hex">#7A7185</div>
+            </div>
+          
+            <div class="swatch" style="background:#615E74; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.492 0.035 291.4)</div>
+              <div class="swatch__hex">#615E74</div>
+            </div>
+          
+            <div class="swatch" style="background:#4A4B61; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.421 0.036 283.0)</div>
+              <div class="swatch__hex">#4A4B61</div>
+            </div>
+          
+            <div class="swatch" style="background:#37394C; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.350 0.034 280.0)</div>
+              <div class="swatch__hex">#37394C</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Very Dark Seed</h2>
+                <p>Extreme low-end seed to catch shadow collapse and monotonicity issues.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">oklch(0.200 0.072 280.0)</div>
+                </div>
+              </div>
+              <div class="engine-grid">
+                
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Archetype</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>950</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.007x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.007x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.003x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.002</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>10 @ 96.2%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#EEF3FE; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.964 0.016 266.6)</div>
+              <div class="swatch__hex">#EEF3FE</div>
+            </div>
+          
+            <div class="swatch" style="background:#CDDBFC; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.891 0.048 267.7)</div>
+              <div class="swatch__hex">#CDDBFC</div>
+            </div>
+          
+            <div class="swatch" style="background:#AFC2FA; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.819 0.082 269.8)</div>
+              <div class="swatch__hex">#AFC2FA</div>
+            </div>
+          
+            <div class="swatch" style="background:#95A8F3; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.746 0.111 272.3)</div>
+              <div class="swatch__hex">#95A8F3</div>
+            </div>
+          
+            <div class="swatch" style="background:#7E8DE3; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.670 0.129 274.8)</div>
+              <div class="swatch__hex">#7E8DE3</div>
+            </div>
+          
+            <div class="swatch" style="background:#6B74CB; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.591 0.132 277.1)</div>
+              <div class="swatch__hex">#6B74CB</div>
+            </div>
+          
+            <div class="swatch" style="background:#575CAE; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.512 0.128 278.4)</div>
+              <div class="swatch__hex">#575CAE</div>
+            </div>
+          
+            <div class="swatch" style="background:#45468F; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.433 0.118 279.1)</div>
+              <div class="swatch__hex">#45468F</div>
+            </div>
+          
+            <div class="swatch" style="background:#323370; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.355 0.104 279.6)</div>
+              <div class="swatch__hex">#323370</div>
+            </div>
+          
+            <div class="swatch" style="background:#212052; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.278 0.088 279.9)</div>
+              <div class="swatch__hex">#212052</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#110F35; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.200 0.072 280.0)</div>
+              <div class="swatch__hex">#110F35</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+                      <article class="engine">
+                        <div class="engine__header">
+                          <div>
+                            <h3>V6 Solver</h3>
+                            <p>Judge only seed truth, placement, and cadence.</p>
+                          </div>
+                          <div class="gate gate--pass">Pass</div>
+                        </div>
+                        <div class="metric-grid">
+                          
+    <div class="metric metric--neutral">
+      <span>Seed Stop</span>
+      <strong>800</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Seed Delta</span>
+      <strong>0.0000</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Split Balance</span>
+      <strong>0.003</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst Adj</span>
+      <strong>1.006x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Worst 3-Step</span>
+      <strong>1.006x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Light Edge</span>
+      <strong>1.000x</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Distance CV</span>
+      <strong>0.002</strong>
+    </div>
+  
+                          
+    <div class="metric metric--ok">
+      <span>Monotone</span>
+      <strong>yes</strong>
+    </div>
+  
+                          
+    <div class="metric metric--neutral">
+      <span>Solved Split</span>
+      <strong>8 @ 79.9%</strong>
+    </div>
+  
+                        </div>
+                        <div class="reasons">
+                          <span class="reason reason--pass">meets the current high bar</span>
+                        </div>
+                        
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#C2C7FE; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__oklch">oklch(0.845 0.076 280.0)</div>
+              <div class="swatch__hex">#C2C7FE</div>
+            </div>
+          
+            <div class="swatch" style="background:#A8AEE3; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__oklch">oklch(0.764 0.076 280.0)</div>
+              <div class="swatch__hex">#A8AEE3</div>
+            </div>
+          
+            <div class="swatch" style="background:#9095C9; color:#f8f8f8">
+              <div class="swatch__label">200</div>
+              <div class="swatch__oklch">oklch(0.684 0.077 280.0)</div>
+              <div class="swatch__hex">#9095C9</div>
+            </div>
+          
+            <div class="swatch" style="background:#787CB0; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__oklch">oklch(0.603 0.079 280.0)</div>
+              <div class="swatch__hex">#787CB0</div>
+            </div>
+          
+            <div class="swatch" style="background:#616497; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__oklch">oklch(0.522 0.080 280.0)</div>
+              <div class="swatch__hex">#616497</div>
+            </div>
+          
+            <div class="swatch" style="background:#4A4D7E; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__oklch">oklch(0.442 0.080 280.0)</div>
+              <div class="swatch__hex">#4A4D7E</div>
+            </div>
+          
+            <div class="swatch" style="background:#363766; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__oklch">oklch(0.361 0.080 280.0)</div>
+              <div class="swatch__hex">#363766</div>
+            </div>
+          
+            <div class="swatch" style="background:#23234E; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__oklch">oklch(0.280 0.077 280.0)</div>
+              <div class="swatch__hex">#23234E</div>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#110F35; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__oklch">oklch(0.200 0.072 280.0)</div>
+              <div class="swatch__hex">#110F35</div>
+            </div>
+          
+            <div class="swatch" style="background:#040318; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__oklch">oklch(0.123 0.048 280.0)</div>
+              <div class="swatch__hex">#040318</div>
+            </div>
+          
+            <div class="swatch" style="background:#000001; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__oklch">oklch(0.050 0.012 280.0)</div>
+              <div class="swatch__hex">#000001</div>
+            </div>
+          
+    </div>
+  
+                      </article>
+                    
+              </div>
+            </section>
+          
+    </main>
+  </body>
+</html>

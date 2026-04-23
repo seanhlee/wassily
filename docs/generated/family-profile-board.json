@@ -1,0 +1,4919 @@
+{
+  "generatedAt": "2026-04-21T20:11:48.987Z",
+  "families": [
+    {
+      "family": "lime",
+      "exemplarSeed": {
+        "id": "bright-lime",
+        "label": "Bright Lime",
+        "note": "Canonical hard case: luminous yellow-green seed with extreme high-lightness chroma.",
+        "color": {
+          "l": 0.931,
+          "c": 0.223,
+          "h": 121.082
+        }
+      },
+      "references": [
+        {
+          "id": "tw-lime-v3",
+          "source": "Tailwind CSS v3 lime",
+          "notes": "Bright yellow-green family reference with clean, leafy darks.",
+          "weight": 0.75,
+          "anchorLabel": "300",
+          "shoulderFit": {
+            "referenceId": "tw-lime-v3",
+            "lightProgress": 0.4550688302555679,
+            "darkProgress": 0.0803348525066385,
+            "lightRadial": -0.15383097207442514,
+            "lightNormal": -0.012764473576217367,
+            "darkRadial": 0.07087103261162501,
+            "darkNormal": 0.019442707182300272,
+            "lightResidual": 0.004096359815351321,
+            "darkResidual": 0.014348004921292921
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.986,
+                "c": 0.031,
+                "h": 120.8
+              },
+              "hex": "#F7FEE7",
+              "textHex": "#111111",
+              "oklch": "oklch(0.986 0.031 120.8)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.967,
+                "c": 0.066,
+                "h": 122.3
+              },
+              "hex": "#ECFCCB",
+              "textHex": "#111111",
+              "oklch": "oklch(0.967 0.066 122.3)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.938,
+                "c": 0.122,
+                "h": 124.3
+              },
+              "hex": "#D9F99D",
+              "textHex": "#111111",
+              "oklch": "oklch(0.938 0.122 124.3)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.897,
+                "c": 0.179,
+                "h": 126.7
+              },
+              "hex": "#BEF264",
+              "textHex": "#111111",
+              "oklch": "oklch(0.897 0.179 126.7)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.849,
+                "c": 0.207,
+                "h": 128.8
+              },
+              "hex": "#A3E635",
+              "textHex": "#111111",
+              "oklch": "oklch(0.849 0.207 128.8)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.768,
+                "c": 0.204,
+                "h": 130.8
+              },
+              "hex": "#84CC17",
+              "textHex": "#111111",
+              "oklch": "oklch(0.768 0.204 130.8)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.648,
+                "c": 0.175,
+                "h": 131.7
+              },
+              "hex": "#65A30E",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.648 0.175 131.7)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.532,
+                "c": 0.141,
+                "h": 131.6
+              },
+              "hex": "#4D7C0E",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.532 0.141 131.6)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.453,
+                "c": 0.113,
+                "h": 130.9
+              },
+              "hex": "#3F6212",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.453 0.113 130.9)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.405,
+                "c": 0.096,
+                "h": 131.1
+              },
+              "hex": "#365314",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.405 0.096 131.1)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.274,
+                "c": 0.069,
+                "h": 132.1
+              },
+              "hex": "#1A2E05",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.274 0.069 132.1)"
+            }
+          ]
+        },
+        {
+          "id": "tw-yellow-v3",
+          "source": "Tailwind CSS v3 yellow",
+          "notes": "Warm yellow-side counterweight for the lime family.",
+          "weight": 0.25,
+          "anchorLabel": "300",
+          "shoulderFit": {
+            "referenceId": "tw-yellow-v3",
+            "lightProgress": 0.48418276104921676,
+            "darkProgress": 0.07341330341865791,
+            "lightRadial": -0.11684034579018893,
+            "lightNormal": 0.013337681501586235,
+            "darkRadial": 0.013401467456601637,
+            "darkNormal": -0.04475348892796609,
+            "lightResidual": 0.012078506091632423,
+            "darkResidual": 0.02801326186042552
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.987,
+                "c": 0.026,
+                "h": 102.2
+              },
+              "hex": "#FEFCE8",
+              "textHex": "#111111",
+              "oklch": "oklch(0.987 0.026 102.2)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.973,
+                "c": 0.069,
+                "h": 103.2
+              },
+              "hex": "#FEF9C3",
+              "textHex": "#111111",
+              "oklch": "oklch(0.973 0.069 103.2)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.945,
+                "c": 0.124,
+                "h": 101.5
+              },
+              "hex": "#FEF08A",
+              "textHex": "#111111",
+              "oklch": "oklch(0.945 0.124 101.5)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.905,
+                "c": 0.166,
+                "h": 98.1
+              },
+              "hex": "#FDE046",
+              "textHex": "#111111",
+              "oklch": "oklch(0.905 0.166 98.1)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.861,
+                "c": 0.173,
+                "h": 91.9
+              },
+              "hex": "#FACC16",
+              "textHex": "#111111",
+              "oklch": "oklch(0.861 0.173 91.9)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.795,
+                "c": 0.162,
+                "h": 86
+              },
+              "hex": "#EAB305",
+              "textHex": "#111111",
+              "oklch": "oklch(0.795 0.162 86.0)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.681,
+                "c": 0.142,
+                "h": 75.8
+              },
+              "hex": "#CA8A06",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.681 0.142 75.8)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.554,
+                "c": 0.121,
+                "h": 66.4
+              },
+              "hex": "#A16206",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.554 0.121 66.4)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.476,
+                "c": 0.103,
+                "h": 61.9
+              },
+              "hex": "#854D0F",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.476 0.103 61.9)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.421,
+                "c": 0.09,
+                "h": 57.7
+              },
+              "hex": "#713F12",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.421 0.090 57.7)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.286,
+                "c": 0.064,
+                "h": 53.8
+              },
+              "hex": "#422006",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.286 0.064 53.8)"
+            }
+          ]
+        }
+      ],
+      "fit": {
+        "family": "lime",
+        "referenceIds": [
+          "tw-lime-v3",
+          "tw-yellow-v3"
+        ],
+        "sources": [
+          "Tailwind CSS v3 lime",
+          "Tailwind CSS v3 yellow"
+        ],
+        "anchorLabels": [
+          "300",
+          "300"
+        ],
+        "profile": {
+          "lightEndpointThreshold": 0.19354838709677422,
+          "darkEndpointThreshold": 0.291970802919708,
+          "lightEndpointHueOffset": -3.720014685612796,
+          "darkEndpointHueOffset": -5.717257460465191,
+          "lightEndpointIntensityScale": 0.7047333927827116,
+          "lightEndpointIntensityOffset": 0,
+          "darkEndpointIntensityScale": 1.0145661757974076,
+          "darkEndpointIntensityOffset": 0,
+          "lightShoulderProgress": 0.4623473129539801,
+          "darkShoulderProgress": 0.1,
+          "lightShoulderRadial": -0.1445833155033661,
+          "lightShoulderNormal": -0.006238934806766468,
+          "darkShoulderRadial": 0.05650364132286917,
+          "darkShoulderNormal": 0.0033936581547336815
+        },
+        "archetype": {
+          "lightEndpoint": {
+            "l": 0.9862500000000001,
+            "c": 0.029672725580032915,
+            "h": 117.3619853143872
+          },
+          "lightShoulder": {
+            "l": 0.9400167670929253,
+            "c": 0.12244976538680893,
+            "h": 120.16403330143791
+          },
+          "seed": {
+            "l": 0.899,
+            "c": 0.17575,
+            "h": 121.082
+          },
+          "darkShoulder": {
+            "l": 0.8384001375996982,
+            "c": 0.19868415916156446,
+            "h": 121.32154661884704
+          },
+          "darkEndpoint": {
+            "l": 0.277,
+            "c": 0.06328622579099913,
+            "h": 115.3647425395348
+          }
+        },
+        "shoulderGeometry": {
+          "lightProgress": 0.4623473129539801,
+          "darkProgress": 0.1,
+          "lightRadial": -0.1445833155033661,
+          "lightNormal": -0.006238934806766468,
+          "darkRadial": 0.05650364132286917,
+          "darkNormal": 0.0033936581547336815,
+          "lightResidualMean": 0.006091896384421596,
+          "darkResidualMean": 0.01776431915607607,
+          "references": [
+            {
+              "referenceId": "tw-lime-v3",
+              "lightProgress": 0.4550688302555679,
+              "darkProgress": 0.0803348525066385,
+              "lightRadial": -0.15383097207442514,
+              "lightNormal": -0.012764473576217367,
+              "darkRadial": 0.07087103261162501,
+              "darkNormal": 0.019442707182300272,
+              "lightResidual": 0.004096359815351321,
+              "darkResidual": 0.014348004921292921
+            },
+            {
+              "referenceId": "tw-yellow-v3",
+              "lightProgress": 0.48418276104921676,
+              "darkProgress": 0.07341330341865791,
+              "lightRadial": -0.11684034579018893,
+              "lightNormal": 0.013337681501586235,
+              "darkRadial": 0.013401467456601637,
+              "darkNormal": -0.04475348892796609,
+              "lightResidual": 0.012078506091632423,
+              "darkResidual": 0.02801326186042552
+            }
+          ]
+        }
+      },
+      "archetypeControlPoints": [
+        {
+          "label": "light endpoint",
+          "color": {
+            "l": 0.9862500000000001,
+            "c": 0.029672725580032915,
+            "h": 117.3619853143872
+          },
+          "hex": "#F9FEE7",
+          "textHex": "#111111",
+          "oklch": "oklch(0.986 0.030 117.4)"
+        },
+        {
+          "label": "light shoulder",
+          "color": {
+            "l": 0.9400167670929253,
+            "c": 0.12244976538680893,
+            "h": 120.16403330143791
+          },
+          "hex": "#E0F898",
+          "textHex": "#111111",
+          "oklch": "oklch(0.940 0.122 120.2)"
+        },
+        {
+          "label": "seed",
+          "color": {
+            "l": 0.899,
+            "c": 0.17575,
+            "h": 121.082
+          },
+          "hex": "#CDEF5B",
+          "textHex": "#111111",
+          "oklch": "oklch(0.899 0.176 121.1)"
+        },
+        {
+          "label": "dark shoulder",
+          "color": {
+            "l": 0.8384001375996982,
+            "c": 0.19868415916156446,
+            "h": 121.32154661884704
+          },
+          "hex": "#B7DC13",
+          "textHex": "#111111",
+          "oklch": "oklch(0.838 0.199 121.3)"
+        },
+        {
+          "label": "dark endpoint",
+          "color": {
+            "l": 0.277,
+            "c": 0.06328622579099913,
+            "h": 115.3647425395348
+          },
+          "hex": "#272B00",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.277 0.063 115.4)"
+        }
+      ],
+      "generatedRamp": [
+        {
+          "label": "50",
+          "color": {
+            "l": 0.9653,
+            "c": 0.128625,
+            "h": 116.082
+          },
+          "hex": "#EFFF98",
+          "textHex": "#111111",
+          "oklch": "oklch(0.965 0.129 116.1)"
+        },
+        {
+          "label": "100",
+          "color": {
+            "l": 0.931,
+            "c": 0.223,
+            "h": 121.082
+          },
+          "hex": "#D3FD05",
+          "textHex": "#111111",
+          "oklch": "oklch(0.931 0.223 121.1)"
+        },
+        {
+          "label": "200",
+          "color": {
+            "l": 0.8324308224713223,
+            "c": 0.20344626666502094,
+            "h": 122.93552495465298
+          },
+          "hex": "#B0DC04",
+          "textHex": "#111111",
+          "oklch": "oklch(0.832 0.203 122.9)"
+        },
+        {
+          "label": "300",
+          "color": {
+            "l": 0.7340841027643913,
+            "c": 0.18213137128494142,
+            "h": 124.25185429380366
+          },
+          "hex": "#91BB03",
+          "textHex": "#111111",
+          "oklch": "oklch(0.734 0.182 124.3)"
+        },
+        {
+          "label": "400",
+          "color": {
+            "l": 0.6360008633811289,
+            "c": 0.1593254028388767,
+            "h": 125.08110503268995
+          },
+          "hex": "#759A03",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.636 0.159 125.1)"
+        },
+        {
+          "label": "500",
+          "color": {
+            "l": 0.5381748336121487,
+            "c": 0.13532366685879443,
+            "h": 125.43120787607324
+          },
+          "hex": "#5C7B02",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.538 0.135 125.4)"
+        },
+        {
+          "label": "600",
+          "color": {
+            "l": 0.4405351480209177,
+            "c": 0.11055628618812059,
+            "h": 125.34683023206253
+          },
+          "hex": "#445C01",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.441 0.111 125.3)"
+        },
+        {
+          "label": "700",
+          "color": {
+            "l": 0.34299804987436566,
+            "c": 0.08540094105563334,
+            "h": 124.82166738274844
+          },
+          "hex": "#2F4001",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.343 0.085 124.8)"
+        },
+        {
+          "label": "800",
+          "color": {
+            "l": 0.24546233004751145,
+            "c": 0.060253837822500725,
+            "h": 123.85072931985462
+          },
+          "hex": "#1B2500",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.245 0.060 123.9)"
+        },
+        {
+          "label": "900",
+          "color": {
+            "l": 0.14782541005879266,
+            "c": 0.03550038020729801,
+            "h": 122.45912270043203
+          },
+          "hex": "#080D00",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.148 0.036 122.5)"
+        },
+        {
+          "label": "950",
+          "color": {
+            "l": 0.05000000000000022,
+            "c": 0.011484375000000052,
+            "h": 121.082
+          },
+          "hex": "#000000",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.050 0.011 121.1)"
+        }
+      ],
+      "analysis": {
+        "seed": {
+          "id": "bright-lime",
+          "label": "Bright Lime",
+          "note": "Canonical hard case: luminous yellow-green seed with extreme high-lightness chroma.",
+          "color": {
+            "l": 0.931,
+            "c": 0.223,
+            "h": 121.082
+          }
+        },
+        "labels": [
+          "50",
+          "100",
+          "200",
+          "300",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800",
+          "900",
+          "950"
+        ],
+        "seedStopIndex": 1,
+        "seedDelta": 0,
+        "seedPlacementImbalance": 0.007592259888688888,
+        "endpointLight": {
+          "lightness": 0.9653,
+          "chroma": 0.128625,
+          "relativeChroma": 0.9799999999999999,
+          "contrastOnWhite": 1.082909829669809,
+          "contrastOnBlack": 19.392196307242976
+        },
+        "endpointDark": {
+          "lightness": 0.05000000000000022,
+          "chroma": 0.011484375000000052,
+          "relativeChroma": 0.9800000000000044,
+          "contrastOnWhite": 20.945485738043356,
+          "contrastOnBlack": 1.0026026735611875
+        },
+        "lightRamp": {
+          "colors": [
+            {
+              "l": 0.9653,
+              "c": 0.128625,
+              "h": 116.082
+            },
+            {
+              "l": 0.931,
+              "c": 0.223,
+              "h": 121.082
+            },
+            {
+              "l": 0.8324308224713223,
+              "c": 0.20344626666502094,
+              "h": 122.93552495465298
+            },
+            {
+              "l": 0.7340841027643913,
+              "c": 0.18213137128494142,
+              "h": 124.25185429380366
+            },
+            {
+              "l": 0.6360008633811289,
+              "c": 0.1593254028388767,
+              "h": 125.08110503268995
+            },
+            {
+              "l": 0.5381748336121487,
+              "c": 0.13532366685879443,
+              "h": 125.43120787607324
+            },
+            {
+              "l": 0.4405351480209177,
+              "c": 0.11055628618812059,
+              "h": 125.34683023206253
+            },
+            {
+              "l": 0.34299804987436566,
+              "c": 0.08540094105563334,
+              "h": 124.82166738274844
+            },
+            {
+              "l": 0.24546233004751145,
+              "c": 0.060253837822500725,
+              "h": 123.85072931985462
+            },
+            {
+              "l": 0.14782541005879266,
+              "c": 0.03550038020729801,
+              "h": 122.45912270043203
+            },
+            {
+              "l": 0.05000000000000022,
+              "c": 0.011484375000000052,
+              "h": 121.082
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.10149595276780923,
+              0.10072589841799776,
+              0.10072715079439372,
+              0.10072989842250549,
+              0.10073142729275594,
+              0.10073213883388965,
+              0.10073266654471072,
+              0.10073267148252975,
+              0.10073213782134831,
+              0.1007313996466607
+            ],
+            "mean": 0.10080713420246012,
+            "variance": 5.2723913023403505e-8,
+            "min": 0.10072589841799776,
+            "max": 0.10149595276780923,
+            "coefficientOfVariation": 0.002277784057226288,
+            "worstAdjacentRatio": 1.0076450482140737,
+            "worstThreeStepRatio": 1.0076450482140737,
+            "lightEntranceRatio": 1.0076024795233678
+          },
+          "lightness": {
+            "values": [
+              0.9653,
+              0.931,
+              0.8324308224713223,
+              0.7340841027643913,
+              0.6360008633811289,
+              0.5381748336121487,
+              0.4405351480209177,
+              0.34299804987436566,
+              0.24546233004751145,
+              0.14782541005879266,
+              0.05000000000000022
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.09856917752867778,
+            "maxStep": -0.0343
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 5
+        },
+        "darkRamp": {
+          "colors": [
+            {
+              "l": 0.9353,
+              "c": 0.11576249999999999,
+              "h": 116.082
+            },
+            {
+              "l": 0.901,
+              "c": 0.20070000000000002,
+              "h": 121.082
+            },
+            {
+              "l": 0.8024308224713222,
+              "c": 0.18310163999851886,
+              "h": 122.93552495465298
+            },
+            {
+              "l": 0.7940841027643912,
+              "c": 0.1548116655922002,
+              "h": 124.25185429380366
+            },
+            {
+              "l": 0.696000863381129,
+              "c": 0.1354265924130452,
+              "h": 125.08110503268995
+            },
+            {
+              "l": 0.5981748336121486,
+              "c": 0.11502511682997527,
+              "h": 125.43120787607324
+            },
+            {
+              "l": 0.4505351480209177,
+              "c": 0.1137034695302922,
+              "h": 125.34683023206253
+            },
+            {
+              "l": 0.35299804987436567,
+              "c": 0.08848880223003258,
+              "h": 124.82166738274844
+            },
+            {
+              "l": 0.25546233004751145,
+              "c": 0.06326652971362576,
+              "h": 123.85072931985462
+            },
+            {
+              "l": 0.15782541005879266,
+              "c": 0.03727539921766291,
+              "h": 122.45912270043203
+            },
+            {
+              "l": 0.06000000000000022,
+              "c": 0.012058593750000055,
+              "h": 121.082
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.09256181786718942,
+              0.10031968939326202,
+              0.029748132436932657,
+              0.10000247270921198,
+              0.09993364763159185,
+              0.14764569711850364,
+              0.1007477555288748,
+              0.10075210824815324,
+              0.10104404051298431,
+              0.10102454051857758
+            ],
+            "mean": 0.09737799019652815,
+            "variance": 0.0007195385668426889,
+            "min": 0.029748132436932657,
+            "max": 0.14764569711850364,
+            "coefficientOfVariation": 0.275464876596627,
+            "worstAdjacentRatio": 3.3723020968104187,
+            "worstThreeStepRatio": 3.3723020968104187,
+            "lightEntranceRatio": 1.0634691406907761
+          },
+          "lightness": {
+            "values": [
+              0.9353,
+              0.901,
+              0.8024308224713222,
+              0.7940841027643912,
+              0.696000863381129,
+              0.5981748336121486,
+              0.4505351480209177,
+              0.35299804987436567,
+              0.25546233004751145,
+              0.15782541005879266,
+              0.06000000000000022
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.14763968559123092,
+            "maxStep": -0.008346719706931016
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 5
+        }
+      }
+    },
+    {
+      "family": "phthalo-green",
+      "exemplarSeed": {
+        "id": "phthalo-green",
+        "label": "Phthalo Green",
+        "note": "Cool deep green between green and cyan; useful for path-family blending pressure.",
+        "color": {
+          "l": 0.52,
+          "c": 0.16,
+          "h": 165
+        }
+      },
+      "references": [
+        {
+          "id": "tw-emerald-v3",
+          "source": "Tailwind CSS v3 emerald",
+          "notes": "Cool deep green reference close to the canonical phthalo seed.",
+          "weight": 0.6,
+          "anchorLabel": "700",
+          "shoulderFit": {
+            "referenceId": "tw-emerald-v3",
+            "lightProgress": 0.18387309184108333,
+            "darkProgress": 0.3086923929900536,
+            "lightRadial": 0.07041428868152097,
+            "lightNormal": -0.01284258134076588,
+            "darkRadial": -0.0611396625312123,
+            "darkNormal": 0.0037279867936083452,
+            "lightResidual": 0.0015754015280369073,
+            "darkResidual": 0.001547642743712089
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.979,
+                "c": 0.021,
+                "h": 166.1
+              },
+              "hex": "#ECFDF5",
+              "textHex": "#111111",
+              "oklch": "oklch(0.979 0.021 166.1)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.95,
+                "c": 0.051,
+                "h": 163.1
+              },
+              "hex": "#D1FAE5",
+              "textHex": "#111111",
+              "oklch": "oklch(0.950 0.051 163.1)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.905,
+                "c": 0.089,
+                "h": 164.2
+              },
+              "hex": "#A7F3D0",
+              "textHex": "#111111",
+              "oklch": "oklch(0.905 0.089 164.2)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.845,
+                "c": 0.13,
+                "h": 165
+              },
+              "hex": "#6EE7B7",
+              "textHex": "#111111",
+              "oklch": "oklch(0.845 0.130 165.0)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.773,
+                "c": 0.153,
+                "h": 163.2
+              },
+              "hex": "#35D399",
+              "textHex": "#111111",
+              "oklch": "oklch(0.773 0.153 163.2)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.696,
+                "c": 0.149,
+                "h": 162.5
+              },
+              "hex": "#10B981",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.696 0.149 162.5)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.596,
+                "c": 0.127,
+                "h": 163.2
+              },
+              "hex": "#079669",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.596 0.127 163.2)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.508,
+                "c": 0.105,
+                "h": 165.6
+              },
+              "hex": "#047857",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.508 0.105 165.6)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.432,
+                "c": 0.086,
+                "h": 166.9
+              },
+              "hex": "#085F46",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.432 0.086 166.9)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.378,
+                "c": 0.073,
+                "h": 168.9
+              },
+              "hex": "#064E3B",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.378 0.073 168.9)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.262,
+                "c": 0.049,
+                "h": 172.6
+              },
+              "hex": "#022C22",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.262 0.049 172.6)"
+            }
+          ]
+        },
+        {
+          "id": "tw-teal-v3",
+          "source": "Tailwind CSS v3 teal",
+          "notes": "Blue-green counterweight so the family can stay cool in the shadows.",
+          "weight": 0.4,
+          "anchorLabel": "700",
+          "shoulderFit": {
+            "referenceId": "tw-teal-v3",
+            "lightProgress": 0.18532773468948735,
+            "darkProgress": 0.3158930988392615,
+            "lightRadial": 0.061646173590553334,
+            "lightNormal": -0.006523120317347343,
+            "darkRadial": -0.0515575515249314,
+            "darkNormal": 0.004476647175279006,
+            "lightResidual": 0.0023319211174091256,
+            "darkResidual": 0.0022734872547657075
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.984,
+                "c": 0.014,
+                "h": 180.7
+              },
+              "hex": "#F0FDFA",
+              "textHex": "#111111",
+              "oklch": "oklch(0.984 0.014 180.7)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.953,
+                "c": 0.05,
+                "h": 180.8
+              },
+              "hex": "#CCFBF1",
+              "textHex": "#111111",
+              "oklch": "oklch(0.953 0.050 180.8)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.91,
+                "c": 0.093,
+                "h": 180.4
+              },
+              "hex": "#99F6E4",
+              "textHex": "#111111",
+              "oklch": "oklch(0.910 0.093 180.4)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.855,
+                "c": 0.125,
+                "h": 181.1
+              },
+              "hex": "#5EEAD4",
+              "textHex": "#111111",
+              "oklch": "oklch(0.855 0.125 181.1)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.785,
+                "c": 0.133,
+                "h": 181.9
+              },
+              "hex": "#2CD4BF",
+              "textHex": "#111111",
+              "oklch": "oklch(0.785 0.133 181.9)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.704,
+                "c": 0.123,
+                "h": 182.5
+              },
+              "hex": "#14B8A6",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.704 0.123 182.5)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.6,
+                "c": 0.104,
+                "h": 184.7
+              },
+              "hex": "#0C9488",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.600 0.104 184.7)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.511,
+                "c": 0.086,
+                "h": 186.4
+              },
+              "hex": "#0F766E",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.511 0.086 186.4)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.437,
+                "c": 0.071,
+                "h": 188.2
+              },
+              "hex": "#105E59",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.437 0.071 188.2)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.386,
+                "c": 0.059,
+                "h": 188.4
+              },
+              "hex": "#134E4A",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.386 0.059 188.4)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.277,
+                "c": 0.045,
+                "h": 192.5
+              },
+              "hex": "#032F2E",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.277 0.045 192.5)"
+            }
+          ]
+        }
+      ],
+      "fit": {
+        "family": "phthalo-green",
+        "referenceIds": [
+          "tw-emerald-v3",
+          "tw-teal-v3"
+        ],
+        "sources": [
+          "Tailwind CSS v3 emerald",
+          "Tailwind CSS v3 teal"
+        ],
+        "anchorLabels": [
+          "700",
+          "700"
+        ],
+        "profile": {
+          "lightEndpointThreshold": 0.14049586776859507,
+          "darkEndpointThreshold": 0.2986425339366516,
+          "lightEndpointHueOffset": -1.4067000674426708,
+          "darkEndpointHueOffset": 6.6582299447730975,
+          "lightEndpointIntensityScale": 0.4644569914359777,
+          "lightEndpointIntensityOffset": 0,
+          "darkEndpointIntensityScale": 0.6239023244740548,
+          "darkEndpointIntensityOffset": 0,
+          "lightShoulderProgress": 0.18445494898044495,
+          "darkShoulderProgress": 0.31157267532973676,
+          "lightShoulderRadial": 0.06690704264513392,
+          "lightShoulderNormal": -0.010314796931398465,
+          "darkShoulderRadial": -0.057306818128699935,
+          "darkShoulderNormal": 0.004027450946276609
+        },
+        "archetype": {
+          "lightEndpoint": {
+            "l": 0.9809999999999999,
+            "c": 0.018177309592890063,
+            "h": 163.59329993255733
+          },
+          "lightShoulder": {
+            "l": 0.5976055167410514,
+            "c": 0.11778978741191516,
+            "h": 162.85084014125272
+          },
+          "seed": {
+            "l": 0.5092000000000001,
+            "c": 0.09739999999999999,
+            "h": 165
+          },
+          "darkShoulder": {
+            "l": 0.43398124153348416,
+            "c": 0.08001252794138343,
+            "h": 166.47810503510982
+          },
+          "darkEndpoint": {
+            "l": 0.268,
+            "c": 0.047398622636302304,
+            "h": 171.6582299447731
+          }
+        },
+        "shoulderGeometry": {
+          "lightProgress": 0.18445494898044495,
+          "darkProgress": 0.31157267532973676,
+          "lightRadial": 0.06690704264513392,
+          "lightNormal": -0.010314796931398465,
+          "darkRadial": -0.057306818128699935,
+          "darkNormal": 0.004027450946276609,
+          "lightResidualMean": 0.0018780093637857946,
+          "darkResidualMean": 0.0018379805481335363,
+          "references": [
+            {
+              "referenceId": "tw-emerald-v3",
+              "lightProgress": 0.18387309184108333,
+              "darkProgress": 0.3086923929900536,
+              "lightRadial": 0.07041428868152097,
+              "lightNormal": -0.01284258134076588,
+              "darkRadial": -0.0611396625312123,
+              "darkNormal": 0.0037279867936083452,
+              "lightResidual": 0.0015754015280369073,
+              "darkResidual": 0.001547642743712089
+            },
+            {
+              "referenceId": "tw-teal-v3",
+              "lightProgress": 0.18532773468948735,
+              "darkProgress": 0.3158930988392615,
+              "lightRadial": 0.061646173590553334,
+              "lightNormal": -0.006523120317347343,
+              "darkRadial": -0.0515575515249314,
+              "darkNormal": 0.004476647175279006,
+              "lightResidual": 0.0023319211174091256,
+              "darkResidual": 0.0022734872547657075
+            }
+          ]
+        }
+      },
+      "archetypeControlPoints": [
+        {
+          "label": "light endpoint",
+          "color": {
+            "l": 0.9809999999999999,
+            "c": 0.018177309592890063,
+            "h": 163.59329993255733
+          },
+          "hex": "#EEFDF5",
+          "textHex": "#111111",
+          "oklch": "oklch(0.981 0.018 163.6)"
+        },
+        {
+          "label": "light shoulder",
+          "color": {
+            "l": 0.5976055167410514,
+            "c": 0.11778978741191516,
+            "h": 162.85084014125272
+          },
+          "hex": "#25956B",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.598 0.118 162.9)"
+        },
+        {
+          "label": "seed",
+          "color": {
+            "l": 0.5092000000000001,
+            "c": 0.09739999999999999,
+            "h": 165
+          },
+          "hex": "#1C7758",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.509 0.097 165.0)"
+        },
+        {
+          "label": "dark shoulder",
+          "color": {
+            "l": 0.43398124153348416,
+            "c": 0.08001252794138343,
+            "h": 166.47810503510982
+          },
+          "hex": "#165F47",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.434 0.080 166.5)"
+        },
+        {
+          "label": "dark endpoint",
+          "color": {
+            "l": 0.268,
+            "c": 0.047398622636302304,
+            "h": 171.6582299447731
+          },
+          "hex": "#052D23",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.268 0.047 171.7)"
+        }
+      ],
+      "generatedRamp": [
+        {
+          "label": "50",
+          "color": {
+            "l": 0.98,
+            "c": 0.019125000000000007,
+            "h": 165
+          },
+          "hex": "#EDFDF5",
+          "textHex": "#111111",
+          "oklch": "oklch(0.980 0.019 165.0)"
+        },
+        {
+          "label": "100",
+          "color": {
+            "l": 0.8895144723104315,
+            "c": 0.058411608251141126,
+            "h": 168.76438318856992
+          },
+          "hex": "#B6E8D4",
+          "textHex": "#111111",
+          "oklch": "oklch(0.890 0.058 168.8)"
+        },
+        {
+          "label": "200",
+          "color": {
+            "l": 0.8014515772180495,
+            "c": 0.10311412931809838,
+            "h": 170.3781764175735
+          },
+          "hex": "#73D4B5",
+          "textHex": "#111111",
+          "oklch": "oklch(0.801 0.103 170.4)"
+        },
+        {
+          "label": "300",
+          "color": {
+            "l": 0.7089859363794238,
+            "c": 0.13954262018533337,
+            "h": 170.52511136561907
+          },
+          "hex": "#00BC95",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.709 0.140 170.5)"
+        },
+        {
+          "label": "400",
+          "color": {
+            "l": 0.6114147345846526,
+            "c": 0.12201127178548621,
+            "h": 169.2443505313439
+          },
+          "hex": "#009A77",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.611 0.122 169.2)"
+        },
+        {
+          "label": "500",
+          "color": {
+            "l": 0.52,
+            "c": 0.16,
+            "h": 165
+          },
+          "hex": "#008451",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.520 0.160 165.0)"
+        },
+        {
+          "label": "600",
+          "color": {
+            "l": 0.4380919481078507,
+            "c": 0.10230005838183501,
+            "h": 158.0928689983075
+          },
+          "hex": "#00623C",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.438 0.102 158.1)"
+        },
+        {
+          "label": "700",
+          "color": {
+            "l": 0.33734871975964387,
+            "c": 0.08825471458829934,
+            "h": 152.24353356433517
+          },
+          "hex": "#00441F",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.337 0.088 152.2)"
+        },
+        {
+          "label": "800",
+          "color": {
+            "l": 0.23994772795640912,
+            "c": 0.06138337816540561,
+            "h": 153.29843491146596
+          },
+          "hex": "#002710",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.240 0.061 153.3)"
+        },
+        {
+          "label": "900",
+          "color": {
+            "l": 0.14485804328777888,
+            "c": 0.03308564046632556,
+            "h": 159.38475167922616
+          },
+          "hex": "#000E06",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.145 0.033 159.4)"
+        },
+        {
+          "label": "950",
+          "color": {
+            "l": 0.05,
+            "c": 0.009546875000000003,
+            "h": 165
+          },
+          "hex": "#000100",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.050 0.010 165.0)"
+        }
+      ],
+      "analysis": {
+        "seed": {
+          "id": "phthalo-green",
+          "label": "Phthalo Green",
+          "note": "Cool deep green between green and cyan; useful for path-family blending pressure.",
+          "color": {
+            "l": 0.52,
+            "c": 0.16,
+            "h": 165
+          }
+        },
+        "labels": [
+          "50",
+          "100",
+          "200",
+          "300",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800",
+          "900",
+          "950"
+        ],
+        "seedStopIndex": 5,
+        "seedDelta": 0,
+        "seedPlacementImbalance": 0.012287531554429427,
+        "endpointLight": {
+          "lightness": 0.98,
+          "chroma": 0.019125000000000007,
+          "relativeChroma": 0.6800000000000003,
+          "contrastOnWhite": 1.05195365858657,
+          "contrastOnBlack": 19.96285656557922
+        },
+        "endpointDark": {
+          "lightness": 0.05,
+          "chroma": 0.009546875000000003,
+          "relativeChroma": 0.9400000000000002,
+          "contrastOnWhite": 20.94385920064483,
+          "contrastOnBlack": 1.0026805374700682
+        },
+        "lightRamp": {
+          "colors": [
+            {
+              "l": 0.98,
+              "c": 0.019125000000000007,
+              "h": 165
+            },
+            {
+              "l": 0.8895144723104315,
+              "c": 0.058411608251141126,
+              "h": 168.76438318856992
+            },
+            {
+              "l": 0.8014515772180495,
+              "c": 0.10311412931809838,
+              "h": 170.3781764175735
+            },
+            {
+              "l": 0.7089859363794238,
+              "c": 0.13954262018533337,
+              "h": 170.52511136561907
+            },
+            {
+              "l": 0.6114147345846526,
+              "c": 0.12201127178548621,
+              "h": 169.2443505313439
+            },
+            {
+              "l": 0.52,
+              "c": 0.16,
+              "h": 165
+            },
+            {
+              "l": 0.4380919481078507,
+              "c": 0.10230005838183501,
+              "h": 158.0928689983075
+            },
+            {
+              "l": 0.33734871975964387,
+              "c": 0.08825471458829934,
+              "h": 152.24353356433517
+            },
+            {
+              "l": 0.23994772795640912,
+              "c": 0.06138337816540561,
+              "h": 153.29843491146596
+            },
+            {
+              "l": 0.14485804328777888,
+              "c": 0.03308564046632556,
+              "h": 159.38475167922616
+            },
+            {
+              "l": 0.05,
+              "c": 0.009546875000000003,
+              "h": 165
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.0986706073258859,
+              0.09878343385796673,
+              0.09938321947271463,
+              0.09917658321175145,
+              0.09953328464043217,
+              0.10136960956569262,
+              0.10217869787589354,
+              0.10104879154585329,
+              0.09932625714399519,
+              0.09775046431583381
+            ],
+            "mean": 0.09972209489560194,
+            "variance": 0.0000016988120976157092,
+            "min": 0.09775046431583381,
+            "max": 0.10217869787589354,
+            "coefficientOfVariation": 0.01307017128981112,
+            "worstAdjacentRatio": 1.0184493552271912,
+            "worstThreeStepRatio": 1.033742317779305,
+            "lightEntranceRatio": 1
+          },
+          "lightness": {
+            "values": [
+              0.98,
+              0.8895144723104315,
+              0.8014515772180495,
+              0.7089859363794238,
+              0.6114147345846526,
+              0.52,
+              0.4380919481078507,
+              0.33734871975964387,
+              0.23994772795640912,
+              0.14485804328777888,
+              0.05
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.10074322834820681,
+            "maxStep": -0.08190805189214934
+          },
+          "gamutViolations": 1,
+          "maxHueDriftFromSeed": 12.756466435664834
+        },
+        "darkRamp": {
+          "colors": [
+            {
+              "l": 0.95,
+              "c": 0.017212500000000006,
+              "h": 165
+            },
+            {
+              "l": 0.8595144723104314,
+              "c": 0.05257044742602701,
+              "h": 168.76438318856992
+            },
+            {
+              "l": 0.7714515772180495,
+              "c": 0.09280271638628855,
+              "h": 170.3781764175735
+            },
+            {
+              "l": 0.7689859363794238,
+              "c": 0.11861122715753336,
+              "h": 170.52511136561907
+            },
+            {
+              "l": 0.6714147345846526,
+              "c": 0.10370958101766327,
+              "h": 169.2443505313439
+            },
+            {
+              "l": 0.5800000000000001,
+              "c": 0.12192187500000001,
+              "h": 165
+            },
+            {
+              "l": 0.4480919481078507,
+              "c": 0.10463527699968209,
+              "h": 158.0928689983075
+            },
+            {
+              "l": 0.3473487197596439,
+              "c": 0.09085753917869646,
+              "h": 152.24353356433517
+            },
+            {
+              "l": 0.24994772795640913,
+              "c": 0.0639490115496628,
+              "h": 153.29843491146596
+            },
+            {
+              "l": 0.15485804328777888,
+              "c": 0.03473992248964184,
+              "h": 159.38475167922616
+            },
+            {
+              "l": 0.060000000000000005,
+              "c": 0.010024218750000004,
+              "h": 165
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.09716851200150829,
+              0.09683790102720422,
+              0.02592741801794796,
+              0.0987337066509981,
+              0.09358256550737613,
+              0.1337300873626918,
+              0.10216664257386504,
+              0.10105934685128452,
+              0.09960052130759062,
+              0.09804211608264347
+            ],
+            "mean": 0.09468488173831102,
+            "variance": 0.000641257398059119,
+            "min": 0.02592741801794796,
+            "max": 0.1337300873626918,
+            "coefficientOfVariation": 0.26744565904584455,
+            "worstAdjacentRatio": 3.808080950546283,
+            "worstThreeStepRatio": 3.808080950546283,
+            "lightEntranceRatio": 1.1042698996602134
+          },
+          "lightness": {
+            "values": [
+              0.95,
+              0.8595144723104314,
+              0.7714515772180495,
+              0.7689859363794238,
+              0.6714147345846526,
+              0.5800000000000001,
+              0.4480919481078507,
+              0.3473487197596439,
+              0.24994772795640913,
+              0.15485804328777888,
+              0.060000000000000005
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.13190805189214938,
+            "maxStep": -0.00246564083862566
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 12.756466435664834
+        }
+      }
+    },
+    {
+      "family": "cyan",
+      "exemplarSeed": {
+        "id": "cyan",
+        "label": "Cyan",
+        "note": "High-energy cyan where gamut geometry shifts quickly between highlights and shadows.",
+        "color": {
+          "l": 0.78,
+          "c": 0.14,
+          "h": 210
+        }
+      },
+      "references": [
+        {
+          "id": "wa-cyan-bright",
+          "source": "Web Awesome bright cyan",
+          "notes": "Clean cyan reference with cool, bluer darks.",
+          "weight": 0.5,
+          "anchorLabel": "300",
+          "shoulderFit": {
+            "referenceId": "wa-cyan-bright",
+            "lightProgress": 0.3908396171517432,
+            "darkProgress": 0.14621538899484518,
+            "lightRadial": 0.0024049790480497003,
+            "lightNormal": -0.015644102950902673,
+            "darkRadial": -0.02606924720635262,
+            "darkNormal": 0.007815391913637471,
+            "lightResidual": 0.01029251938622499,
+            "darkResidual": 0.006233820456541485
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.961,
+                "c": 0.031,
+                "h": 204
+              },
+              "hex": "#DBF9FC",
+              "textHex": "#111111",
+              "oklch": "oklch(0.961 0.031 204.0)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.914,
+                "c": 0.075,
+                "h": 204.3
+              },
+              "hex": "#A6F2FA",
+              "textHex": "#111111",
+              "oklch": "oklch(0.914 0.075 204.3)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.827,
+                "c": 0.12,
+                "h": 207.3
+              },
+              "hex": "#51DCEE",
+              "textHex": "#111111",
+              "oklch": "oklch(0.827 0.120 207.3)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.741,
+                "c": 0.119,
+                "h": 210.5
+              },
+              "hex": "#2EBFD5",
+              "textHex": "#111111",
+              "oklch": "oklch(0.741 0.119 210.5)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.659,
+                "c": 0.109,
+                "h": 212.4
+              },
+              "hex": "#1FA3B9",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.659 0.109 212.4)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.553,
+                "c": 0.094,
+                "h": 215.2
+              },
+              "hex": "#128095",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.553 0.094 215.2)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.457,
+                "c": 0.08,
+                "h": 215.3
+              },
+              "hex": "#036273",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.457 0.080 215.3)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.384,
+                "c": 0.068,
+                "h": 215.5
+              },
+              "hex": "#004C5A",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.384 0.068 215.5)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.314,
+                "c": 0.056,
+                "h": 215.6
+              },
+              "hex": "#003843",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.314 0.056 215.6)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.229,
+                "c": 0.041,
+                "h": 217.2
+              },
+              "hex": "#002129",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.229 0.041 217.2)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.18,
+                "c": 0.032,
+                "h": 213.8
+              },
+              "hex": "#00151A",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.180 0.032 213.8)"
+            }
+          ]
+        },
+        {
+          "id": "tw-cyan-v3",
+          "source": "Tailwind CSS v3 cyan",
+          "notes": "Higher-energy cyan reference with vivid midtones and inky shadows.",
+          "weight": 0.5,
+          "anchorLabel": "400",
+          "shoulderFit": {
+            "referenceId": "tw-cyan-v3",
+            "lightProgress": 0.3591952447888364,
+            "darkProgress": 0.16650985456301406,
+            "lightRadial": -0.04701678951079309,
+            "lightNormal": -0.019879033165860222,
+            "darkRadial": -0.035659507012573456,
+            "darkNormal": 0.016631715462123588,
+            "lightResidual": 0.009000672722069574,
+            "darkResidual": 0.005454237204454918
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.984,
+                "c": 0.019,
+                "h": 200.9
+              },
+              "hex": "#ECFEFF",
+              "textHex": "#111111",
+              "oklch": "oklch(0.984 0.019 200.9)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.956,
+                "c": 0.044,
+                "h": 203.4
+              },
+              "hex": "#CFFAFE",
+              "textHex": "#111111",
+              "oklch": "oklch(0.956 0.044 203.4)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.917,
+                "c": 0.077,
+                "h": 205
+              },
+              "hex": "#A5F3FC",
+              "textHex": "#111111",
+              "oklch": "oklch(0.917 0.077 205.0)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.865,
+                "c": 0.115,
+                "h": 207.1
+              },
+              "hex": "#68E8F9",
+              "textHex": "#111111",
+              "oklch": "oklch(0.865 0.115 207.1)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.797,
+                "c": 0.134,
+                "h": 211.5
+              },
+              "hex": "#21D3EE",
+              "textHex": "#111111",
+              "oklch": "oklch(0.797 0.134 211.5)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.715,
+                "c": 0.126,
+                "h": 215.2
+              },
+              "hex": "#04B6D4",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.715 0.126 215.2)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.609,
+                "c": 0.111,
+                "h": 221.7
+              },
+              "hex": "#0891B2",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.609 0.111 221.7)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.52,
+                "c": 0.094,
+                "h": 223.1
+              },
+              "hex": "#0D7490",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.520 0.094 223.1)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.45,
+                "c": 0.077,
+                "h": 224.3
+              },
+              "hex": "#155E75",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.450 0.077 224.3)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.398,
+                "c": 0.066,
+                "h": 227.4
+              },
+              "hex": "#174E63",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.398 0.066 227.4)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.302,
+                "c": 0.054,
+                "h": 229.7
+              },
+              "hex": "#083344",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.302 0.054 229.7)"
+            }
+          ]
+        }
+      ],
+      "fit": {
+        "family": "cyan",
+        "referenceIds": [
+          "wa-cyan-bright",
+          "tw-cyan-v3"
+        ],
+        "sources": [
+          "Web Awesome bright cyan",
+          "Tailwind CSS v3 cyan"
+        ],
+        "anchorLabels": [
+          "300",
+          "400"
+        ],
+        "profile": {
+          "lightEndpointThreshold": 0.21164021164021157,
+          "darkEndpointThreshold": 0.3048128342245989,
+          "lightEndpointHueOffset": -8.057802054879971,
+          "darkEndpointHueOffset": 12.665913217738307,
+          "lightEndpointIntensityScale": 0.7673940225475592,
+          "lightEndpointIntensityOffset": 0,
+          "darkEndpointIntensityScale": 0.9195072471801914,
+          "darkEndpointIntensityOffset": 0,
+          "lightShoulderProgress": 0.37501743097028983,
+          "darkShoulderProgress": 0.15636262177892962,
+          "lightShoulderRadial": -0.022305905231371697,
+          "lightShoulderNormal": -0.017761568058381447,
+          "darkShoulderRadial": -0.030864377109463038,
+          "darkShoulderNormal": 0.012223553687880528
+        },
+        "archetype": {
+          "lightEndpoint": {
+            "l": 0.9724999999999999,
+            "c": 0.024984921664339136,
+            "h": 201.94219794512003
+          },
+          "lightShoulder": {
+            "l": 0.8458525691075739,
+            "c": 0.11682355343337948,
+            "h": 206.14672815454918
+          },
+          "seed": {
+            "l": 0.769,
+            "c": 0.1265,
+            "h": 210
+          },
+          "darkShoulder": {
+            "l": 0.686608429756091,
+            "c": 0.11725677996360409,
+            "h": 212.89462751276596
+          },
+          "darkEndpoint": {
+            "l": 0.241,
+            "c": 0.04266085949126703,
+            "h": 222.6659132177383
+          }
+        },
+        "shoulderGeometry": {
+          "lightProgress": 0.37501743097028983,
+          "darkProgress": 0.15636262177892962,
+          "lightRadial": -0.022305905231371697,
+          "lightNormal": -0.017761568058381447,
+          "darkRadial": -0.030864377109463038,
+          "darkNormal": 0.012223553687880528,
+          "lightResidualMean": 0.00964659605414728,
+          "darkResidualMean": 0.005844028830498202,
+          "references": [
+            {
+              "referenceId": "wa-cyan-bright",
+              "lightProgress": 0.3908396171517432,
+              "darkProgress": 0.14621538899484518,
+              "lightRadial": 0.0024049790480497003,
+              "lightNormal": -0.015644102950902673,
+              "darkRadial": -0.02606924720635262,
+              "darkNormal": 0.007815391913637471,
+              "lightResidual": 0.01029251938622499,
+              "darkResidual": 0.006233820456541485
+            },
+            {
+              "referenceId": "tw-cyan-v3",
+              "lightProgress": 0.3591952447888364,
+              "darkProgress": 0.16650985456301406,
+              "lightRadial": -0.04701678951079309,
+              "lightNormal": -0.019879033165860222,
+              "darkRadial": -0.035659507012573456,
+              "darkNormal": 0.016631715462123588,
+              "lightResidual": 0.009000672722069574,
+              "darkResidual": 0.005454237204454918
+            }
+          ]
+        }
+      },
+      "archetypeControlPoints": [
+        {
+          "label": "light endpoint",
+          "color": {
+            "l": 0.9724999999999999,
+            "c": 0.024984921664339136,
+            "h": 201.94219794512003
+          },
+          "hex": "#E4FBFD",
+          "textHex": "#111111",
+          "oklch": "oklch(0.972 0.025 201.9)"
+        },
+        {
+          "label": "light shoulder",
+          "color": {
+            "l": 0.8458525691075739,
+            "c": 0.11682355343337948,
+            "h": 206.14672815454918
+          },
+          "hex": "#5DE2F2",
+          "textHex": "#111111",
+          "oklch": "oklch(0.846 0.117 206.1)"
+        },
+        {
+          "label": "seed",
+          "color": {
+            "l": 0.769,
+            "c": 0.1265,
+            "h": 210
+          },
+          "hex": "#27C9E0",
+          "textHex": "#111111",
+          "oklch": "oklch(0.769 0.127 210.0)"
+        },
+        {
+          "label": "dark shoulder",
+          "color": {
+            "l": 0.686608429756091,
+            "c": 0.11725677996360409,
+            "h": 212.89462751276596
+          },
+          "hex": "#14ADC5",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.687 0.117 212.9)"
+        },
+        {
+          "label": "dark endpoint",
+          "color": {
+            "l": 0.241,
+            "c": 0.04266085949126703,
+            "h": 222.6659132177383
+          },
+          "hex": "#02242E",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.241 0.043 222.7)"
+        }
+      ],
+      "generatedRamp": [
+        {
+          "label": "50",
+          "color": {
+            "l": 0.95,
+            "c": 0.06660937500000003,
+            "h": 198
+          },
+          "hex": "#BAFDFF",
+          "textHex": "#111111",
+          "oklch": "oklch(0.950 0.067 198.0)"
+        },
+        {
+          "label": "100",
+          "color": {
+            "l": 0.8663971336765967,
+            "c": 0.10696080844310016,
+            "h": 206.12423485890724
+          },
+          "hex": "#73E7F6",
+          "textHex": "#111111",
+          "oklch": "oklch(0.866 0.107 206.1)"
+        },
+        {
+          "label": "200",
+          "color": {
+            "l": 0.78,
+            "c": 0.14,
+            "h": 210
+          },
+          "hex": "#00CFE8",
+          "textHex": "#111111",
+          "oklch": "oklch(0.780 0.140 210.0)"
+        },
+        {
+          "label": "300",
+          "color": {
+            "l": 0.6895416300945387,
+            "c": 0.12092585396437912,
+            "h": 213.51830887734297
+          },
+          "hex": "#00AEC8",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.690 0.121 213.5)"
+        },
+        {
+          "label": "400",
+          "color": {
+            "l": 0.5985351452270683,
+            "c": 0.1034648862064686,
+            "h": 216.0260276361114
+          },
+          "hex": "#108FA7",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.599 0.103 216.0)"
+        },
+        {
+          "label": "500",
+          "color": {
+            "l": 0.5072431150321737,
+            "c": 0.08698154994276919,
+            "h": 217.4563290789755
+          },
+          "hex": "#107186",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.507 0.087 217.5)"
+        },
+        {
+          "label": "600",
+          "color": {
+            "l": 0.415818891474612,
+            "c": 0.07106639936114922,
+            "h": 217.78713277140025
+          },
+          "hex": "#0A5565",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.416 0.071 217.8)"
+        },
+        {
+          "label": "700",
+          "color": {
+            "l": 0.32434326258973634,
+            "c": 0.055459143815338764,
+            "h": 217.02595532708574
+          },
+          "hex": "#043B46",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.324 0.055 217.0)"
+        },
+        {
+          "label": "800",
+          "color": {
+            "l": 0.23285726369392767,
+            "c": 0.03995990179881774,
+            "h": 215.21882899893944
+          },
+          "hex": "#012229",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.233 0.040 215.2)"
+        },
+        {
+          "label": "900",
+          "color": {
+            "l": 0.14139219968979314,
+            "c": 0.024339169185778303,
+            "h": 212.51733386943363
+          },
+          "hex": "#000C0F",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.141 0.024 212.5)"
+        },
+        {
+          "label": "950",
+          "color": {
+            "l": 0.05,
+            "c": 0.00825,
+            "h": 210
+          },
+          "hex": "#000101",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.050 0.008 210.0)"
+        }
+      ],
+      "analysis": {
+        "seed": {
+          "id": "cyan",
+          "label": "Cyan",
+          "note": "High-energy cyan where gamut geometry shifts quickly between highlights and shadows.",
+          "color": {
+            "l": 0.78,
+            "c": 0.14,
+            "h": 210
+          }
+        },
+        "labels": [
+          "50",
+          "100",
+          "200",
+          "300",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800",
+          "900",
+          "950"
+        ],
+        "seedStopIndex": 2,
+        "seedDelta": 0,
+        "seedPlacementImbalance": 0.004680612748533491,
+        "endpointLight": {
+          "lightness": 0.95,
+          "chroma": 0.06660937500000003,
+          "relativeChroma": 0.9800000000000003,
+          "contrastOnWhite": 1.1310217488153624,
+          "contrastOnBlack": 18.56728221362276
+        },
+        "endpointDark": {
+          "lightness": 0.05,
+          "chroma": 0.00825,
+          "relativeChroma": 0.96,
+          "contrastOnWhite": 20.94507677347746,
+          "contrastOnBlack": 1.0026222499500255
+        },
+        "lightRamp": {
+          "colors": [
+            {
+              "l": 0.95,
+              "c": 0.06660937500000003,
+              "h": 198
+            },
+            {
+              "l": 0.8663971336765967,
+              "c": 0.10696080844310016,
+              "h": 206.12423485890724
+            },
+            {
+              "l": 0.78,
+              "c": 0.14,
+              "h": 210
+            },
+            {
+              "l": 0.6895416300945387,
+              "c": 0.12092585396437912,
+              "h": 213.51830887734297
+            },
+            {
+              "l": 0.5985351452270683,
+              "c": 0.1034648862064686,
+              "h": 216.0260276361114
+            },
+            {
+              "l": 0.5072431150321737,
+              "c": 0.08698154994276919,
+              "h": 217.4563290789755
+            },
+            {
+              "l": 0.415818891474612,
+              "c": 0.07106639936114922,
+              "h": 217.78713277140025
+            },
+            {
+              "l": 0.32434326258973634,
+              "c": 0.055459143815338764,
+              "h": 217.02595532708574
+            },
+            {
+              "l": 0.23285726369392767,
+              "c": 0.03995990179881774,
+              "h": 215.21882899893944
+            },
+            {
+              "l": 0.14139219968979314,
+              "c": 0.024339169185778303,
+              "h": 212.51733386943363
+            },
+            {
+              "l": 0.05,
+              "c": 0.00825,
+              "h": 210
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.09359851854580262,
+              0.09286844216703742,
+              0.09279200554543113,
+              0.09279563274572225,
+              0.09279840054911064,
+              0.0928002517633201,
+              0.09280125377634438,
+              0.09280150274601451,
+              0.092801007576564,
+              0.09279969330692807
+            ],
+            "mean": 0.09288567087222752,
+            "variance": 5.690117600508559e-8,
+            "min": 0.09279200554543113,
+            "max": 0.09359851854580262,
+            "coefficientOfVariation": 0.002568099811517957,
+            "worstAdjacentRatio": 1.0078614043880703,
+            "worstThreeStepRatio": 1.008691621607172,
+            "lightEntranceRatio": 1.0086419775213415
+          },
+          "lightness": {
+            "values": [
+              0.95,
+              0.8663971336765967,
+              0.78,
+              0.6895416300945387,
+              0.5985351452270683,
+              0.5072431150321737,
+              0.415818891474612,
+              0.32434326258973634,
+              0.23285726369392767,
+              0.14139219968979314,
+              0.05
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.09148599889580866,
+            "maxStep": -0.0836028663234033
+          },
+          "gamutViolations": 1,
+          "maxHueDriftFromSeed": 12
+        },
+        "darkRamp": {
+          "colors": [
+            {
+              "l": 0.9199999999999999,
+              "c": 0.05994843750000003,
+              "h": 198
+            },
+            {
+              "l": 0.8363971336765966,
+              "c": 0.09626472759879015,
+              "h": 206.12423485890724
+            },
+            {
+              "l": 0.75,
+              "c": 0.12600000000000003,
+              "h": 210
+            },
+            {
+              "l": 0.7495416300945388,
+              "c": 0.10278697586972224,
+              "h": 213.51830887734297
+            },
+            {
+              "l": 0.6585351452270682,
+              "c": 0.0879451532754983,
+              "h": 216.0260276361114
+            },
+            {
+              "l": 0.5672431150321737,
+              "c": 0.0739343174513538,
+              "h": 217.4563290789755
+            },
+            {
+              "l": 0.425818891474612,
+              "c": 0.07461971932920669,
+              "h": 217.78713277140025
+            },
+            {
+              "l": 0.33434326258973635,
+              "c": 0.05823210100610571,
+              "h": 217.02595532708574
+            },
+            {
+              "l": 0.24285726369392768,
+              "c": 0.04195789688875863,
+              "h": 215.21882899893944
+            },
+            {
+              "l": 0.15139219968979314,
+              "c": 0.02555612764506722,
+              "h": 212.51733386943363
+            },
+            {
+              "l": 0.060000000000000005,
+              "c": 0.0086625,
+              "h": 210
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.09178314891546124,
+              0.09167405200143738,
+              0.024246118468685178,
+              0.09230262083143691,
+              0.09238284512033952,
+              0.1414265346027722,
+              0.0929360619446279,
+              0.09293528975049731,
+              0.09293685672167344,
+              0.09294275706861888
+            ],
+            "mean": 0.090556628542555,
+            "variance": 0.0007016646460290175,
+            "min": 0.024246118468685178,
+            "max": 0.1414265346027722,
+            "coefficientOfVariation": 0.2925125825610135,
+            "worstAdjacentRatio": 3.80690298740598,
+            "worstThreeStepRatio": 3.8102117351136275,
+            "lightEntranceRatio": 1.0478780873849216
+          },
+          "lightness": {
+            "values": [
+              0.9199999999999999,
+              0.8363971336765966,
+              0.75,
+              0.7495416300945388,
+              0.6585351452270682,
+              0.5672431150321737,
+              0.425818891474612,
+              0.33434326258973635,
+              0.24285726369392768,
+              0.15139219968979314,
+              0.060000000000000005
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.14142422355756173,
+            "maxStep": -0.00045836990546122003
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 12
+        }
+      }
+    },
+    {
+      "family": "ultramarine",
+      "exemplarSeed": {
+        "id": "ultramarine",
+        "label": "Ultramarine",
+        "note": "Deep vivid blue seed that tests dark retention and blue highlight presence.",
+        "color": {
+          "l": 0.47,
+          "c": 0.18,
+          "h": 265
+        }
+      },
+      "references": [
+        {
+          "id": "wa-blue-bright",
+          "source": "Web Awesome bright blue",
+          "notes": "Blue-side ultramarine reference with strong colored highlights.",
+          "weight": 1,
+          "anchorLabel": "600",
+          "shoulderFit": {
+            "referenceId": "wa-blue-bright",
+            "lightProgress": 0.19757960735220126,
+            "darkProgress": 0.24806326901966314,
+            "lightRadial": 0.05678576888113864,
+            "lightNormal": -0.007758303673331937,
+            "darkRadial": -0.051870904926235396,
+            "darkNormal": -0.0045541079711938414,
+            "lightResidual": 1.734723475976807e-18,
+            "darkResidual": 0
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.963,
+                "c": 0.02,
+                "h": 238.7
+              },
+              "hex": "#E7F5FF",
+              "textHex": "#111111",
+              "oklch": "oklch(0.963 0.020 238.7)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.923,
+                "c": 0.041,
+                "h": 240.4
+              },
+              "hex": "#CEEAFF",
+              "textHex": "#111111",
+              "oklch": "oklch(0.923 0.041 240.4)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.833,
+                "c": 0.091,
+                "h": 242.3
+              },
+              "hex": "#93D0FF",
+              "textHex": "#111111",
+              "oklch": "oklch(0.833 0.091 242.3)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.748,
+                "c": 0.137,
+                "h": 245.6
+              },
+              "hex": "#5BB5FE",
+              "textHex": "#111111",
+              "oklch": "oklch(0.748 0.137 245.6)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.667,
+                "c": 0.136,
+                "h": 249.6
+              },
+              "hex": "#4A99E4",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.667 0.136 249.6)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.563,
+                "c": 0.132,
+                "h": 251.6
+              },
+              "hex": "#3178C0",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.563 0.132 251.6)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.463,
+                "c": 0.113,
+                "h": 253.2
+              },
+              "hex": "#245A96",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.463 0.113 253.2)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.393,
+                "c": 0.095,
+                "h": 252.4
+              },
+              "hex": "#194777",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.393 0.095 252.4)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.318,
+                "c": 0.079,
+                "h": 253.2
+              },
+              "hex": "#103359",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.318 0.079 253.2)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.233,
+                "c": 0.059,
+                "h": 252.8
+              },
+              "hex": "#061E38",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.233 0.059 252.8)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.181,
+                "c": 0.045,
+                "h": 253.3
+              },
+              "hex": "#031225",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.181 0.045 253.3)"
+            }
+          ]
+        }
+      ],
+      "fit": {
+        "family": "ultramarine",
+        "referenceIds": [
+          "wa-blue-bright"
+        ],
+        "sources": [
+          "Web Awesome bright blue"
+        ],
+        "anchorLabels": [
+          "600"
+        ],
+        "profile": {
+          "lightEndpointThreshold": 0.09583333333333334,
+          "darkEndpointThreshold": 0.39698492462311546,
+          "lightEndpointHueOffset": -14.5,
+          "darkEndpointHueOffset": 0.09999999999990905,
+          "lightEndpointIntensityScale": 1.5,
+          "lightEndpointIntensityOffset": 0,
+          "darkEndpointIntensityScale": 0.6091772151898734,
+          "darkEndpointIntensityOffset": 0,
+          "lightShoulderProgress": 0.19757960735220126,
+          "darkShoulderProgress": 0.24806326901966314,
+          "lightShoulderRadial": 0.05678576888113864,
+          "lightShoulderNormal": -0.007758303673331937,
+          "darkShoulderRadial": -0.051870904926235396,
+          "darkShoulderNormal": -0.0045541079711938414
+        },
+        "archetype": {
+          "lightEndpoint": {
+            "l": 0.963,
+            "c": 0.02,
+            "h": 250.5
+          },
+          "lightShoulder": {
+            "l": 0.563,
+            "c": 0.132,
+            "h": 263.3999999999999
+          },
+          "seed": {
+            "l": 0.463,
+            "c": 0.113,
+            "h": 265
+          },
+          "darkShoulder": {
+            "l": 0.393,
+            "c": 0.095,
+            "h": 264.19999999999993
+          },
+          "darkEndpoint": {
+            "l": 0.181,
+            "c": 0.045,
+            "h": 265.0999999999999
+          }
+        },
+        "shoulderGeometry": {
+          "lightProgress": 0.19757960735220126,
+          "darkProgress": 0.24806326901966314,
+          "lightRadial": 0.05678576888113864,
+          "lightNormal": -0.007758303673331937,
+          "darkRadial": -0.051870904926235396,
+          "darkNormal": -0.0045541079711938414,
+          "lightResidualMean": 1.734723475976807e-18,
+          "darkResidualMean": 0,
+          "references": [
+            {
+              "referenceId": "wa-blue-bright",
+              "lightProgress": 0.19757960735220126,
+              "darkProgress": 0.24806326901966314,
+              "lightRadial": 0.05678576888113864,
+              "lightNormal": -0.007758303673331937,
+              "darkRadial": -0.051870904926235396,
+              "darkNormal": -0.0045541079711938414,
+              "lightResidual": 1.734723475976807e-18,
+              "darkResidual": 0
+            }
+          ]
+        }
+      },
+      "archetypeControlPoints": [
+        {
+          "label": "light endpoint",
+          "color": {
+            "l": 0.963,
+            "c": 0.02,
+            "h": 250.5
+          },
+          "hex": "#E9F4FF",
+          "textHex": "#111111",
+          "oklch": "oklch(0.963 0.020 250.5)"
+        },
+        {
+          "label": "light shoulder",
+          "color": {
+            "l": 0.563,
+            "c": 0.132,
+            "h": 263.3999999999999
+          },
+          "hex": "#4C72C2",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.563 0.132 263.4)"
+        },
+        {
+          "label": "seed",
+          "color": {
+            "l": 0.463,
+            "c": 0.113,
+            "h": 265
+          },
+          "hex": "#395598",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.463 0.113 265.0)"
+        },
+        {
+          "label": "dark shoulder",
+          "color": {
+            "l": 0.393,
+            "c": 0.095,
+            "h": 264.19999999999993
+          },
+          "hex": "#2B4378",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.393 0.095 264.2)"
+        },
+        {
+          "label": "dark endpoint",
+          "color": {
+            "l": 0.181,
+            "c": 0.045,
+            "h": 265.0999999999999
+          },
+          "hex": "#081126",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.181 0.045 265.1)"
+        }
+      ],
+      "generatedRamp": [
+        {
+          "label": "50",
+          "color": {
+            "l": 0.9199999999999999,
+            "c": 0.036750000000000005,
+            "h": 265
+          },
+          "hex": "#D9E5FE",
+          "textHex": "#111111",
+          "oklch": "oklch(0.920 0.037 265.0)"
+        },
+        {
+          "label": "100",
+          "color": {
+            "l": 0.8299347040957563,
+            "c": 0.06520730223380711,
+            "h": 265.3154538874453
+          },
+          "hex": "#B3C7F3",
+          "textHex": "#111111",
+          "oklch": "oklch(0.830 0.065 265.3)"
+        },
+        {
+          "label": "200",
+          "color": {
+            "l": 0.7398117072103679,
+            "c": 0.09347959953020192,
+            "h": 265.6529643885399
+          },
+          "hex": "#8FAAE6",
+          "textHex": "#111111",
+          "oklch": "oklch(0.740 0.093 265.7)"
+        },
+        {
+          "label": "300",
+          "color": {
+            "l": 0.6497182725613657,
+            "c": 0.12184873088286657,
+            "h": 265.7488510640553
+          },
+          "hex": "#6C8CD9",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.650 0.122 265.7)"
+        },
+        {
+          "label": "400",
+          "color": {
+            "l": 0.5597446241106985,
+            "c": 0.15059031446916657,
+            "h": 265.53987499654886
+          },
+          "hex": "#496ECC",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.560 0.151 265.5)"
+        },
+        {
+          "label": "500",
+          "color": {
+            "l": 0.47,
+            "c": 0.18,
+            "h": 265
+          },
+          "hex": "#274FBE",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.470 0.180 265.0)"
+        },
+        {
+          "label": "600",
+          "color": {
+            "l": 0.3772856746439788,
+            "c": 0.19159693975851524,
+            "h": 264.5044341612469
+          },
+          "hex": "#0A2FA5",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.377 0.192 264.5)"
+        },
+        {
+          "label": "700",
+          "color": {
+            "l": 0.2877546542915276,
+            "c": 0.16458108938054294,
+            "h": 264.3217360764787
+          },
+          "hex": "#01177A",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.288 0.165 264.3)"
+        },
+        {
+          "label": "800",
+          "color": {
+            "l": 0.2083451872393127,
+            "c": 0.11423088365166115,
+            "h": 264.34660349225885
+          },
+          "hex": "#010D4B",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.208 0.114 264.3)"
+        },
+        {
+          "label": "900",
+          "color": {
+            "l": 0.13218342505468916,
+            "c": 0.058910603613663765,
+            "h": 264.5694405831206
+          },
+          "hex": "#01051F",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.132 0.059 264.6)"
+        },
+        {
+          "label": "950",
+          "color": {
+            "l": 0.05,
+            "c": 0.013385146103896102,
+            "h": 265
+          },
+          "hex": "#000001",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.050 0.013 265.0)"
+        }
+      ],
+      "analysis": {
+        "seed": {
+          "id": "ultramarine",
+          "label": "Ultramarine",
+          "note": "Deep vivid blue seed that tests dark retention and blue highlight presence.",
+          "color": {
+            "l": 0.47,
+            "c": 0.18,
+            "h": 265
+          }
+        },
+        "labels": [
+          "50",
+          "100",
+          "200",
+          "300",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800",
+          "900",
+          "950"
+        ],
+        "seedStopIndex": 5,
+        "seedDelta": 0,
+        "seedPlacementImbalance": 0.006777901542949517,
+        "endpointLight": {
+          "lightness": 0.9199999999999999,
+          "chroma": 0.036750000000000005,
+          "relativeChroma": 0.98,
+          "contrastOnWhite": 1.2679769728315577,
+          "contrastOnBlack": 16.56181496191075
+        },
+        "endpointDark": {
+          "lightness": 0.05,
+          "chroma": 0.013385146103896102,
+          "relativeChroma": 0.3984415584415583,
+          "contrastOnWhite": 20.949166907955036,
+          "contrastOnBlack": 1.0024264970663654
+        },
+        "lightRamp": {
+          "colors": [
+            {
+              "l": 0.9199999999999999,
+              "c": 0.036750000000000005,
+              "h": 265
+            },
+            {
+              "l": 0.8299347040957563,
+              "c": 0.06520730223380711,
+              "h": 265.3154538874453
+            },
+            {
+              "l": 0.7398117072103679,
+              "c": 0.09347959953020192,
+              "h": 265.6529643885399
+            },
+            {
+              "l": 0.6497182725613657,
+              "c": 0.12184873088286657,
+              "h": 265.7488510640553
+            },
+            {
+              "l": 0.5597446241106985,
+              "c": 0.15059031446916657,
+              "h": 265.53987499654886
+            },
+            {
+              "l": 0.47,
+              "c": 0.18,
+              "h": 265
+            },
+            {
+              "l": 0.3772856746439788,
+              "c": 0.19159693975851524,
+              "h": 264.5044341612469
+            },
+            {
+              "l": 0.2877546542915276,
+              "c": 0.16458108938054294,
+              "h": 264.3217360764787
+            },
+            {
+              "l": 0.2083451872393127,
+              "c": 0.11423088365166115,
+              "h": 264.34660349225885
+            },
+            {
+              "l": 0.13218342505468916,
+              "c": 0.058910603613663765,
+              "h": 264.5694405831206
+            },
+            {
+              "l": 0.05,
+              "c": 0.013385146103896102,
+              "h": 265
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.0944544769572701,
+              0.0944546921915559,
+              0.09445457364206865,
+              0.09445411659234416,
+              0.09445334181303701,
+              0.09345060253909063,
+              0.09351994652040131,
+              0.09402664630781227,
+              0.09413314608996118,
+              0.09395066345389314
+            ],
+            "mean": 0.09413522061074343,
+            "variance": 1.4019869481088468e-7,
+            "min": 0.09345060253909063,
+            "max": 0.0944546921915559,
+            "coefficientOfVariation": 0.003977588401193463,
+            "worstAdjacentRatio": 1.0107301531151385,
+            "worstThreeStepRatio": 1.01073844390499,
+            "lightEntranceRatio": 1.002670117950761
+          },
+          "lightness": {
+            "values": [
+              0.9199999999999999,
+              0.8299347040957563,
+              0.7398117072103679,
+              0.6497182725613657,
+              0.5597446241106985,
+              0.47,
+              0.3772856746439788,
+              0.2877546542915276,
+              0.2083451872393127,
+              0.13218342505468916,
+              0.05
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.0927143253560212,
+            "maxStep": -0.07616176218462353
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 0.7488510640553159
+        },
+        "darkRamp": {
+          "colors": [
+            {
+              "l": 0.8899999999999999,
+              "c": 0.03307500000000001,
+              "h": 265
+            },
+            {
+              "l": 0.7999347040957563,
+              "c": 0.058686572010426395,
+              "h": 265.3154538874453
+            },
+            {
+              "l": 0.7098117072103679,
+              "c": 0.08413163957718173,
+              "h": 265.6529643885399
+            },
+            {
+              "l": 0.7097182725613658,
+              "c": 0.10357142125043658,
+              "h": 265.7488510640553
+            },
+            {
+              "l": 0.6197446241106985,
+              "c": 0.1280017672987916,
+              "h": 265.53987499654886
+            },
+            {
+              "l": 0.53,
+              "c": 0.153,
+              "h": 265
+            },
+            {
+              "l": 0.3872856746439788,
+              "c": 0.20117678674644102,
+              "h": 264.5044341612469
+            },
+            {
+              "l": 0.2977546542915276,
+              "c": 0.1728101438495701,
+              "h": 264.3217360764787
+            },
+            {
+              "l": 0.2183451872393127,
+              "c": 0.1199424278342442,
+              "h": 264.34660349225885
+            },
+            {
+              "l": 0.14218342505468917,
+              "c": 0.06185613379434696,
+              "h": 264.5694405831206
+            },
+            {
+              "l": 0.060000000000000005,
+              "c": 0.014054403409090909,
+              "h": 265
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.09363636572395626,
+              0.0936470894273601,
+              0.01944063389057285,
+              0.09323237412430291,
+              0.09317053170290084,
+              0.15063427256919393,
+              0.09391923934072857,
+              0.09539844211845462,
+              0.09578488293097702,
+              0.09507454903349087
+            ],
+            "mean": 0.09239383808619378,
+            "variance": 0.0008748579011393081,
+            "min": 0.01944063389057285,
+            "max": 0.15063427256919393,
+            "coefficientOfVariation": 0.3201295402540388,
+            "worstAdjacentRatio": 4.817080037332087,
+            "worstThreeStepRatio": 4.817080037332087,
+            "lightEntranceRatio": 1.0508041308553886
+          },
+          "lightness": {
+            "values": [
+              0.8899999999999999,
+              0.7999347040957563,
+              0.7098117072103679,
+              0.7097182725613658,
+              0.6197446241106985,
+              0.53,
+              0.3872856746439788,
+              0.2977546542915276,
+              0.2183451872393127,
+              0.14218342505468917,
+              0.060000000000000005
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.14271432535602124,
+            "maxStep": -0.00009343464900213316
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 0.7488510640553159
+        }
+      }
+    },
+    {
+      "family": "violet",
+      "exemplarSeed": {
+        "id": "violet",
+        "label": "Violet",
+        "note": "Mid-dark vivid violet that often wants richer mids and inkier shadows.",
+        "color": {
+          "l": 0.62,
+          "c": 0.21,
+          "h": 315
+        }
+      },
+      "references": [
+        {
+          "id": "tw-violet-v3",
+          "source": "Tailwind CSS v3 violet",
+          "notes": "Blue-violet reference that keeps the upper mids saturated without drifting magenta.",
+          "weight": 0.45,
+          "anchorLabel": "500",
+          "shoulderFit": {
+            "referenceId": "tw-violet-v3",
+            "lightProgress": 0.2848296098838468,
+            "darkProgress": 0.2264461385407356,
+            "lightRadial": -0.1193085925906144,
+            "lightNormal": 0.004618687953264382,
+            "darkRadial": 0.047344063826493324,
+            "darkNormal": 0.004824480391011901,
+            "lightResidual": 0.03859368321257329,
+            "darkResidual": 0.03275004152022056
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.969,
+                "c": 0.016,
+                "h": 293.8
+              },
+              "hex": "#F5F3FF",
+              "textHex": "#111111",
+              "oklch": "oklch(0.969 0.016 293.8)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.943,
+                "c": 0.028,
+                "h": 294.6
+              },
+              "hex": "#EDE9FE",
+              "textHex": "#111111",
+              "oklch": "oklch(0.943 0.028 294.6)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.894,
+                "c": 0.055,
+                "h": 293.3
+              },
+              "hex": "#DDD6FE",
+              "textHex": "#111111",
+              "oklch": "oklch(0.894 0.055 293.3)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.811,
+                "c": 0.101,
+                "h": 293.6
+              },
+              "hex": "#C4B5FD",
+              "textHex": "#111111",
+              "oklch": "oklch(0.811 0.101 293.6)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.709,
+                "c": 0.159,
+                "h": 293.5
+              },
+              "hex": "#A78BFA",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.709 0.159 293.5)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.606,
+                "c": 0.219,
+                "h": 292.7
+              },
+              "hex": "#8B5CF6",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.606 0.219 292.7)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.541,
+                "c": 0.247,
+                "h": 293
+              },
+              "hex": "#7C3AED",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.541 0.247 293.0)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.491,
+                "c": 0.241,
+                "h": 292.6
+              },
+              "hex": "#6D28D9",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.491 0.241 292.6)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.432,
+                "c": 0.211,
+                "h": 292.8
+              },
+              "hex": "#5B21B6",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.432 0.211 292.8)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.38,
+                "c": 0.178,
+                "h": 293.7
+              },
+              "hex": "#4C1D95",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.380 0.178 293.7)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.283,
+                "c": 0.135,
+                "h": 291.1
+              },
+              "hex": "#2E1065",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.283 0.135 291.1)"
+            }
+          ]
+        },
+        {
+          "id": "tw-fuchsia-v3",
+          "source": "Tailwind CSS v3 fuchsia",
+          "notes": "Magenta-side counterweight so violet ramps can hold the seed's red bias.",
+          "weight": 0.55,
+          "anchorLabel": "600",
+          "shoulderFit": {
+            "referenceId": "tw-fuchsia-v3",
+            "lightProgress": 0.1777366598757645,
+            "darkProgress": 0.2449787994795873,
+            "lightRadial": 0.04162565416423186,
+            "lightNormal": -0.008112305798105582,
+            "darkRadial": -0.12288093097750333,
+            "darkNormal": 0.00914980935250893,
+            "lightResidual": 0.03231792375723465,
+            "darkResidual": 0.026665730400990816
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.977,
+                "c": 0.017,
+                "h": 320.1
+              },
+              "hex": "#FDF4FF",
+              "textHex": "#111111",
+              "oklch": "oklch(0.977 0.017 320.1)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.952,
+                "c": 0.036,
+                "h": 318.9
+              },
+              "hex": "#FAE8FF",
+              "textHex": "#111111",
+              "oklch": "oklch(0.952 0.036 318.9)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.903,
+                "c": 0.073,
+                "h": 319.6
+              },
+              "hex": "#F5D0FE",
+              "textHex": "#111111",
+              "oklch": "oklch(0.903 0.073 319.6)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.833,
+                "c": 0.132,
+                "h": 321.4
+              },
+              "hex": "#F0ABFC",
+              "textHex": "#111111",
+              "oklch": "oklch(0.833 0.132 321.4)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.748,
+                "c": 0.207,
+                "h": 322.2
+              },
+              "hex": "#E879F9",
+              "textHex": "#111111",
+              "oklch": "oklch(0.748 0.207 322.2)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.667,
+                "c": 0.259,
+                "h": 322.1
+              },
+              "hex": "#D946EF",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.667 0.259 322.1)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.591,
+                "c": 0.257,
+                "h": 322.9
+              },
+              "hex": "#C026D3",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.591 0.257 322.9)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.518,
+                "c": 0.226,
+                "h": 323.9
+              },
+              "hex": "#A21CAF",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.518 0.226 323.9)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.452,
+                "c": 0.192,
+                "h": 324.6
+              },
+              "hex": "#86198F",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.452 0.192 324.6)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.401,
+                "c": 0.16,
+                "h": 325.6
+              },
+              "hex": "#701A75",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.401 0.160 325.6)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.293,
+                "c": 0.131,
+                "h": 325.7
+              },
+              "hex": "#4A044E",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.293 0.131 325.7)"
+            }
+          ]
+        }
+      ],
+      "fit": {
+        "family": "violet",
+        "referenceIds": [
+          "tw-violet-v3",
+          "tw-fuchsia-v3"
+        ],
+        "sources": [
+          "Tailwind CSS v3 violet",
+          "Tailwind CSS v3 fuchsia"
+        ],
+        "anchorLabels": [
+          "500",
+          "600"
+        ],
+        "profile": {
+          "lightEndpointThreshold": 0.05670103092783505,
+          "darkEndpointThreshold": 0.45,
+          "lightEndpointHueOffset": -1.1034194643851833,
+          "darkEndpointHueOffset": 0.7872901811272186,
+          "lightEndpointIntensityScale": 1.3962825347823962,
+          "lightEndpointIntensityOffset": 0,
+          "darkEndpointIntensityScale": 1.3615917250537117,
+          "darkEndpointIntensityOffset": 0,
+          "lightShoulderProgress": 0.22592848737940158,
+          "darkShoulderProgress": 0.23663910205710403,
+          "lightShoulderRadial": -0.030794756875448952,
+          "lightShoulderNormal": -0.002383358609989098,
+          "darkShoulderRadial": -0.04627968331570484,
+          "darkShoulderNormal": 0.0072034113198352675
+        },
+        "archetype": {
+          "lightEndpoint": {
+            "l": 0.9734,
+            "c": 0.016540577719729926,
+            "h": 313.8965805356148
+          },
+          "lightShoulder": {
+            "l": 0.6867746151597771,
+            "c": 0.21395563994551353,
+            "h": 314.70375218955644
+          },
+          "seed": {
+            "l": 0.59775,
+            "c": 0.2399,
+            "h": 315
+          },
+          "darkShoulder": {
+            "l": 0.5281169098984715,
+            "c": 0.2354218028996619,
+            "h": 315.6619510728117
+          },
+          "darkEndpoint": {
+            "l": 0.2885,
+            "c": 0.13270282428023483,
+            "h": 315.7872901811272
+          }
+        },
+        "shoulderGeometry": {
+          "lightProgress": 0.22592848737940158,
+          "darkProgress": 0.23663910205710403,
+          "lightRadial": -0.030794756875448952,
+          "lightNormal": -0.002383358609989098,
+          "darkRadial": -0.04627968331570484,
+          "darkNormal": 0.0072034113198352675,
+          "lightResidualMean": 0.03514201551213704,
+          "darkResidualMean": 0.0294036704046442,
+          "references": [
+            {
+              "referenceId": "tw-violet-v3",
+              "lightProgress": 0.2848296098838468,
+              "darkProgress": 0.2264461385407356,
+              "lightRadial": -0.1193085925906144,
+              "lightNormal": 0.004618687953264382,
+              "darkRadial": 0.047344063826493324,
+              "darkNormal": 0.004824480391011901,
+              "lightResidual": 0.03859368321257329,
+              "darkResidual": 0.03275004152022056
+            },
+            {
+              "referenceId": "tw-fuchsia-v3",
+              "lightProgress": 0.1777366598757645,
+              "darkProgress": 0.2449787994795873,
+              "lightRadial": 0.04162565416423186,
+              "lightNormal": -0.008112305798105582,
+              "darkRadial": -0.12288093097750333,
+              "darkNormal": 0.00914980935250893,
+              "lightResidual": 0.03231792375723465,
+              "darkResidual": 0.026665730400990816
+            }
+          ]
+        }
+      },
+      "archetypeControlPoints": [
+        {
+          "label": "light endpoint",
+          "color": {
+            "l": 0.9734,
+            "c": 0.016540577719729926,
+            "h": 313.8965805356148
+          },
+          "hex": "#FAF3FE",
+          "textHex": "#111111",
+          "oklch": "oklch(0.973 0.017 313.9)"
+        },
+        {
+          "label": "light shoulder",
+          "color": {
+            "l": 0.6867746151597771,
+            "c": 0.21395563994551353,
+            "h": 314.70375218955644
+          },
+          "hex": "#CA68F3",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.687 0.214 314.7)"
+        },
+        {
+          "label": "seed",
+          "color": {
+            "l": 0.59775,
+            "c": 0.2399,
+            "h": 315
+          },
+          "hex": "#B33DDE",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.598 0.240 315.0)"
+        },
+        {
+          "label": "dark shoulder",
+          "color": {
+            "l": 0.5281169098984715,
+            "c": 0.2354218028996619,
+            "h": 315.6619510728117
+          },
+          "hex": "#9C23C4",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.528 0.235 315.7)"
+        },
+        {
+          "label": "dark endpoint",
+          "color": {
+            "l": 0.2885,
+            "c": 0.13270282428023483,
+            "h": 315.7872901811272
+          },
+          "hex": "#430656",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.288 0.133 315.8)"
+        }
+      ],
+      "generatedRamp": [
+        {
+          "label": "50",
+          "color": {
+            "l": 0.98,
+            "c": 0.013015625000000001,
+            "h": 315
+          },
+          "hex": "#FCF6FF",
+          "textHex": "#111111",
+          "oklch": "oklch(0.980 0.013 315.0)"
+        },
+        {
+          "label": "100",
+          "color": {
+            "l": 0.8918691526400911,
+            "c": 0.06613892597787266,
+            "h": 315.20648443138066
+          },
+          "hex": "#ECCFFA",
+          "textHex": "#111111",
+          "oklch": "oklch(0.892 0.066 315.2)"
+        },
+        {
+          "label": "200",
+          "color": {
+            "l": 0.8051806890470563,
+            "c": 0.12162008299299978,
+            "h": 315.2966884008158
+          },
+          "hex": "#DDA7F5",
+          "textHex": "#111111",
+          "oklch": "oklch(0.805 0.122 315.3)"
+        },
+        {
+          "label": "300",
+          "color": {
+            "l": 0.7155840452632422,
+            "c": 0.17219217932413053,
+            "h": 315.2345921501801
+          },
+          "hex": "#CB7EEC",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.716 0.172 315.2)"
+        },
+        {
+          "label": "400",
+          "color": {
+            "l": 0.62,
+            "c": 0.21,
+            "h": 315
+          },
+          "hex": "#B453DB",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.620 0.210 315.0)"
+        },
+        {
+          "label": "500",
+          "color": {
+            "l": 0.518618314573299,
+            "c": 0.22138831517535676,
+            "h": 314.76625244924514
+          },
+          "hex": "#952ABD",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.519 0.221 314.8)"
+        },
+        {
+          "label": "600",
+          "color": {
+            "l": 0.418545624544376,
+            "c": 0.20069697436331563,
+            "h": 314.6716893050509
+          },
+          "hex": "#730895",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.419 0.201 314.7)"
+        },
+        {
+          "label": "700",
+          "color": {
+            "l": 0.32457423192404994,
+            "c": 0.15999523665089432,
+            "h": 314.6589557438622
+          },
+          "hex": "#50006A",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.325 0.160 314.7)"
+        },
+        {
+          "label": "800",
+          "color": {
+            "l": 0.23455119365755864,
+            "c": 0.1110007928427452,
+            "h": 314.7104021738603
+          },
+          "hex": "#300241",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.235 0.111 314.7)"
+        },
+        {
+          "label": "900",
+          "color": {
+            "l": 0.14434914481021088,
+            "c": 0.062341491258463326,
+            "h": 314.8366850720946
+          },
+          "hex": "#13011B",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.144 0.062 314.8)"
+        },
+        {
+          "label": "950",
+          "color": {
+            "l": 0.05,
+            "c": 0.02250480769230769,
+            "h": 315
+          },
+          "hex": "#010002",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.050 0.023 315.0)"
+        }
+      ],
+      "analysis": {
+        "seed": {
+          "id": "violet",
+          "label": "Violet",
+          "note": "Mid-dark vivid violet that often wants richer mids and inkier shadows.",
+          "color": {
+            "l": 0.62,
+            "c": 0.21,
+            "h": 315
+          }
+        },
+        "labels": [
+          "50",
+          "100",
+          "200",
+          "300",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800",
+          "900",
+          "950"
+        ],
+        "seedStopIndex": 4,
+        "seedDelta": 0,
+        "seedPlacementImbalance": 0.005261720907117168,
+        "endpointLight": {
+          "lightness": 0.98,
+          "chroma": 0.013015625000000001,
+          "relativeChroma": 0.98,
+          "contrastOnWhite": 1.0633397979739139,
+          "contrastOnBlack": 19.749096234348944
+        },
+        "endpointDark": {
+          "lightness": 0.05,
+          "chroma": 0.02250480769230769,
+          "relativeChroma": 0.9292307692307691,
+          "contrastOnWhite": 20.956461220085338,
+          "contrastOnBlack": 1.0020775826346542
+        },
+        "lightRamp": {
+          "colors": [
+            {
+              "l": 0.98,
+              "c": 0.013015625000000001,
+              "h": 315
+            },
+            {
+              "l": 0.8918691526400911,
+              "c": 0.06613892597787266,
+              "h": 315.20648443138066
+            },
+            {
+              "l": 0.8051806890470563,
+              "c": 0.12162008299299978,
+              "h": 315.2966884008158
+            },
+            {
+              "l": 0.7155840452632422,
+              "c": 0.17219217932413053,
+              "h": 315.2345921501801
+            },
+            {
+              "l": 0.62,
+              "c": 0.21,
+              "h": 315
+            },
+            {
+              "l": 0.518618314573299,
+              "c": 0.22138831517535676,
+              "h": 314.76625244924514
+            },
+            {
+              "l": 0.418545624544376,
+              "c": 0.20069697436331563,
+              "h": 314.6716893050509
+            },
+            {
+              "l": 0.32457423192404994,
+              "c": 0.15999523665089432,
+              "h": 314.6589557438622
+            },
+            {
+              "l": 0.23455119365755864,
+              "c": 0.1110007928427452,
+              "h": 314.7104021738603
+            },
+            {
+              "l": 0.14434914481021088,
+              "c": 0.062341491258463326,
+              "h": 314.8366850720946
+            },
+            {
+              "l": 0.05,
+              "c": 0.02250480769230769,
+              "h": 315
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.10290355943017401,
+              0.1029226332798159,
+              0.10288401286349778,
+              0.10279273909262691,
+              0.10202310351569126,
+              0.10218999904337298,
+              0.1024073028148444,
+              0.10249203511164419,
+              0.10248985736645834,
+              0.1024145198824698
+            ],
+            "mean": 0.10255197624005956,
+            "variance": 8.872226442129693e-8,
+            "min": 0.10202310351569126,
+            "max": 0.1029226332798159,
+            "coefficientOfVariation": 0.0029045059794789193,
+            "worstAdjacentRatio": 1.0075437381378747,
+            "worstThreeStepRatio": 1.0084383763886786,
+            "lightEntranceRatio": 1.0043930792241846
+          },
+          "lightness": {
+            "values": [
+              0.98,
+              0.8918691526400911,
+              0.8051806890470563,
+              0.7155840452632422,
+              0.62,
+              0.518618314573299,
+              0.418545624544376,
+              0.32457423192404994,
+              0.23455119365755864,
+              0.14434914481021088,
+              0.05
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.10138168542670101,
+            "maxStep": -0.08668846359303484
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 0.3410442561378204
+        },
+        "darkRamp": {
+          "colors": [
+            {
+              "l": 0.95,
+              "c": 0.0117140625,
+              "h": 315
+            },
+            {
+              "l": 0.8618691526400911,
+              "c": 0.05952503338008539,
+              "h": 315.20648443138066
+            },
+            {
+              "l": 0.7751806890470563,
+              "c": 0.10945807469369981,
+              "h": 315.2966884008158
+            },
+            {
+              "l": 0.7755840452632421,
+              "c": 0.14636335242551093,
+              "h": 315.2345921501801
+            },
+            {
+              "l": 0.6799999999999999,
+              "c": 0.1785,
+              "h": 315
+            },
+            {
+              "l": 0.578618314573299,
+              "c": 0.18818006789905323,
+              "h": 314.76625244924514
+            },
+            {
+              "l": 0.428545624544376,
+              "c": 0.21073182308148142,
+              "h": 314.6716893050509
+            },
+            {
+              "l": 0.33457423192404995,
+              "c": 0.16508297580464898,
+              "h": 314.6589557438622
+            },
+            {
+              "l": 0.24455119365755865,
+              "c": 0.11655083248488246,
+              "h": 314.7104021738603
+            },
+            {
+              "l": 0.1543491448102109,
+              "c": 0.0654585658213865,
+              "h": 314.8366850720946
+            },
+            {
+              "l": 0.060000000000000005,
+              "c": 0.023630048076923073,
+              "h": 315
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.10026437178212823,
+              0.100041063989927,
+              0.036907736836043016,
+              0.10084399736008015,
+              0.10184551495606863,
+              0.15175803759218853,
+              0.10447220494925542,
+              0.10227185275763134,
+              0.10366709405972362,
+              0.10320561317235376
+            ],
+            "mean": 0.10052774874553996,
+            "variance": 0.0006709818241561695,
+            "min": 0.036907736836043016,
+            "max": 0.15175803759218853,
+            "coefficientOfVariation": 0.25767330094931923,
+            "worstAdjacentRatio": 2.7323267695351845,
+            "worstThreeStepRatio": 2.759462478246818,
+            "lightEntranceRatio": 1.0247912848318559
+          },
+          "lightness": {
+            "values": [
+              0.95,
+              0.8618691526400911,
+              0.7751806890470563,
+              0.7755840452632421,
+              0.6799999999999999,
+              0.578618314573299,
+              0.428545624544376,
+              0.33457423192404995,
+              0.24455119365755865,
+              0.1543491448102109,
+              0.060000000000000005
+            ],
+            "strictlyDescending": false,
+            "nonIncreasing": false,
+            "violations": 1,
+            "flatSteps": 0,
+            "minStep": -0.15007269002892304,
+            "maxStep": 0.00040335621618581285
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 0.3410442561378204
+        }
+      }
+    },
+    {
+      "family": "neutral",
+      "exemplarSeed": {
+        "id": "warm-neutral",
+        "label": "Warm Neutral",
+        "note": "Warm gray / bone family for neutral-specific behavior and temperature handling.",
+        "color": {
+          "l": 0.62,
+          "c": 0.018,
+          "h": 70
+        }
+      },
+      "references": [
+        {
+          "id": "wa-gray-bright",
+          "source": "Web Awesome bright gray",
+          "notes": "Cool neutral structure reference with more visible chroma in the mids.",
+          "weight": 0.35,
+          "anchorLabel": "400",
+          "shoulderFit": {
+            "referenceId": "wa-gray-bright",
+            "lightProgress": 0.2887761125345913,
+            "darkProgress": 0.21957790451268427,
+            "lightRadial": -0.011445378003199376,
+            "lightNormal": -0.0000084200449539192,
+            "darkRadial": 0.016076807965171937,
+            "darkNormal": 0.0017597168986512356,
+            "lightResidual": 0.015525542025847439,
+            "darkResidual": 0.01481813151023399
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.961,
+                "c": 0.004,
+                "h": 271.4
+              },
+              "hex": "#F1F2F5",
+              "textHex": "#111111",
+              "oklch": "oklch(0.961 0.004 271.4)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.925,
+                "c": 0.007,
+                "h": 268.5
+              },
+              "hex": "#E4E6EB",
+              "textHex": "#111111",
+              "oklch": "oklch(0.925 0.007 268.5)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.838,
+                "c": 0.016,
+                "h": 266.3
+              },
+              "hex": "#C5CAD5",
+              "textHex": "#111111",
+              "oklch": "oklch(0.838 0.016 266.3)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.754,
+                "c": 0.024,
+                "h": 266.9
+              },
+              "hex": "#A8AFBF",
+              "textHex": "#111111",
+              "oklch": "oklch(0.754 0.024 266.9)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.67,
+                "c": 0.033,
+                "h": 267.1
+              },
+              "hex": "#8C95AA",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.670 0.033 267.1)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.564,
+                "c": 0.045,
+                "h": 268.1
+              },
+              "hex": "#6A7591",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.564 0.045 268.1)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.465,
+                "c": 0.057,
+                "h": 265.4
+              },
+              "hex": "#4A597A",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.465 0.057 265.4)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.394,
+                "c": 0.057,
+                "h": 266.9
+              },
+              "hex": "#384565",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.394 0.057 266.9)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.318,
+                "c": 0.056,
+                "h": 267.9
+              },
+              "hex": "#26314F",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.318 0.056 267.9)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.235,
+                "c": 0.056,
+                "h": 268.5
+              },
+              "hex": "#131C38",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.235 0.056 268.5)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.185,
+                "c": 0.046,
+                "h": 268.4
+              },
+              "hex": "#0A1127",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.185 0.046 268.4)"
+            }
+          ]
+        },
+        {
+          "id": "tw-slate-v3",
+          "source": "Tailwind CSS v3 slate",
+          "notes": "Cool neutral reference with blue-gray bias.",
+          "weight": 0.4,
+          "anchorLabel": "500",
+          "shoulderFit": {
+            "referenceId": "tw-slate-v3",
+            "lightProgress": 0.3643132995366191,
+            "darkProgress": 0.25368953210734907,
+            "lightRadial": 0.002152932363321283,
+            "lightNormal": 0.0015914443585781498,
+            "darkRadial": -0.020458100127230587,
+            "darkNormal": -0.0018348187184780336,
+            "lightResidual": 0.010419604173249756,
+            "darkResidual": 0.007916619755166254
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.984,
+                "c": 0.003,
+                "h": 247.9
+              },
+              "hex": "#F8FAFC",
+              "textHex": "#111111",
+              "oklch": "oklch(0.984 0.003 247.9)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.968,
+                "c": 0.007,
+                "h": 247.9
+              },
+              "hex": "#F1F5F9",
+              "textHex": "#111111",
+              "oklch": "oklch(0.968 0.007 247.9)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.929,
+                "c": 0.013,
+                "h": 255.5
+              },
+              "hex": "#E2E8F0",
+              "textHex": "#111111",
+              "oklch": "oklch(0.929 0.013 255.5)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.869,
+                "c": 0.02,
+                "h": 252.9
+              },
+              "hex": "#CBD5E1",
+              "textHex": "#111111",
+              "oklch": "oklch(0.869 0.020 252.9)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.711,
+                "c": 0.035,
+                "h": 256.8
+              },
+              "hex": "#94A3B8",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.711 0.035 256.8)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.554,
+                "c": 0.041,
+                "h": 257.4
+              },
+              "hex": "#64748B",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.554 0.041 257.4)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.446,
+                "c": 0.037,
+                "h": 257.3
+              },
+              "hex": "#475569",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.446 0.037 257.3)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.372,
+                "c": 0.039,
+                "h": 257.3
+              },
+              "hex": "#334155",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.372 0.039 257.3)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.279,
+                "c": 0.037,
+                "h": 260
+              },
+              "hex": "#1E293B",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.279 0.037 260.0)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.208,
+                "c": 0.04,
+                "h": 265.8
+              },
+              "hex": "#0F172A",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.208 0.040 265.8)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.129,
+                "c": 0.041,
+                "h": 264.7
+              },
+              "hex": "#020617",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.129 0.041 264.7)"
+            }
+          ]
+        },
+        {
+          "id": "tw-stone-v3",
+          "source": "Tailwind CSS v3 stone",
+          "notes": "Warm neutral reference with bone-to-umber progression.",
+          "weight": 0.25,
+          "anchorLabel": "500",
+          "shoulderFit": {
+            "referenceId": "tw-stone-v3",
+            "lightProgress": 0.3773011362960866,
+            "darkProgress": 0.26845955237239066,
+            "lightRadial": -0.005644687760507504,
+            "lightNormal": -0.001308571912010013,
+            "darkRadial": -0.006661396465101179,
+            "darkNormal": 0.006801824359615944,
+            "lightResidual": 0.01565208518131726,
+            "darkResidual": 0.009650752898480193
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "color": {
+                "l": 0.985,
+                "c": 0.001,
+                "h": 106.4
+              },
+              "hex": "#FAFAF9",
+              "textHex": "#111111",
+              "oklch": "oklch(0.985 0.001 106.4)"
+            },
+            {
+              "label": "100",
+              "color": {
+                "l": 0.97,
+                "c": 0.001,
+                "h": 106.4
+              },
+              "hex": "#F5F5F4",
+              "textHex": "#111111",
+              "oklch": "oklch(0.970 0.001 106.4)"
+            },
+            {
+              "label": "200",
+              "color": {
+                "l": 0.923,
+                "c": 0.003,
+                "h": 48.7
+              },
+              "hex": "#E7E5E4",
+              "textHex": "#111111",
+              "oklch": "oklch(0.923 0.003 48.7)"
+            },
+            {
+              "label": "300",
+              "color": {
+                "l": 0.869,
+                "c": 0.004,
+                "h": 56.4
+              },
+              "hex": "#D6D3D1",
+              "textHex": "#111111",
+              "oklch": "oklch(0.869 0.004 56.4)"
+            },
+            {
+              "label": "400",
+              "color": {
+                "l": 0.716,
+                "c": 0.009,
+                "h": 56.3
+              },
+              "hex": "#A8A29E",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.716 0.009 56.3)"
+            },
+            {
+              "label": "500",
+              "color": {
+                "l": 0.553,
+                "c": 0.012,
+                "h": 58.1
+              },
+              "hex": "#78716C",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.553 0.012 58.1)"
+            },
+            {
+              "label": "600",
+              "color": {
+                "l": 0.444,
+                "c": 0.01,
+                "h": 73.6
+              },
+              "hex": "#57534E",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.444 0.010 73.6)"
+            },
+            {
+              "label": "700",
+              "color": {
+                "l": 0.374,
+                "c": 0.009,
+                "h": 67.6
+              },
+              "hex": "#44403C",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.374 0.009 67.6)"
+            },
+            {
+              "label": "800",
+              "color": {
+                "l": 0.268,
+                "c": 0.006,
+                "h": 34.3
+              },
+              "hex": "#292524",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.268 0.006 34.3)"
+            },
+            {
+              "label": "900",
+              "color": {
+                "l": 0.216,
+                "c": 0.006,
+                "h": 56
+              },
+              "hex": "#1C1917",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.216 0.006 56.0)"
+            },
+            {
+              "label": "950",
+              "color": {
+                "l": 0.147,
+                "c": 0.004,
+                "h": 49.2
+              },
+              "hex": "#0C0A09",
+              "textHex": "#f8f8f8",
+              "oklch": "oklch(0.147 0.004 49.2)"
+            }
+          ]
+        }
+      ],
+      "fit": {
+        "family": "neutral",
+        "referenceIds": [
+          "wa-gray-bright",
+          "tw-slate-v3",
+          "tw-stone-v3"
+        ],
+        "sources": [
+          "Web Awesome bright gray",
+          "Tailwind CSS v3 slate",
+          "Tailwind CSS v3 stone"
+        ],
+        "anchorLabels": [
+          "400",
+          "500",
+          "500"
+        ],
+        "profile": {
+          "lightEndpointThreshold": 0.05,
+          "darkEndpointThreshold": 0.3333333333333333,
+          "lightEndpointHueOffset": 0,
+          "darkEndpointHueOffset": 0,
+          "lightEndpointIntensityScale": 1.5,
+          "lightEndpointIntensityOffset": 0,
+          "darkEndpointIntensityScale": 1.5,
+          "darkEndpointIntensityOffset": 0,
+          "lightShoulderProgress": 0.3411222432757762,
+          "darkShoulderProgress": 0.24544296751547678,
+          "lightShoulderRadial": 0,
+          "lightShoulderNormal": 0,
+          "darkShoulderRadial": 0,
+          "darkShoulderNormal": 0
+        },
+        "archetype": {
+          "lightEndpoint": {
+            "l": 0.9762,
+            "c": 0.0023233830673008316,
+            "h": 257.87918669191686
+          },
+          "lightShoulder": {
+            "l": 0.7247186444289233,
+            "c": 0.02048411484045065,
+            "h": 263.14138745003714
+          },
+          "seed": {
+            "l": 0.59435,
+            "c": 0.02512578840333316,
+            "h": 264.11412372836526
+          },
+          "darkShoulder": {
+            "l": 0.48612824022234696,
+            "c": 0.028982827691811062,
+            "h": 264.6848124897076
+          },
+          "darkEndpoint": {
+            "l": 0.1531,
+            "c": 0.03169373878479486,
+            "h": 267.6293127927372
+          }
+        },
+        "shoulderGeometry": {
+          "lightProgress": 0.3411222432757762,
+          "darkProgress": 0.24544296751547678,
+          "lightRadial": -0.0045558812959181445,
+          "lightNormal": 0.00030648774969488504,
+          "darkRadial": -0.0042217063793573515,
+          "darkNormal": 0.0015824295170407052,
+          "lightResidualMean": 0.01351480267367582,
+          "darkResidualMean": 0.010765682155268446,
+          "references": [
+            {
+              "referenceId": "wa-gray-bright",
+              "lightProgress": 0.2887761125345913,
+              "darkProgress": 0.21957790451268427,
+              "lightRadial": -0.011445378003199376,
+              "lightNormal": -0.0000084200449539192,
+              "darkRadial": 0.016076807965171937,
+              "darkNormal": 0.0017597168986512356,
+              "lightResidual": 0.015525542025847439,
+              "darkResidual": 0.01481813151023399
+            },
+            {
+              "referenceId": "tw-slate-v3",
+              "lightProgress": 0.3643132995366191,
+              "darkProgress": 0.25368953210734907,
+              "lightRadial": 0.002152932363321283,
+              "lightNormal": 0.0015914443585781498,
+              "darkRadial": -0.020458100127230587,
+              "darkNormal": -0.0018348187184780336,
+              "lightResidual": 0.010419604173249756,
+              "darkResidual": 0.007916619755166254
+            },
+            {
+              "referenceId": "tw-stone-v3",
+              "lightProgress": 0.3773011362960866,
+              "darkProgress": 0.26845955237239066,
+              "lightRadial": -0.005644687760507504,
+              "lightNormal": -0.001308571912010013,
+              "darkRadial": -0.006661396465101179,
+              "darkNormal": 0.006801824359615944,
+              "lightResidual": 0.01565208518131726,
+              "darkResidual": 0.009650752898480193
+            }
+          ]
+        }
+      },
+      "archetypeControlPoints": [
+        {
+          "label": "light endpoint",
+          "color": {
+            "l": 0.9762,
+            "c": 0.0023233830673008316,
+            "h": 257.87918669191686
+          },
+          "hex": "#F6F7F9",
+          "textHex": "#111111",
+          "oklch": "oklch(0.976 0.002 257.9)"
+        },
+        {
+          "label": "light shoulder",
+          "color": {
+            "l": 0.7247186444289233,
+            "c": 0.02048411484045065,
+            "h": 263.14138745003714
+          },
+          "hex": "#9FA6B3",
+          "textHex": "#111111",
+          "oklch": "oklch(0.725 0.020 263.1)"
+        },
+        {
+          "label": "seed",
+          "color": {
+            "l": 0.59435,
+            "c": 0.02512578840333316,
+            "h": 264.11412372836526
+          },
+          "hex": "#777F8E",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.594 0.025 264.1)"
+        },
+        {
+          "label": "dark shoulder",
+          "color": {
+            "l": 0.48612824022234696,
+            "c": 0.028982827691811062,
+            "h": 264.6848124897076
+          },
+          "hex": "#575F70",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.486 0.029 264.7)"
+        },
+        {
+          "label": "dark endpoint",
+          "color": {
+            "l": 0.1531,
+            "c": 0.03169373878479486,
+            "h": 267.6293127927372
+          },
+          "hex": "#060B19",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.153 0.032 267.6)"
+        }
+      ],
+      "generatedRamp": [
+        {
+          "label": "50",
+          "color": {
+            "l": 0.98,
+            "c": 0.00028125000000000003,
+            "h": 70
+          },
+          "hex": "#F8F8F8",
+          "textHex": "#111111",
+          "oklch": "oklch(0.980 0.000 70.0)"
+        },
+        {
+          "label": "100",
+          "color": {
+            "l": 0.8899642517891723,
+            "c": 0.00893951563216144,
+            "h": 70
+          },
+          "hex": "#DFDAD4",
+          "textHex": "#111111",
+          "oklch": "oklch(0.890 0.009 70.0)"
+        },
+        {
+          "label": "200",
+          "color": {
+            "l": 0.8002081745439519,
+            "c": 0.020298381861379246,
+            "h": 70
+          },
+          "hex": "#C7BCB0",
+          "textHex": "#111111",
+          "oklch": "oklch(0.800 0.020 70.0)"
+        },
+        {
+          "label": "300",
+          "color": {
+            "l": 0.7099644590371401,
+            "c": 0.026098257984101734,
+            "h": 70
+          },
+          "hex": "#AC9F90",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.710 0.026 70.0)"
+        },
+        {
+          "label": "400",
+          "color": {
+            "l": 0.62,
+            "c": 0.018,
+            "h": 70
+          },
+          "hex": "#8D847B",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.620 0.018 70.0)"
+        },
+        {
+          "label": "500",
+          "color": {
+            "l": 0.530781967635481,
+            "c": 0.004892269870089114,
+            "h": 70
+          },
+          "hex": "#6E6B69",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.531 0.005 70.0)"
+        },
+        {
+          "label": "600",
+          "color": {
+            "l": 0.44077144449270395,
+            "c": 0.0007992328700937095,
+            "h": 250
+          },
+          "hex": "#525353",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.441 0.001 250.0)"
+        },
+        {
+          "label": "700",
+          "color": {
+            "l": 0.350572134067125,
+            "c": 0.0014282736816982338,
+            "h": 250
+          },
+          "hex": "#3A3B3B",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.351 0.001 250.0)"
+        },
+        {
+          "label": "800",
+          "color": {
+            "l": 0.26038567606616403,
+            "c": 0.0005133341671908645,
+            "h": 69.99999999999994
+          },
+          "hex": "#242424",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.260 0.001 70.0)"
+        },
+        {
+          "label": "900",
+          "color": {
+            "l": 0.17020014235973804,
+            "c": 0.0025035657951478466,
+            "h": 70
+          },
+          "hex": "#100F0E",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.170 0.003 70.0)"
+        },
+        {
+          "label": "950",
+          "color": {
+            "l": 0.08,
+            "c": 0.00197203947368421,
+            "h": 70
+          },
+          "hex": "#020201",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.080 0.002 70.0)"
+        }
+      ],
+      "analysis": {
+        "seed": {
+          "id": "warm-neutral",
+          "label": "Warm Neutral",
+          "note": "Warm gray / bone family for neutral-specific behavior and temperature handling.",
+          "color": {
+            "l": 0.62,
+            "c": 0.018,
+            "h": 70
+          }
+        },
+        "labels": [
+          "50",
+          "100",
+          "200",
+          "300",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800",
+          "900",
+          "950"
+        ],
+        "seedStopIndex": 4,
+        "seedDelta": 0,
+        "seedPlacementImbalance": 0.00246927475395384,
+        "endpointLight": {
+          "lightness": 0.98,
+          "chroma": 0.00028125000000000003,
+          "relativeChroma": 0.02,
+          "contrastOnWhite": 1.0593578764534013,
+          "contrastOnBlack": 19.82332927027964
+        },
+        "endpointDark": {
+          "lightness": 0.08,
+          "chroma": 0.00197203947368421,
+          "relativeChroma": 0.11473684210526312,
+          "contrastOnWhite": 20.787670328101726,
+          "contrastOnBlack": 1.0102142120087034
+        },
+        "lightRamp": {
+          "colors": [
+            {
+              "l": 0.98,
+              "c": 0.00028125000000000003,
+              "h": 70
+            },
+            {
+              "l": 0.8899642517891723,
+              "c": 0.00893951563216144,
+              "h": 70
+            },
+            {
+              "l": 0.8002081745439519,
+              "c": 0.020298381861379246,
+              "h": 70
+            },
+            {
+              "l": 0.7099644590371401,
+              "c": 0.026098257984101734,
+              "h": 70
+            },
+            {
+              "l": 0.62,
+              "c": 0.018,
+              "h": 70
+            },
+            {
+              "l": 0.530781967635481,
+              "c": 0.004892269870089114,
+              "h": 70
+            },
+            {
+              "l": 0.44077144449270395,
+              "c": 0.0007992328700937095,
+              "h": 250
+            },
+            {
+              "l": 0.350572134067125,
+              "c": 0.0014282736816982338,
+              "h": 250
+            },
+            {
+              "l": 0.26038567606616403,
+              "c": 0.0005133341671908645,
+              "h": 69.99999999999994
+            },
+            {
+              "l": 0.17020014235973804,
+              "c": 0.0025035657951478466,
+              "h": 70
+            },
+            {
+              "l": 0.08,
+              "c": 0.00197203947368421,
+              "h": 70
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.09045110015716025,
+              0.09047196938534738,
+              0.09042989965444673,
+              0.09032821083262045,
+              0.0901757721794215,
+              0.09019028484198238,
+              0.09020150383221234,
+              0.09020735584085128,
+              0.09020749143971257,
+              0.09020170842033656
+            ],
+            "mean": 0.09028652965840915,
+            "variance": 1.3223346822430951e-8,
+            "min": 0.0901757721794215,
+            "max": 0.09047196938534738,
+            "coefficientOfVariation": 0.0012736430615050334,
+            "worstAdjacentRatio": 1.0016904613014639,
+            "worstThreeStepRatio": 1.002818134726028,
+            "lightEntranceRatio": 1.0021148128583792
+          },
+          "lightness": {
+            "values": [
+              0.98,
+              0.8899642517891723,
+              0.8002081745439519,
+              0.7099644590371401,
+              0.62,
+              0.530781967635481,
+              0.44077144449270395,
+              0.350572134067125,
+              0.26038567606616403,
+              0.17020014235973804,
+              0.08
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.09024371550681176,
+            "maxStep": -0.08921803236451897
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 180
+        },
+        "darkRamp": {
+          "colors": [
+            {
+              "l": 0.95,
+              "c": 0.00025312500000000004,
+              "h": 70
+            },
+            {
+              "l": 0.8599642517891722,
+              "c": 0.008045564068945295,
+              "h": 70
+            },
+            {
+              "l": 0.7702081745439519,
+              "c": 0.018268543675241323,
+              "h": 70
+            },
+            {
+              "l": 0.7699644590371402,
+              "c": 0.022183519286486472,
+              "h": 70
+            },
+            {
+              "l": 0.6799999999999999,
+              "c": 0.015299999999999998,
+              "h": 70
+            },
+            {
+              "l": 0.5907819676354811,
+              "c": 0.004158429389575747,
+              "h": 70
+            },
+            {
+              "l": 0.45077144449270395,
+              "c": 0.0008391945135983951,
+              "h": 250
+            },
+            {
+              "l": 0.360572134067125,
+              "c": 0.0014996873657831455,
+              "h": 250
+            },
+            {
+              "l": 0.27038567606616404,
+              "c": 0.0005390008755504078,
+              "h": 69.99999999999994
+            },
+            {
+              "l": 0.18020014235973805,
+              "c": 0.0026287440849052392,
+              "h": 70
+            },
+            {
+              "l": 0.09,
+              "c": 0.0020706414473684208,
+              "h": 70
+            }
+          ],
+          "adjacentDistance": {
+            "values": [
+              0.09037233018201307,
+              0.09033638643692093,
+              0.003922554178708665,
+              0.09022741671805036,
+              0.08991102209775732,
+              0.14009968891968214,
+              0.0902017286533786,
+              0.09020949759589869,
+              0.09020974180538344,
+              0.09020186894001164
+            ],
+            "mean": 0.08656922355278049,
+            "variance": 0.0009802083986074571,
+            "min": 0.003922554178708665,
+            "max": 0.14009968891968214,
+            "coefficientOfVariation": 0.361656010621783,
+            "worstAdjacentRatio": 23.029990746147035,
+            "worstThreeStepRatio": 23.039154098252464,
+            "lightEntranceRatio": 1.1151547392898633
+          },
+          "lightness": {
+            "values": [
+              0.95,
+              0.8599642517891722,
+              0.7702081745439519,
+              0.7699644590371402,
+              0.6799999999999999,
+              0.5907819676354811,
+              0.45077144449270395,
+              0.360572134067125,
+              0.27038567606616404,
+              0.18020014235973805,
+              0.09
+            ],
+            "strictlyDescending": true,
+            "nonIncreasing": true,
+            "violations": 0,
+            "flatSteps": 0,
+            "minStep": -0.14001052314277712,
+            "maxStep": -0.00024371550681168141
+          },
+          "gamutViolations": 0,
+          "maxHueDriftFromSeed": 180
+        }
+      }
+    }
+  ]
+}

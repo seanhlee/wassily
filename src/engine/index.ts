@@ -12,6 +12,24 @@ export {
 } from "./gamut";
 export { generateRamp, nameForHue } from "./ramp";
 export {
+  CURATED_FAMILY_PROFILE_FITS,
+  CURATED_REFERENCE_CORPUS,
+  FAMILY_EXEMPLARS,
+  FAMILY_PROFILES,
+} from "./familyProfiles";
+export {
+  RESEARCH_SEEDS,
+  analyzeRamp,
+  evaluateSeed,
+  evaluateSeedRun,
+  evaluateSeedSuite,
+  researchSeedToRampConfig,
+} from "./research";
+export { buildResearchLabData } from "./researchLab";
+export { solveV6ResearchRamp } from "./v6ResearchSolver";
+export { solveV6ArchetypeRamp } from "./v6ResearchSolver";
+export { compareToV6SoftPrior } from "./v6SoftPriors";
+export {
   checkContrast,
   contrastRatio,
   WHITE,

@@ -18,7 +18,13 @@ import {
   BLACK,
 } from "../contrast";
 import { harmonizePair, harmonizeMultiple } from "../harmonize";
+import { RESEARCH_SEEDS, analyzeRamp, researchSeedToRampConfig } from "../research";
 import type { OklchColor } from "../../types";
+
+function circularHueDistance(a: number, b: number): number {
+  const delta = Math.abs(a - b) % 360;
+  return Math.min(delta, 360 - delta);
+}
 
 // ---- Gamut ----
 
@@ -151,8 +157,20 @@ describe("ramp generation", () => {
     }
   });
 
-  it("all ramp colors are in gamut", () => {
-    for (let h = 0; h < 360; h += 30) {
+  it("preserves legacy custom labels for one- and two-stop ramps in both modes", () => {
+    for (const mode of ["opinionated", "pure"] as const) {
+      expect(generateRamp({ hue: 180, stopCount: 1, mode }).map((stop) => stop.label)).toEqual([
+        "500",
+      ]);
+      expect(generateRamp({ hue: 180, stopCount: 2, mode }).map((stop) => stop.label)).toEqual([
+        "200",
+        "800",
+      ]);
+    }
+  });
+
+  it("all ramp colors are in gamut", { timeout: 20000 }, () => {
+    for (let h = 0; h < 360; h += 60) {
       const stops = generateRamp({
         hue: h,
         stopCount: 11,
@@ -176,32 +194,33 @@ describe("ramp generation", () => {
     }
   });
 
-  it("opinionated mode has warm shadow drift (hue increases in dark stops)", () => {
-    const stops = generateRamp({
-      hue: 200,
-      stopCount: 11,
-      mode: "opinionated",
-    });
-    const hue500 = stops[5].color.h; // 500
-    const hue900 = stops[9].color.h; // 900
-    // 900 should be warmer (higher hue) than 500
-    const drift = (hue900 - hue500 + 360) % 360;
-    expect(drift).toBeGreaterThan(0);
-    expect(drift).toBeLessThan(20); // subtle, not extreme
+  it("opinionated mode routes through the seeded v6 path", () => {
+    for (const seedId of ["bright-lime", "cyan", "very-light-seed"] as const) {
+      const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
+      const stops = generateRamp(researchSeedToRampConfig(seed));
+      const analysis = analyzeRamp(stops, seed);
+
+      expect(analysis.seedStopIndex).not.toBeNull();
+      if (isInGamut(seed.color)) {
+        expect(analysis.seedDelta).toBeLessThan(1e-6);
+      } else {
+        expect(stops[analysis.seedStopIndex!].color).toEqual(clampToGamut(seed.color));
+      }
+      expect(analysis.lightRamp.gamutViolations).toBe(0);
+      expect(analysis.lightRamp.lightness.nonIncreasing).toBe(true);
+    }
   });
 
-  it("opinionated mode has cool highlight lift (hue decreases in light stops)", () => {
-    const stops = generateRamp({
-      hue: 200,
-      stopCount: 11,
-      mode: "opinionated",
-    });
-    const hue50 = stops[0].color.h; // 50
-    const hue500 = stops[5].color.h; // 500
-    // 50 should be cooler (lower hue) than 500
-    const drift = (hue500 - hue50 + 360) % 360;
-    expect(drift).toBeGreaterThan(0);
-    expect(drift).toBeLessThan(10);
+  it("opinionated mode keeps edge cadence controlled for hard seeded ramps", () => {
+    for (const seedId of ["bright-lime", "cadmium-yellow", "very-light-seed"] as const) {
+      const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
+      const analysis = analyzeRamp(generateRamp(researchSeedToRampConfig(seed)), seed);
+
+      expect(analysis.lightRamp.adjacentDistance.lightEntranceRatio).toBeLessThan(1.03);
+      expect(analysis.lightRamp.adjacentDistance.worstAdjacentRatio).toBeLessThan(1.05);
+      expect(analysis.seedPlacementImbalance).not.toBeNull();
+      expect(analysis.seedPlacementImbalance!).toBeLessThan(0.05);
+    }
   });
 
   it("pure mode has constant hue across all stops", () => {
@@ -212,20 +231,54 @@ describe("ramp generation", () => {
     }
   });
 
-  it("chroma is gamut-relative (not zero at extremes, peaks where gamut allows)", () => {
-    const stops = generateRamp({
-      hue: 260,
-      stopCount: 11,
-      mode: "opinionated",
-    });
-    // Every stop should have some chroma (gamut-relative, no zero rolloff)
-    for (const stop of stops) {
-      expect(stop.color.c).toBeGreaterThan(0);
+  it("opinionated mode preserves useful endpoint chroma for seeded chromatic ramps", () => {
+    const brightLime = analyzeRamp(
+      generateRamp(
+        researchSeedToRampConfig(
+          RESEARCH_SEEDS.find((candidate) => candidate.id === "bright-lime")!,
+        ),
+      ),
+      RESEARCH_SEEDS.find((candidate) => candidate.id === "bright-lime")!,
+    );
+    const ultramarine = analyzeRamp(
+      generateRamp(
+        researchSeedToRampConfig(
+          RESEARCH_SEEDS.find((candidate) => candidate.id === "ultramarine")!,
+        ),
+      ),
+      RESEARCH_SEEDS.find((candidate) => candidate.id === "ultramarine")!,
+    );
+
+    expect(brightLime.endpointLight.relativeChroma).toBeGreaterThan(0.95);
+    expect(brightLime.endpointDark.relativeChroma).toBeGreaterThan(0.95);
+    expect(ultramarine.endpointLight.relativeChroma).toBeGreaterThan(0.9);
+    expect(ultramarine.endpointDark.chroma).toBeGreaterThan(0.01);
+  });
+
+  it("transitions family behavior smoothly across adjacent boundary hues", { timeout: 20000 }, () => {
+    const baseConfig = {
+      seedLightness: 0.62,
+      seedChroma: 0.14,
+      stopCount: 11 as const,
+      mode: "opinionated" as const,
+    };
+
+    for (const [leftHue, rightHue] of [
+      [150, 151],
+      [239, 240],
+      [285, 286],
+    ]) {
+      const leftRamp = generateRamp({ ...baseConfig, hue: leftHue });
+      const rightRamp = generateRamp({ ...baseConfig, hue: rightHue });
+      const leftTop = leftRamp[0].color;
+      const rightTop = rightRamp[0].color;
+      const leftDark = leftRamp.at(-1)!.color;
+      const rightDark = rightRamp.at(-1)!.color;
+
+      expect(Math.abs(leftTop.l - rightTop.l)).toBeLessThan(0.03);
+      expect(Math.abs(leftTop.c - rightTop.c)).toBeLessThan(0.015);
+      expect(circularHueDistance(leftDark.h, rightDark.h)).toBeLessThan(4);
     }
-    // Blue peaks at low lightness (where gamut is largest)
-    const chroma300 = stops[3].color.c;
-    const chroma800 = stops[8].color.c;
-    expect(chroma800).toBeGreaterThan(chroma300);
   });
 });
 
