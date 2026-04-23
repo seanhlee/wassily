@@ -5,7 +5,7 @@
  * `pure` remains a simple hue-constant baseline used for comparison.
  */
 
-import type { OklchColor, RampConfig, RampStop, StopPreset } from "../types";
+import type { RampConfig, RampStop, StopPreset } from "../types";
 import { clampToGamut, maxChroma } from "./gamut";
 import { solveV6ResearchRamp } from "./v6ResearchSolver";
 
