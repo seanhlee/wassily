@@ -65,6 +65,7 @@ Sources:
 - Do not make extraction markers required for every image.
 - Do not add a sidebar or persistent properties panel.
 - Do not bind markers to ramps in the first version. Markers update swatches only.
+- No MCP bridge tools for markers in v1. MCP treats marker-linked swatches as ordinary swatches.
 
 ## Design Language
 
@@ -86,8 +87,9 @@ The style should feel like a quiet color laboratory: part artist's notebook, par
 ### Marker-Specific Style
 
 - Markers should feel drawn onto the image, not pasted on top as app chrome.
-- Use a filled color dot with a thin adaptive ring and a larger invisible hit target.
-- Active markers can use a second ring, small corner brackets, or a plotted crosshair treatment.
+- Filled color dot (≈7px visible) with a thin adaptive ring (0.75px stroke, matching `SEL.stroke`) and a 14px invisible hit target.
+- Adaptive ring contrast is computed against the marker fill, not the underlying image pixels. This stays stable during drag and is cheap to compute.
+- Active markers use a second concentric ring. Corner brackets are reserved for object-level selection chrome (swatches, ramps, images); do not reuse them for markers.
 - Hover links should be subtle: a dotted line, ghost connector, or temporary highlight, never a heavy callout.
 - The loupe should feel like an inspection instrument: crisp, minimal, and close to the pointer without becoming a panel.
 - Avoid labels by default. Use text only when it resolves ambiguity, such as a temporary index or sampled value on hover.
@@ -117,7 +119,7 @@ Avoid:
 Primary:
 
 - Right-click reference image -> `Extract colors`
-- Wassily creates swatches beside the image and enters `extraction edit` state for that image.
+- Wassily creates swatches beside the image. Markers appear while the image remains selected.
 
 Secondary:
 
@@ -133,13 +135,10 @@ Later:
 On the reference image:
 
 - A small circular marker for each extracted color.
-- Marker fill is the current sampled color.
-- Marker outline adapts to image/color contrast.
-- Active marker shows corner brackets or a slightly larger ring.
-- Markers render only when:
-  - the image is selected,
-  - extraction edit mode is active,
-  - or the linked swatch is selected/hovered.
+- Marker fill tracks the linked swatch's current color, so the two never visually disagree — even if the swatch has been manually edited since extraction.
+- Marker ring contrast adapts to the fill (light ring on dark colors, dark ring on light colors). See Marker-Specific Style for sizing.
+- Active marker gains a second concentric ring.
+- Markers render when the image is selected, or when a linked swatch is selected/hovered. No dedicated extraction edit mode in v1 — selection is the affordance.
 
 Next to the image:
 
@@ -151,6 +150,7 @@ During drag:
 
 - Cursor changes to crosshair.
 - A loupe appears near the pointer, showing a pixelated 20x20 source crop scaled to ~120-160 px.
+- Loupe sits offset from the cursor (≈24px up-left). Flip side when the cursor is within ~80px of an image edge so the loupe stays over the image.
 - The center sample square is outlined in black/white.
 - The swatch color updates live.
 - On pointer up, one undo snapshot is committed.
@@ -162,13 +162,17 @@ Marker hover:
 - Highlight linked swatch.
 - Show marker index or swatch hex only if needed; default should stay visual.
 
+Marker click (no drag):
+
+- Select the linked swatch. Mirrors the hover-to-highlight affordance and gives a way to locate a swatch from its source point.
+
 Marker drag:
 
 - Pointer down on marker captures pointer.
 - Movement is clamped to the image bounds.
 - Position is stored normalized: `{ x: 0..1, y: 0..1 }`.
 - New color comes from the corresponding source pixel in the reference image's offscreen sampling canvas.
-- Update linked swatch with `preserveColors` semantics: do not purify, because this is an explicit sampled color.
+- Linked swatch is written with raw color (no purification), which is what `UPDATE_SWATCH_COLOR` already does.
 
 Image move:
 
@@ -176,7 +180,11 @@ Image move:
 
 Delete swatch:
 
-- Linked marker should be removed or orphaned. Preferred v1 behavior: remove marker when linked swatch no longer exists.
+- Linked marker is removed silently. Cmd+Z restores both marker and swatch from the snapshot, so there is no need for a persistent orphan state.
+
+Promote swatch to ramp:
+
+- Remove the linked marker. Markers bind to swatches only in v1 (see Non-Goals). If the user wants to re-sample after promotion, re-extract.
 
 Delete image:
 
@@ -277,43 +285,16 @@ Validated against the current codebase on 2026-04-24.
 
 ### Validated Implementation Preference
 
-The single `CREATE_EXTRACTION` action still looks like the cleanest v1 path. It can create linked swatches, attach image markers, select the created swatches or source image, and avoid transient half-linked state. Directly dispatching `CREATE_SWATCHES` plus `SET_IMAGE_EXTRACTION` is workable, but more fragile around undo, selection, and future external actions.
+Use a single `CREATE_EXTRACTION` action for initial extraction rather than two separate dispatches. It keeps undo, selection, and marker/swatch linkage atomic. See the State Actions section for the full shape.
 
 ## Engine Changes
 
-The current `extractColors(imageData)` returns only colors:
-
-```ts
-interface ExtractionResult {
-  colors: OklchColor[];
-  isSingleColor: boolean;
-}
-```
-
-Editable markers need source positions. Add a new extraction shape:
-
-```ts
-interface ExtractedColor {
-  color: OklchColor;
-  source: {
-    x: number; // normalized 0..1
-    y: number; // normalized 0..1
-  };
-}
-
-interface ExtractionResult {
-  colors: OklchColor[];
-  samples?: ExtractedColor[];
-  isSingleColor: boolean;
-}
-```
-
-Better v1 API:
+The current `extractColors(imageData)` returns only `{ colors, isSingleColor }`. Editable markers need per-color source positions. Extend the shape:
 
 ```ts
 export interface ExtractionSample {
   color: OklchColor;
-  source: Point; // normalized
+  source: Point; // normalized 0..1, relative to image
 }
 
 export interface ExtractionResult {
@@ -322,6 +303,8 @@ export interface ExtractionResult {
   isSingleColor: boolean;
 }
 ```
+
+Keeping `colors` alongside `samples` preserves every current callsite.
 
 ### How To Get Source Positions
 
@@ -343,55 +326,58 @@ interface Cluster {
 
 When selecting the peak-chroma representative for a cluster, keep the pixel coordinate. Normalize with `x / imageData.width`, `y / imageData.height`.
 
+### Coordinate Spaces
+
+Two sampling paths, one asymmetry. Commit to it explicitly so it does not drift:
+
+- **Initial extraction** samples from a full-resolution canvas so the normalized source coordinate maps back to a visually correct pixel at any future display size. `dataUrlToImageData` keeps its 200px downscale for clustering speed; a separate natural-size canvas is drawn only to look up peak-chroma pixel coordinates.
+- **Marker drag** reuses the existing display-size offscreen ctx that eyedropper primes via `primeImageCanvas`. Accuracy loss at display scale is acceptable for a pointer gesture, and keeps sampling code shared with eyedropper.
+
 ### Color Preservation
 
-Dragged markers should sample exact image pixels and update the linked swatch without purification.
+Dragged markers sample exact image pixels and update the linked swatch without purification. `UPDATE_SWATCH_COLOR` in the reducer already writes raw color without calling `purify`, so the combined marker+swatch drag action inherits that behavior for free.
 
 Reason:
 
 - Purification is right for collected colors entering as design material.
 - Marker dragging is an eyedropper action. The user is explicitly asking for the source color.
-- Wassily already treats eyedropper sampling this way.
 
 ## State Actions
 
-Add reducer actions:
+Three reducer actions. Each one combines marker and swatch writes atomically so the two cannot drift apart.
 
 ```ts
 | {
-    type: "SET_IMAGE_EXTRACTION";
+    // Initial extraction. Creates linked swatches and writes image markers in one step.
+    type: "CREATE_EXTRACTION";
     imageId: string;
-    markers: ExtractionMarker[];
+    samples: {
+      id?: string;        // optional external id (matches CREATE_SWATCHES pattern)
+      color: OklchColor;
+      source: Point;      // normalized, for the marker
+      position: Point;    // canvas position, for the swatch
+    }[];
   }
 | {
+    // Drag update. Moves a marker and updates its linked swatch color.
     type: "MOVE_EXTRACTION_MARKER";
     imageId: string;
     markerId: string;
-    position: Point; // normalized
+    position: Point;      // normalized
     color: OklchColor;
   }
 | {
+    // Used on re-extraction and on image delete.
     type: "CLEAR_IMAGE_EXTRACTION";
     imageId: string;
   }
 ```
 
-Potential helper action:
+Notes:
 
-```ts
-| {
-    type: "UPDATE_EXTRACTION_MARKER_AND_SWATCH";
-    imageId: string;
-    markerId: string;
-    position: Point;
-    color: OklchColor;
-  }
-```
-
-Recommendation:
-
-- Use a combined action for drag updates so marker and swatch cannot drift out of sync.
-- Keep `UPDATE_SWATCH_COLOR` available for ordinary swatch edits.
+- `MOVE_EXTRACTION_MARKER` joins `SKIP_HISTORY`. Drag start calls `snapshot()` once; intermediate frames are free.
+- `UPDATE_SWATCH_COLOR` already bypasses purification, so `MOVE_EXTRACTION_MARKER` can reuse that write semantic on the linked swatch.
+- Marker cleanup on swatch delete and promote-to-ramp is inlined in the existing `DELETE_OBJECTS`, `DELETE_SELECTED`, and `PROMOTE_TO_RAMP` reducers, not a dedicated action.
 
 ## Component Changes
 
@@ -444,27 +430,11 @@ Update `handleExtractColors`:
 
 1. Load `ImageData`.
 2. Call updated `extractColors`.
-3. Create swatches with stable ids.
-4. Create markers that point to those ids.
-5. Dispatch `SET_IMAGE_EXTRACTION`.
-6. Select image or keep image + swatches selected.
+3. Build samples (swatch `position` + normalized `source`).
+4. `snapshot()`, then dispatch `CREATE_EXTRACTION`.
+5. Select image or keep image + swatches selected.
 
-Important: if `CREATE_SWATCHES` currently generates ids internally, marker linkage needs known ids. Options:
-
-- Generate ids in `Canvas.tsx` and pass them into `CREATE_SWATCHES`.
-- Add a single reducer action that creates swatches and extraction markers together.
-
-Recommendation: add a single action:
-
-```ts
-| {
-    type: "CREATE_EXTRACTION";
-    imageId: string;
-    samples: { id?: string; color: OklchColor; source: Point; position: Point }[];
-  }
-```
-
-Reducer creates swatches and writes image extraction in one atomic state update.
+Because a single reducer action writes both swatches and markers, there is no transient half-linked state and `Canvas.tsx` does not need to pre-generate ids. The reducer mints them and wires the markers internally.
 
 ## Persistence
 
@@ -489,7 +459,7 @@ Need migration behavior:
 - Transparent pixels: ignore during auto-extraction; dragged marker on transparent pixel should either no-op or sample the composited RGB. Prefer no-op for v1.
 - Image object uses `objectFit: cover`: current reference image displays the whole image at proportional size, so normalized sampling is straightforward. If cropping is added later, sampling math must account for crop.
 - Re-extracting an image: replace previous extraction markers, create a new swatch strip, or update existing linked swatches? Prefer prompt-free v1 behavior: replace markers and create a new strip. Later we can support `Re-extract into existing swatches`.
-- Swatch manually edited after extraction: marker still exists, but marker color may differ from swatch. Prefer marker drag overwrites swatch; manual edit does not move marker.
+- Swatch manually edited after extraction: the link is preserved. The marker stays pinned to its source pixel and its fill tracks the swatch's current color, so the two never visually disagree. Marker drag still re-samples and overwrites the swatch; manual swatch edits do not move the marker. Deleting the marker is the explicit way to break the link.
 
 ## Implementation Plan
 
@@ -498,7 +468,7 @@ Need migration behavior:
 - Change `extractColors` internals to retain sampled pixel coordinates.
 - Return `samples` with normalized source positions.
 - Keep `colors` for compatibility.
-- Add tests for source positions in `src/engine/__tests__/research.test.ts` or a new extraction test.
+- Add tests in a new `src/engine/__tests__/extract.test.ts`. (`research.test.ts` is reserved for ramp solver research per CLAUDE.md.)
 
 ### Phase 2: Atomic Extraction State
 
@@ -555,14 +525,6 @@ Visual:
 - Loupe is crisp and does not flicker.
 - Text/markers do not overlap selected brackets badly.
 
-## Open Questions
-
-1. Should extracted swatches be visually grouped with their source image?
-2. Should manual swatch edits break the marker link, or keep it?
-3. Should `Extract colors` on an image with existing extraction update existing swatches or create a new set?
-4. Should marker colors be source-exact, normalized-to-peak, or user-toggleable?
-5. Do we need a dedicated `extraction edit mode`, or should selected images always show markers?
-
 ## Recommended V1 Decisions
 
 - Store extraction metadata on `ReferenceImage`.
@@ -572,3 +534,6 @@ Visual:
 - Re-extraction creates a new linked swatch strip and replaces image markers.
 - Use a combined reducer action for marker and swatch updates.
 - Add loupe if time allows; markers alone are still a coherent first cut.
+- No persistent grouping between image and extracted swatches. Rely on spatial adjacency plus the hover ghost-link.
+- Manual swatch edits never break the marker link. Marker fill tracks the linked swatch's current color so the two cannot visually disagree. `ExtractionMarker.color` preserves the originally sampled pixel for future provenance affordances (loupe divergence display, etc.); it is not used for rendering.
+- On swatch delete, the linked marker is removed silently. Undo restores both.
