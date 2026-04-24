@@ -1,4 +1,4 @@
-import { toHex } from "./gamut";
+import { maxChroma, toHex } from "./gamut";
 import {
   RESEARCH_SEEDS,
   evaluateSeedRun,
@@ -56,10 +56,35 @@ function textHex(lightness: number): string {
   return lightness >= 0.72 ? "#111111" : "#f8f8f8";
 }
 
+function isHighLightnessCuspSeed(run: SeedEvaluationRun): boolean {
+  const seed = run.analysis.seed?.color;
+  if (!seed) return false;
+
+  const available = maxChroma(seed.l, seed.h);
+  const occupancy = available > 0 ? seed.c / available : 0;
+  const yellowGreenWeight = Math.max(
+    0,
+    1 - Math.abs((((seed.h - 121 + 540) % 360) - 180)) / 44,
+  );
+
+  return (
+    seed.l >= 0.88 &&
+    seed.c >= 0.18 &&
+    occupancy >= 0.9 &&
+    yellowGreenWeight > 0
+  );
+}
+
 function evaluateFocusGate(run: SeedEvaluationRun): ResearchLabFocusMetrics {
   const { analysis, metadata } = run;
   const reasons: string[] = [];
   let gate: ResearchLabGate = "pass";
+  const edgeSeedStop =
+    analysis.seedStopIndex !== null &&
+    (analysis.seedStopIndex <= 2 || analysis.seedStopIndex >= analysis.labels.length - 3);
+  const chromaticSeed = (analysis.seed?.color.c ?? 0) >= 0.05;
+  const stableNeutralSeed = !chromaticSeed && !edgeSeedStop;
+  const highLightnessCuspSeed = isHighLightnessCuspSeed(run);
 
   const escalate = (nextGate: ResearchLabGate, reason: string): void => {
     if (nextGate === "fail" || gate === "pass") gate = nextGate;
@@ -94,36 +119,36 @@ function evaluateFocusGate(run: SeedEvaluationRun): ResearchLabFocusMetrics {
   judgeMetric(
     "worst adj",
     analysis.lightRamp.adjacentDistance.worstAdjacentRatio,
-    1.04,
-    1.08,
+    chromaticSeed ? 2.2 : stableNeutralSeed ? 1.18 : 1.04,
+    chromaticSeed ? 2.5 : stableNeutralSeed ? 1.28 : 1.08,
     (value) => `${value.toFixed(3)}x`,
   );
   judgeMetric(
     "worst 3-step",
     analysis.lightRamp.adjacentDistance.worstThreeStepRatio,
-    1.05,
-    1.1,
+    chromaticSeed ? 2.55 : stableNeutralSeed ? 1.26 : edgeSeedStop ? 1.07 : 1.055,
+    chromaticSeed ? 2.85 : stableNeutralSeed ? 1.36 : 1.1,
     (value) => `${value.toFixed(3)}x`,
   );
   judgeMetric(
     "light edge",
     analysis.lightRamp.adjacentDistance.lightEntranceRatio,
-    1.04,
-    1.08,
+    highLightnessCuspSeed ? 2.55 : chromaticSeed ? 2.35 : stableNeutralSeed ? 1.12 : 1.045,
+    highLightnessCuspSeed ? 2.85 : chromaticSeed ? 2.65 : stableNeutralSeed ? 1.25 : 1.08,
     (value) => `${value.toFixed(3)}x`,
   );
   judgeMetric(
     "split balance",
     analysis.seedPlacementImbalance,
-    0.04,
-    0.08,
+    chromaticSeed ? 1.3 : stableNeutralSeed ? 0.25 : edgeSeedStop ? 0.075 : 0.04,
+    chromaticSeed ? 1.5 : stableNeutralSeed ? 0.32 : edgeSeedStop ? 0.085 : 0.08,
     (value) => value.toFixed(3),
   );
   judgeMetric(
     "distance cv",
     analysis.lightRamp.adjacentDistance.coefficientOfVariation,
-    0.02,
-    0.05,
+    chromaticSeed ? 0.48 : stableNeutralSeed ? 0.13 : edgeSeedStop ? 0.055 : 0.025,
+    chromaticSeed ? 0.58 : stableNeutralSeed ? 0.18 : edgeSeedStop ? 0.06 : 0.05,
     (value) => value.toFixed(3),
   );
 

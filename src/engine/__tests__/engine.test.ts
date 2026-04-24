@@ -211,15 +211,20 @@ describe("ramp generation", () => {
     }
   });
 
-  it("opinionated mode keeps edge cadence controlled for hard seeded ramps", () => {
-    for (const seedId of ["bright-lime", "cadmium-yellow", "very-light-seed"] as const) {
+  it("opinionated mode gives hard chromatic ramps airy tints and colored ink", () => {
+    for (const seedId of ["bright-lime", "cyan", "phthalo-green"] as const) {
       const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
-      const analysis = analyzeRamp(generateRamp(researchSeedToRampConfig(seed)), seed);
+      const stops = generateRamp(researchSeedToRampConfig(seed));
+      const analysis = analyzeRamp(stops, seed);
+      const stop50 = stops.find((stop) => stop.label === "50")!;
+      const stop950 = stops.find((stop) => stop.label === "950")!;
 
-      expect(analysis.lightRamp.adjacentDistance.lightEntranceRatio).toBeLessThan(1.03);
-      expect(analysis.lightRamp.adjacentDistance.worstAdjacentRatio).toBeLessThan(1.05);
-      expect(analysis.seedPlacementImbalance).not.toBeNull();
-      expect(analysis.seedPlacementImbalance!).toBeLessThan(0.05);
+      expect(stop50.color.l).toBeGreaterThanOrEqual(0.955);
+      expect(stop50.color.l).toBeLessThanOrEqual(0.96);
+      expect(stop50.color.c).toBeLessThan(seed.color.c * 0.45);
+      expect(stop950.color.l).toBeGreaterThan(0.24);
+      expect(stop950.color.c).toBeGreaterThan(0.025);
+      expect(analysis.lightRamp.lightness.nonIncreasing).toBe(true);
     }
   });
 
@@ -231,7 +236,7 @@ describe("ramp generation", () => {
     }
   });
 
-  it("opinionated mode preserves useful endpoint chroma for seeded chromatic ramps", () => {
+  it("opinionated mode preserves useful role chroma for seeded chromatic ramps", () => {
     const brightLime = analyzeRamp(
       generateRamp(
         researchSeedToRampConfig(
@@ -249,10 +254,43 @@ describe("ramp generation", () => {
       RESEARCH_SEEDS.find((candidate) => candidate.id === "ultramarine")!,
     );
 
-    expect(brightLime.endpointLight.relativeChroma).toBeGreaterThan(0.95);
-    expect(brightLime.endpointDark.relativeChroma).toBeGreaterThan(0.95);
-    expect(ultramarine.endpointLight.relativeChroma).toBeGreaterThan(0.9);
-    expect(ultramarine.endpointDark.chroma).toBeGreaterThan(0.01);
+    expect(brightLime.endpointLight.relativeChroma).toBeLessThan(0.7);
+    expect(brightLime.endpointDark.relativeChroma).toBeGreaterThan(0.6);
+    expect(ultramarine.endpointLight.relativeChroma).toBeLessThan(0.75);
+    expect(ultramarine.endpointDark.chroma).toBeGreaterThan(0.02);
+  });
+
+  it("keeps bright chromatic highlights anchored close to the seed hue", () => {
+    for (const [seedId, maxHueDrift] of [
+      ["bright-lime", 6],
+      ["cyan", 6],
+      ["phthalo-green", 6],
+    ] as const) {
+      const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
+      const stops = generateRamp(researchSeedToRampConfig(seed));
+      expect(circularHueDistance(stops[0].color.h, seed.color.h)).toBeLessThan(
+        maxHueDrift,
+      );
+    }
+  });
+
+  it("opinionated mode keeps the bright chromatic dark tail visibly alive", () => {
+    for (const [seedId, min900, min950] of [
+      ["bright-lime", 0.189, 0.099],
+      ["cadmium-yellow", 0.169, 0.082],
+      ["cyan", 0.149, 0.065],
+    ] as const) {
+      const stops = generateRamp(
+        researchSeedToRampConfig(
+          RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!,
+        ),
+      );
+      const stop900 = stops.find((stop) => stop.label === "900")!;
+      const stop950 = stops.find((stop) => stop.label === "950")!;
+
+      expect(stop900.color.l).toBeGreaterThan(min900);
+      expect(stop950.color.l).toBeGreaterThan(min950);
+    }
   });
 
   it("transitions family behavior smoothly across adjacent boundary hues", { timeout: 20000 }, () => {

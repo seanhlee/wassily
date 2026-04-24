@@ -1,0 +1,3282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Wassily Ramp Gauntlet</title>
+    <style>
+      :root {
+        --bg: #f6f7f4;
+        --ink: #111816;
+        --muted: #68736d;
+        --line: rgba(17, 24, 22, 0.12);
+        --panel: rgba(255, 255, 255, 0.62);
+        --ok: #0b6b61;
+        --watch: #9a6500;
+        --fail: #a32929;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(1500px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 28px 0 56px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 3.8rem);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 1.1rem;
+      }
+
+      h3 {
+        font-size: 0.92rem;
+        letter-spacing: 0;
+      }
+
+      p {
+        color: var(--muted);
+        line-height: 1.48;
+      }
+
+      .mono {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .hero {
+        display: grid;
+        gap: 10px;
+        padding-bottom: 22px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill,
+      .status,
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+      }
+
+      .pill {
+        padding: 7px 10px;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .group {
+        display: grid;
+        gap: 10px;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .group__header {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 18px;
+        align-items: baseline;
+      }
+
+      .rows {
+        display: grid;
+        gap: 6px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: minmax(170px, 0.9fr) minmax(390px, 2.2fr) minmax(360px, 1.7fr);
+        gap: 10px;
+        align-items: center;
+        min-height: 58px;
+        padding: 7px 0;
+      }
+
+      .row__meta {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .row__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .seed-value {
+        color: var(--muted);
+        font-size: 0.68rem;
+        overflow-wrap: anywhere;
+      }
+
+      .status {
+        padding: 3px 7px;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+      }
+
+      .status--ok {
+        color: var(--ok);
+      }
+
+      .status--watch {
+        color: var(--watch);
+      }
+
+      .status--fail {
+        color: var(--fail);
+      }
+
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(11, minmax(0, 1fr));
+        gap: 3px;
+      }
+
+      .swatch {
+        position: relative;
+        min-height: 42px;
+        border: 1px solid rgba(17, 24, 22, 0.15);
+        border-radius: 5px;
+        overflow: hidden;
+      }
+
+      .swatch span {
+        position: absolute;
+        left: 5px;
+        top: 4px;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.62rem;
+      }
+
+      .swatch--seed {
+        outline: 2px solid rgba(17, 24, 22, 0.52);
+        outline-offset: -4px;
+      }
+
+      .metrics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .metric {
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 6px;
+        align-items: baseline;
+        min-height: 26px;
+        padding: 5px 7px;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 0.64rem;
+      }
+
+      .metric strong {
+        font-size: 0.69rem;
+      }
+
+      @media (max-width: 980px) {
+        main {
+          width: min(100vw - 24px, 760px);
+        }
+
+        .group__header,
+        .row {
+          grid-template-columns: 1fr;
+        }
+
+        .swatch {
+          min-height: 36px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <h1>Ramp Gauntlet</h1>
+        <p>Compact stress matrix for the v6 anchor-seeded solver. The focused lab is for beauty; this board is for catching cliffs, dead tails, neutral chroma leaks, and hue-family overfitting.</p>
+        <div class="summary">
+          <div class="pill mono">26 seeds</div>
+          <div class="pill mono">ok 26</div>
+          <div class="pill mono">watch 0</div>
+          <div class="pill mono">fail 0</div>
+          <div class="pill mono">stops 50/100/200/300/400/500/600/700/800/900/950</div>
+          <div class="pill mono">Generated 4/23/2026, 8:23:23 PM</div>
+        </div>
+      </section>
+      
+            <section class="group">
+              <div class="group__header">
+                <h2>Neutrals</h2>
+                <p>Neutral and near-neutral seeds should stay quiet, monotone, and free of chroma theatrics.</p>
+              </div>
+              <div class="rows">
+                
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Warm Neutral</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.620 0.018 70.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F2F0ED; color:#111111" title="50 #F2F0ED">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#D8D4CF; color:#111111" title="100 #D8D4CF">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#BFB9B2; color:#111111" title="200 #BFB9B2">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#A69E96; color:#f8f8f8" title="300 #A69E96">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#8D847B; color:#f8f8f8" title="400 #8D847B">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#776F67; color:#f8f8f8" title="500 #776F67">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#635C54; color:#f8f8f8" title="600 #635C54">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#504A43; color:#f8f8f8" title="700 #504A43">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#3E3933; color:#f8f8f8" title="800 #3E3933">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#2D2924; color:#f8f8f8" title="900 #2D2924">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#1E1A16; color:#f8f8f8" title="950 #1E1A16">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.955</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">14%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.084</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.084</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.09x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.12</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.220</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.010</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Cool Neutral</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.620 0.018 255.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#EFF0F2; color:#111111" title="50 #EFF0F2">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#D2D5D9; color:#111111" title="100 #D2D5D9">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#B5BAC0; color:#111111" title="200 #B5BAC0">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#9AA0A9; color:#f8f8f8" title="300 #9AA0A9">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#7F8791; color:#f8f8f8" title="400 #7F8791">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#6A717A; color:#f8f8f8" title="500 #6A717A">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#585E66; color:#f8f8f8" title="600 #585E66">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#464C53; color:#f8f8f8" title="700 #464C53">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#363A41; color:#f8f8f8" title="800 #363A41">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#262A2F; color:#f8f8f8" title="900 #262A2F">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#181B1F; color:#f8f8f8" title="950 #181B1F">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.955</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">14%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.084</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.084</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.09x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.12</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.220</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.010</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Paper Gray</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.740 0.006 72.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F1F0EF; color:#111111" title="50 #F1F0EF">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#DAD8D6; color:#111111" title="100 #DAD8D6">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#C3C1BE; color:#111111" title="200 #C3C1BE">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#ADAAA7; color:#111111" title="300 #ADAAA7">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#94918E; color:#f8f8f8" title="400 #94918E">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#7D7A77; color:#f8f8f8" title="500 #7D7A77">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#676562; color:#f8f8f8" title="600 #676562">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#52514E; color:#f8f8f8" title="700 #52514E">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#3F3D3B; color:#f8f8f8" title="800 #3F3D3B">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#2D2B2A; color:#f8f8f8" title="900 #2D2B2A">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#1C1A19; color:#f8f8f8" title="950 #1C1A19">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">300</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.955</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">4%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.072</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.072</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.00x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.04</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.220</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.003</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Warm Chroma Edge</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.620 0.045 72.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F2F0ED; color:#111111" title="50 #F2F0ED">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#DBD3CA; color:#111111" title="100 #DBD3CA">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#C4B8A9; color:#111111" title="200 #C4B8A9">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#AE9D88; color:#f8f8f8" title="300 #AE9D88">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#978269; color:#f8f8f8" title="400 #978269">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#7F6D58; color:#f8f8f8" title="500 #7F6D58">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#695B49; color:#f8f8f8" title="600 #695B49">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#55493B; color:#f8f8f8" title="700 #55493B">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#41382E; color:#f8f8f8" title="800 #41382E">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#2F2921; color:#f8f8f8" title="900 #2F2921">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#1E1A15; color:#f8f8f8" title="950 #1E1A15">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.955</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">14%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.084</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.084</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.09x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.12</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.220</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.010</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Cool Chroma Edge</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.580 0.045 250.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#EFF0F2; color:#111111" title="50 #EFF0F2">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#CBD2DA; color:#111111" title="100 #CBD2DA">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#A8B5C3; color:#111111" title="200 #A8B5C3">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#8798AB; color:#f8f8f8" title="300 #8798AB">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#667D94; color:#f8f8f8" title="400 #667D94">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#56697D; color:#f8f8f8" title="500 #56697D">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#485869; color:#f8f8f8" title="600 #485869">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#3A4755; color:#f8f8f8" title="700 #3A4755">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#2E3843; color:#f8f8f8" title="800 #2E3843">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#212931; color:#f8f8f8" title="900 #212931">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#161B21; color:#f8f8f8" title="950 #161B21">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.955</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">14%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.094</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.094</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.19x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.23</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.220</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.014</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+              </div>
+            </section>
+          
+            <section class="group">
+              <div class="group__header">
+                <h2>Warm Hues</h2>
+                <p>Yellows, oranges, reds, and roses should avoid muddy shadows and harsh top clips.</p>
+              </div>
+              <div class="rows">
+                
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Cadmium Yellow</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.900 0.165 98.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F8F2D7; color:#111111" title="50 #F8F2D7">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#FBEA9A; color:#111111" title="100 #FBEA9A">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#FBDE46; color:#111111" title="200 #FBDE46">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#D7BE14; color:#111111" title="300 #D7BE14">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#B7A418; color:#f8f8f8" title="400 #B7A418">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#9B8C19; color:#f8f8f8" title="500 #9B8C19">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#817617; color:#f8f8f8" title="600 #817617">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#6A6014; color:#f8f8f8" title="700 #6A6014">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#554B11; color:#f8f8f8" title="800 #554B11">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#41380C; color:#f8f8f8" title="900 #41380C">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#2D2708; color:#f8f8f8" title="950 #2D2708">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">200</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">48%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.071</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.071</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.00x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.12</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.271</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.047</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Amber</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.780 0.160 82.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F8F0E3; color:#111111" title="50 #F8F0E3">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#F4CE87; color:#111111" title="100 #F4CE87">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#EAAB05; color:#111111" title="200 #EAAB05">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#C28E0D; color:#f8f8f8" title="300 #C28E0D">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#A77A0F; color:#f8f8f8" title="400 #A77A0F">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#8F680F; color:#f8f8f8" title="500 #8F680F">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#79590F; color:#f8f8f8" title="600 #79590F">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#654A0E; color:#f8f8f8" title="700 #654A0E">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#533D0D; color:#f8f8f8" title="800 #533D0D">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#42300B; color:#f8f8f8" title="900 #42300B">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#322509; color:#f8f8f8" title="950 #322509">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">200</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">50%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.119</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.108</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.57x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.32</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.273</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.047</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Orange</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.680 0.180 48.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F8EFEB; color:#111111" title="50 #F8EFEB">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#FAC4AA; color:#111111" title="100 #FAC4AA">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#F89865; color:#111111" title="200 #F89865">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#ED6E12; color:#f8f8f8" title="300 #ED6E12">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#C35A12; color:#f8f8f8" title="400 #C35A12">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#A74D11; color:#f8f8f8" title="500 #A74D11">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#8D4110; color:#f8f8f8" title="600 #8D4110">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#77370E; color:#f8f8f8" title="700 #77370E">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#622D0C; color:#f8f8f8" title="800 #622D0C">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#4F240A; color:#f8f8f8" title="900 #4F240A">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#3E1C08; color:#f8f8f8" title="950 #3E1C08">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">300</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">49%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.112</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.112</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.40x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.33</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.270</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.061</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Red</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.600 0.210 28.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F8EFEE; color:#111111" title="50 #F8EFEE">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#FBC7C0; color:#111111" title="100 #FBC7C0">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#FC9B8E; color:#111111" title="200 #FC9B8E">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#F76A5C; color:#f8f8f8" title="300 #F76A5C">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#E2352E; color:#f8f8f8" title="400 #E2352E">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#BF2C26; color:#f8f8f8" title="500 #BF2C26">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#A3241F; color:#f8f8f8" title="600 #A3241F">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#891E19; color:#f8f8f8" title="700 #891E19">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#721713; color:#f8f8f8" title="800 #721713">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#5C110E; color:#f8f8f8" title="900 #5C110E">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#480C09; color:#f8f8f8" title="950 #480C09">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">47%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.099</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.106</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.22x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.29</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.265</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.090</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Rose</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.640 0.180 355.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F7EEF1; color:#111111" title="50 #F7EEF1">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#F8CEDD; color:#111111" title="100 #F8CEDD">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#FAA7C7; color:#111111" title="200 #FAA7C7">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#F27CAE; color:#111111" title="300 #F27CAE">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#DB5392; color:#f8f8f8" title="400 #DB5392">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#B84379; color:#f8f8f8" title="500 #B84379">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#9B3665; color:#f8f8f8" title="600 #9B3665">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#822A53; color:#f8f8f8" title="700 #822A53">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#6B2043; color:#f8f8f8" title="800 #6B2043">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#551634; color:#f8f8f8" title="900 #551634">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#410D26; color:#f8f8f8" title="950 #410D26">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">44%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.078</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.091</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.05x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.20</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.259</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.084</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+              </div>
+            </section>
+          
+            <section class="group">
+              <div class="group__header">
+                <h2>Greens</h2>
+                <p>Green families reveal cusp flash, leafy body drift, teal transitions, and ink retention.</p>
+              </div>
+              <div class="rows">
+                
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Bright Lime</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.931 0.223 121.1)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#EBF9C5; color:#111111" title="50 #EBF9C5">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#E0FC86; color:#111111" title="100 #E0FC86">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#D3FD05; color:#111111" title="200 #D3FD05">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#A9DB16; color:#111111" title="300 #A9DB16">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#89BE19; color:#111111" title="400 #89BE19">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#71A31A; color:#f8f8f8" title="500 #71A31A">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#5E8818; color:#f8f8f8" title="600 #5E8818">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#506E16; color:#f8f8f8" title="700 #506E16">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#435612; color:#f8f8f8" title="800 #435612">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#34400D; color:#f8f8f8" title="900 #34400D">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#242C08; color:#f8f8f8" title="950 #242C08">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">200</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">50%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.080</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.078</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.00x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.11</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.276</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.056</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Lime Cool Neighbor</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.900 0.180 132.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#E7F8DA; color:#111111" title="50 #E7F8DA">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#CDF9A9; color:#111111" title="100 #CDF9A9">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#B0F671; color:#111111" title="200 #B0F671">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#78DB15; color:#111111" title="300 #78DB15">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#5BBE16; color:#f8f8f8" title="400 #5BBE16">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#48A218; color:#f8f8f8" title="500 #48A218">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#3D8717; color:#f8f8f8" title="600 #3D8717">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#366E14; color:#f8f8f8" title="700 #366E14">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#305511; color:#f8f8f8" title="800 #305511">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#263F0C; color:#f8f8f8" title="900 #263F0C">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#192B07; color:#f8f8f8" title="950 #192B07">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">200</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">46%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.074</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.074</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.00x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.14</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.265</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.062</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Leaf Green</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.620 0.160 145.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#E1F9E0; color:#111111" title="50 #E1F9E0">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#BFE7BE; color:#111111" title="100 #BFE7BE">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#94D394; color:#111111" title="200 #94D394">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#64BB69; color:#f8f8f8" title="300 #64BB69">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#399E43; color:#f8f8f8" title="400 #399E43">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#2E8437; color:#f8f8f8" title="500 #2E8437">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#256F2D; color:#f8f8f8" title="600 #256F2D">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#1E5D24; color:#f8f8f8" title="700 #1E5D24">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#174C1C; color:#f8f8f8" title="800 #174C1C">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#103C15; color:#f8f8f8" title="900 #103C15">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#0A2D0E; color:#f8f8f8" title="950 #0A2D0E">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">56%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.075</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.089</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.05x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.23</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.264</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.068</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Phthalo Green</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.520 0.160 165.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#D8FBE9; color:#111111" title="50 #D8FBE9">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#B9E5D0; color:#111111" title="100 #B9E5D0">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#8FCFB4; color:#111111" title="200 #8FCFB4">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#5FB695; color:#f8f8f8" title="300 #5FB695">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#2D9A77; color:#f8f8f8" title="400 #2D9A77">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#007C59; color:#f8f8f8" title="500 #007C59">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#086548; color:#f8f8f8" title="600 #086548">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#0B543C; color:#f8f8f8" title="700 #0B543C">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#0C4632; color:#f8f8f8" title="800 #0C4632">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#0B3929; color:#f8f8f8" title="900 #0B3929">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#0A2E21; color:#f8f8f8" title="950 #0A2E21">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">500</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">70%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.074</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.085</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.00x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.30</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.270</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.047</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Teal</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.580 0.140 185.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#D5FAF4; color:#111111" title="50 #D5FAF4">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#A2E2D9; color:#111111" title="100 #A2E2D9">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#69C8BD; color:#111111" title="200 #69C8BD">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#32ABA0; color:#f8f8f8" title="300 #32ABA0">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#008D82; color:#f8f8f8" title="400 #008D82">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#08776E; color:#f8f8f8" title="500 #08776E">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#0C665E; color:#f8f8f8" title="600 #0C665E">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#0D564F; color:#f8f8f8" title="700 #0D564F">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#0D4741; color:#f8f8f8" title="800 #0D4741">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#0C3935; color:#f8f8f8" title="900 #0C3935">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#0B2D29; color:#f8f8f8" title="950 #0B2D29">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">67%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.095</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.100</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.27x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.32</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.270</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.039</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+              </div>
+            </section>
+          
+            <section class="group">
+              <div class="group__header">
+                <h2>Cool Hues</h2>
+                <p>Cyan through violet should keep fresh tints and avoid dead blue-violet tails.</p>
+              </div>
+              <div class="rows">
+                
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Cyan</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.780 0.140 210.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#DAF7FC; color:#111111" title="50 #DAF7FC">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#85E7F7; color:#111111" title="100 #85E7F7">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#00CEE7; color:#111111" title="200 #00CEE7">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#0CABC0; color:#f8f8f8" title="300 #0CABC0">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#1093A4; color:#f8f8f8" title="400 #1093A4">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#117E8D; color:#f8f8f8" title="500 #117E8D">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#116B78; color:#f8f8f8" title="600 #116B78">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#105964; color:#f8f8f8" title="700 #105964">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#0F4952; color:#f8f8f8" title="800 #0F4952">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#0D3A41; color:#f8f8f8" title="900 #0D3A41">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#0A2C32; color:#f8f8f8" title="950 #0A2C32">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">200</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">81%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.105</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.103</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.40x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.29</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.273</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.039</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Sky Blue</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.720 0.130 230.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#E7F3F9; color:#111111" title="50 #E7F3F9">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#B7E2F7; color:#111111" title="100 #B7E2F7">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#72CFF8; color:#111111" title="200 #72CFF8">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#32B3E6; color:#111111" title="300 #32B3E6">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#2992BC; color:#f8f8f8" title="400 #2992BC">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#227CA0; color:#f8f8f8" title="500 #227CA0">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#1C6887; color:#f8f8f8" title="600 #1C6887">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#175670; color:#f8f8f8" title="700 #175670">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#12465C; color:#f8f8f8" title="800 #12465C">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#0E3849; color:#f8f8f8" title="900 #0E3849">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#0A2A38; color:#f8f8f8" title="950 #0A2A38">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">300</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">61%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.078</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.093</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.12x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.24</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.268</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.045</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Ultramarine</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.470 0.180 265.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#EEF1F7; color:#111111" title="50 #EEF1F7">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#C3D2F0; color:#111111" title="100 #C3D2F0">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#98B1E7; color:#111111" title="200 #98B1E7">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#7091DB; color:#f8f8f8" title="300 #7091DB">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#4A70CD; color:#f8f8f8" title="400 #4A70CD">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#274FBE; color:#f8f8f8" title="500 #274FBE">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#1C3FA2; color:#f8f8f8" title="600 #1C3FA2">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#14328D; color:#f8f8f8" title="700 #14328D">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#0D277A; color:#f8f8f8" title="800 #0D277A">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#071D69; color:#f8f8f8" title="900 #071D69">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#031259; color:#f8f8f8" title="950 #031259">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">500</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">43%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.104</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.107</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.17x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.38</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.238</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.126</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Violet</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.620 0.210 315.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F4EFF7; color:#111111" title="50 #F4EFF7">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#E9CEF6; color:#111111" title="100 #E9CEF6">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#DCA8F4; color:#111111" title="200 #DCA8F4">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#CB7FEB; color:#f8f8f8" title="300 #CB7FEB">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#B453DB; color:#f8f8f8" title="400 #B453DB">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#9643B8; color:#f8f8f8" title="500 #9643B8">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#7F369C; color:#f8f8f8" title="600 #7F369C">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#6A2B83; color:#f8f8f8" title="700 #6A2B83">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#57206C; color:#f8f8f8" title="800 #57206C">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#451757; color:#f8f8f8" title="900 #451757">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#340D43; color:#f8f8f8" title="950 #340D43">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">44%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.087</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.099</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.11x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.24</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.255</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.099</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Purple</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.580 0.180 295.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F1F0F7; color:#111111" title="50 #F1F0F7">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#D4CBF5; color:#111111" title="100 #D4CBF5">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#B9A5F4; color:#111111" title="200 #B9A5F4">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#9F80ED; color:#f8f8f8" title="300 #9F80ED">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#855DD7; color:#f8f8f8" title="400 #855DD7">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#6F4BB8; color:#f8f8f8" title="500 #6F4BB8">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#5E3D9F; color:#f8f8f8" title="600 #5E3D9F">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#4F3089; color:#f8f8f8" title="700 #4F3089">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#412574; color:#f8f8f8" title="800 #412574">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#341961; color:#f8f8f8" title="900 #341961">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#270F4E; color:#f8f8f8" title="950 #270F4E">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">400</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">44%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.106</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.109</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.31x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.32</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.249</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.108</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+              </div>
+            </section>
+          
+            <section class="group">
+              <div class="group__header">
+                <h2>Perturbations</h2>
+                <p>Nearby hue variants around the tuned hard cases catch overfitting and boundary jumps.</p>
+              </div>
+              <div class="rows">
+                
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Lime h115</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.930 0.210 115.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#F0F9A9; color:#111111" title="50 #F0F9A9">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#EBF974; color:#111111" title="100 #EBF974">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#E5F707; color:#111111" title="200 #E5F707">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#BCD517; color:#111111" title="300 #BCD517">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#9CB81A; color:#111111" title="400 #9CB81A">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#829E19; color:#f8f8f8" title="500 #829E19">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#6D8418; color:#f8f8f8" title="600 #6D8418">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#5B6B16; color:#f8f8f8" title="700 #5B6B16">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#4A5412; color:#f8f8f8" title="800 #4A5412">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#393E0E; color:#f8f8f8" title="900 #393E0E">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#272B08; color:#f8f8f8" title="950 #272B08">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">200</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">50%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.056</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.055</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.00x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.19</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.276</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.052</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Lime h130</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.900 0.180 130.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#E8F8D8; color:#111111" title="50 #E8F8D8">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#D0F8A6; color:#111111" title="100 #D0F8A6">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#B6F56C; color:#111111" title="200 #B6F56C">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#82D914; color:#111111" title="300 #82D914">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#65BC17; color:#f8f8f8" title="400 #65BC17">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#51A118; color:#f8f8f8" title="500 #51A118">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#448616; color:#f8f8f8" title="600 #448616">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#3B6D14; color:#f8f8f8" title="700 #3B6D14">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#335510; color:#f8f8f8" title="800 #335510">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#293F0D; color:#f8f8f8" title="900 #293F0D">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#1B2B07; color:#f8f8f8" title="950 #1B2B07">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">200</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">45%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.073</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.074</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.00x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.13</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.266</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.060</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Cyan h195</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.780 0.130 195.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#CEFCFA; color:#111111" title="50 #CEFCFA">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#7FE9E9; color:#111111" title="100 #7FE9E9">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#1AD1D1; color:#111111" title="200 #1AD1D1">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#1AADAD; color:#f8f8f8" title="300 #1AADAD">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#199595; color:#f8f8f8" title="400 #199595">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#177F7F; color:#f8f8f8" title="500 #177F7F">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#156C6C; color:#f8f8f8" title="600 #156C6C">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#135A5A; color:#f8f8f8" title="700 #135A5A">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#104A4A; color:#f8f8f8" title="800 #104A4A">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#0D3B3B; color:#f8f8f8" title="900 #0D3B3B">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#0A2D2D; color:#f8f8f8" title="950 #0A2D2D">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">200</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">76%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.101</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.097</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.34x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.27</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.272</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.039</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Cyan h220</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.760 0.130 220.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#E2F5FB; color:#111111" title="50 #E2F5FB">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#B7E9F8; color:#111111" title="100 #B7E9F8">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#75DBF8; color:#111111" title="200 #75DBF8">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#2BC4EA; color:#111111" title="300 #2BC4EA">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#249FBE; color:#f8f8f8" title="400 #249FBE">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch" style="background:#1F86A0; color:#f8f8f8" title="500 #1F86A0">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#1B7086; color:#f8f8f8" title="600 #1B7086">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#175C6F; color:#f8f8f8" title="700 #175C6F">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#134B5A; color:#f8f8f8" title="800 #134B5A">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#0E3A46; color:#f8f8f8" title="900 #0E3A46">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#0A2B34; color:#f8f8f8" title="950 #0A2B34">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">300</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">71%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.064</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.079</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.00x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.21</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.270</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.041</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Phthalo h155</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.520 0.150 155.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#DCFAE4; color:#111111" title="50 #DCFAE4">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#BCE5C9; color:#111111" title="100 #BCE5C9">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#91D0A8; color:#111111" title="200 #91D0A8">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#61B886; color:#f8f8f8" title="300 #61B886">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#2E9C64; color:#f8f8f8" title="400 #2E9C64">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#007E46; color:#f8f8f8" title="500 #007E46">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#086639; color:#f8f8f8" title="600 #086639">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#0B5530; color:#f8f8f8" title="700 #0B5530">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#0B4728; color:#f8f8f8" title="800 #0B4728">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#0B3A21; color:#f8f8f8" title="900 #0B3A21">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#0A2E1A; color:#f8f8f8" title="950 #0A2E1A">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">500</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">64%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.075</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.086</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.00x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.30</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.270</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.056</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+    <article class="row row--ok">
+      <div class="row__meta">
+        <div class="row__title">
+          <h3>Phthalo h175</h3>
+          <span class="status status--ok">ok</span>
+        </div>
+        <div class="mono seed-value">oklch(0.520 0.150 175.0)</div>
+      </div>
+      
+    <div class="swatches">
+      
+            <div class="swatch" style="background:#D8FAEF; color:#111111" title="50 #D8FAEF">
+              <span>50</span>
+            </div>
+          
+            <div class="swatch" style="background:#B2E3D5; color:#111111" title="100 #B2E3D5">
+              <span>100</span>
+            </div>
+          
+            <div class="swatch" style="background:#84CBB9; color:#111111" title="200 #84CBB9">
+              <span>200</span>
+            </div>
+          
+            <div class="swatch" style="background:#57B29D; color:#f8f8f8" title="300 #57B29D">
+              <span>300</span>
+            </div>
+          
+            <div class="swatch" style="background:#279781; color:#f8f8f8" title="400 #279781">
+              <span>400</span>
+            </div>
+          
+            <div class="swatch swatch--seed" style="background:#007B66; color:#f8f8f8" title="500 #007B66">
+              <span>500</span>
+            </div>
+          
+            <div class="swatch" style="background:#086352; color:#f8f8f8" title="600 #086352">
+              <span>600</span>
+            </div>
+          
+            <div class="swatch" style="background:#0B5345; color:#f8f8f8" title="700 #0B5345">
+              <span>700</span>
+            </div>
+          
+            <div class="swatch" style="background:#0B4539; color:#f8f8f8" title="800 #0B4539">
+              <span>800</span>
+            </div>
+          
+            <div class="swatch" style="background:#0B392F; color:#f8f8f8" title="900 #0B392F">
+              <span>900</span>
+            </div>
+          
+            <div class="swatch" style="background:#0A2D25; color:#f8f8f8" title="950 #0A2D25">
+              <span>950</span>
+            </div>
+          
+    </div>
+  
+      <div class="metrics">
+        
+    <div class="metric">
+      <span>anchor</span>
+      <strong class="mono">500</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 L</span>
+      <strong class="mono">0.958</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50 occ</span>
+      <strong class="mono">64%</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>50->100</span>
+      <strong class="mono">0.082</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>100->200</span>
+      <strong class="mono">0.089</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>edge</span>
+      <strong class="mono">1.03x</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>cv</span>
+      <strong class="mono">0.30</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 L</span>
+      <strong class="mono">0.270</strong>
+    </div>
+  
+        
+    <div class="metric">
+      <span>950 c</span>
+      <strong class="mono">0.043</strong>
+    </div>
+  
+      </div>
+    </article>
+  
+              </div>
+            </section>
+          
+    </main>
+  </body>
+</html>

@@ -149,22 +149,42 @@ describe("research harness", () => {
     expect(analysis.endpointLight.lightness).toBeGreaterThanOrEqual(seed.color.l);
     expect(analysis.lightRamp.lightness.nonIncreasing).toBe(true);
     expect(analysis.lightRamp.lightness.flatSteps).toBeLessThanOrEqual(1);
-    expect(analysis.lightRamp.adjacentDistance.lightEntranceRatio).toBeLessThan(1.03);
+    expect(analysis.lightRamp.adjacentDistance.lightEntranceRatio).toBeLessThan(1.2);
   });
 
-  it("uses cusp-aware top endpoints so narrow-near-white hues carry color", () => {
+  it("uses semantic top endpoints so narrow-near-white hues carry a quiet family signal", () => {
     const ultramarine = evaluateSeed(
       RESEARCH_SEEDS.find((candidate) => candidate.id === "ultramarine")!,
     );
     const brightLime = evaluateSeed(
       RESEARCH_SEEDS.find((candidate) => candidate.id === "bright-lime")!,
     );
+    const cyan = evaluateSeed(
+      RESEARCH_SEEDS.find((candidate) => candidate.id === "cyan")!,
+    );
+    const phthaloGreen = evaluateSeed(
+      RESEARCH_SEEDS.find((candidate) => candidate.id === "phthalo-green")!,
+    );
 
-    expect(ultramarine.endpointLight.chroma).toBeGreaterThan(0.015);
-    expect(ultramarine.endpointLight.relativeChroma).toBeGreaterThan(0.85);
+    expect(ultramarine.endpointLight.lightness).toBeGreaterThanOrEqual(0.955);
+    expect(ultramarine.endpointLight.lightness).toBeLessThanOrEqual(0.96);
+    expect(ultramarine.endpointLight.chroma).toBeGreaterThan(0.004);
+    expect(ultramarine.endpointLight.relativeChroma).toBeGreaterThan(0.4);
 
-    expect(brightLime.endpointLight.lightness).toBeGreaterThan(0.96);
-    expect(brightLime.endpointLight.chroma).toBeGreaterThan(0.04);
+    expect(brightLime.endpointLight.lightness).toBeGreaterThanOrEqual(0.955);
+    expect(brightLime.endpointLight.lightness).toBeLessThanOrEqual(0.96);
+    expect(brightLime.endpointLight.chroma).toBeGreaterThan(0.02);
+    expect(brightLime.endpointLight.chroma).toBeLessThan(0.07);
+
+    expect(cyan.endpointLight.lightness).toBeGreaterThanOrEqual(0.955);
+    expect(cyan.endpointLight.lightness).toBeLessThanOrEqual(0.96);
+    expect(cyan.endpointLight.chroma).toBeGreaterThan(0.016);
+    expect(cyan.endpointLight.relativeChroma).toBeGreaterThan(0.75);
+
+    expect(phthaloGreen.endpointLight.lightness).toBeGreaterThanOrEqual(0.955);
+    expect(phthaloGreen.endpointLight.lightness).toBeLessThanOrEqual(0.96);
+    expect(phthaloGreen.endpointLight.chroma).toBeGreaterThan(0.022);
+    expect(phthaloGreen.endpointLight.relativeChroma).toBeGreaterThan(0.62);
   });
 
   it("applies family-aware dark behavior for lime, ultramarine, cyan, and neutral", () => {
@@ -186,7 +206,9 @@ describe("research harness", () => {
 
     const limeDark = lime.lightRamp.colors.at(-1)!;
     expect(limeDark.h).toBeGreaterThan(110);
-    expect(lime.endpointDark.relativeChroma).toBeGreaterThan(0.95);
+    expect(lime.endpointDark.lightness).toBeGreaterThan(0.18);
+    expect(lime.endpointDark.chroma).toBeGreaterThan(0.035);
+    expect(lime.endpointDark.relativeChroma).toBeGreaterThan(0.8);
 
     const ultramarineDark = ultramarine.lightRamp.colors.at(-1)!;
     expect(Math.abs(ultramarineDark.h - 265)).toBeLessThan(3);

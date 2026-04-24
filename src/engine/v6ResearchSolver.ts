@@ -1,5 +1,6 @@
 import type { OklchColor, RampConfig, RampStop, StopPreset } from "../types";
-import { clampToGamut, isInGamut, maxChroma } from "./gamut";
+import { BLACK, contrastRatio } from "./contrast";
+import { clampToGamut, isInGamut, maxChroma, NEUTRAL_CHROMA } from "./gamut";
 import {
   addLab,
   buildSeedCenteredFrame,
@@ -39,11 +40,13 @@ const STOP_PRESETS: Record<StopPreset, string[]> = {
     "950",
   ],
 };
+const SEMANTIC_TONAL_LABELS = STOP_PRESETS[11];
 
 const L_MAX = 0.98;
 const L_FLOOR = 0.05;
 const L_CEILING = 1.0;
 const EPSILON = 1e-6;
+const TOP_TINT_OCCUPANCY_FLOOR = 0.055;
 const SOFT_PRIOR_WEIGHTS = {
   endpointReserve: 0.18,
   darkEndpointReserve: 0.5,
@@ -104,6 +107,7 @@ export interface V6EnergyBreakdown {
   worstThreeStepWindowPenalty: number;
   localStepSpreadPenalty: number;
   lightEntrancePenalty: number;
+  lightTopTintPenalty: number;
   seedPlacementPenalty: number;
   seedNeighborhoodAsymmetry: number;
   endpointHuePenalty: number;
@@ -162,6 +166,11 @@ interface PathSolution {
   colors: OklchColor[];
   metadata: BaseV6SolveMetadata;
   softPrior: V6SoftPriorComparison;
+}
+
+interface TonalRoleEnvelopeResult {
+  colors: OklchColor[];
+  seedIndex: number;
 }
 
 interface V6ParameterVector {
@@ -227,6 +236,25 @@ function clamp(value: number, min: number, max: number): number {
 function chromaIntensity(color: OklchColor): number {
   const available = maxChroma(color.l, color.h);
   return available > EPSILON ? clamp(color.c / available, 0, 1) : 0;
+}
+
+function occupancy(color: OklchColor): number {
+  const available = maxChroma(color.l, color.h);
+  return available > EPSILON ? clamp(color.c / available, 0, 1.1) : 0;
+}
+
+function weightedRmsPenalty(
+  values: readonly number[],
+  weights: readonly number[],
+): number {
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  if (totalWeight <= EPSILON || values.length === 0) return 0;
+
+  const weightedSquares = values.reduce(
+    (sum, value, index) => sum + value ** 2 * (weights[index] ?? 0),
+    0,
+  );
+  return Math.sqrt(weightedSquares / totalWeight);
 }
 
 function sanitizeSolvedColor(color: OklchColor): OklchColor {
@@ -673,30 +701,192 @@ function buildSamplingPlan(
   };
 }
 
+function minimumDarkSampleContrastOnBlack(seed: OklchColor): number {
+  if (seed.c < NEUTRAL_CHROMA || seed.l <= 0.24) return 1.012;
+  return clamp(
+    1.018 + Math.max(seed.l - 0.55, 0) * 0.015 + Math.min(seed.c * 0.03, 0.003),
+    1.018,
+    1.03,
+  );
+}
+
+function minimumDarkEndpointLightness(
+  seed: OklchColor,
+  seedIndex: number,
+  totalStops: number,
+): number {
+  if (seed.c < NEUTRAL_CHROMA || seed.l <= 0.28) return L_FLOOR;
+
+  const fraction = stopFractionForIndex(seedIndex, totalStops);
+  const edgeBias = clamp((0.5 - fraction) / 0.4, 0, 1);
+  const brightnessBias = clamp((seed.l - 0.45) / 0.45, 0, 1);
+  const chromaBias = clamp((seed.c - NEUTRAL_CHROMA) / 0.18, 0, 1);
+
+  return clamp(
+    0.075 + edgeBias * 0.025 + brightnessBias * 0.02 + chromaBias * 0.015,
+    0.075,
+    0.14,
+  );
+}
+
+function darkVisibilityCorrectionWeight(
+  seed: OklchColor,
+  seedIndex: number,
+  totalStops: number,
+): number {
+  if (seed.c < NEUTRAL_CHROMA || seed.l <= 0.28) return 0;
+  const fraction = stopFractionForIndex(seedIndex, totalStops);
+  const edgeBias = clamp((0.55 - fraction) / 0.45, 0, 1);
+  const brightnessBias = clamp((seed.l - 0.45) / 0.45, 0, 1);
+  const chromaBias = clamp((seed.c - NEUTRAL_CHROMA) / 0.18, 0, 1);
+  return clamp(
+    chromaBias * (0.12 + edgeBias * 0.38 + brightnessBias * 0.15),
+    0,
+    0.72,
+  );
+}
+
+function darkBudgetForMinimumContrast(
+  seed: OklchColor,
+  points: readonly FinePathPoint[],
+  seedPointIndex: number,
+  lightBudget: number,
+  darkBudget: number,
+): number {
+  if (darkBudget <= EPSILON || points.length <= seedPointIndex + 1) return darkBudget;
+
+  const targetContrast = minimumDarkSampleContrastOnBlack(seed);
+  const endpointContrast = contrastRatio(points[points.length - 1].color, BLACK);
+  if (endpointContrast >= targetContrast) return darkBudget;
+
+  for (let index = points.length - 2; index >= seedPointIndex; index--) {
+    const lighter = points[index];
+    const darker = points[index + 1];
+    const lighterContrast = contrastRatio(lighter.color, BLACK);
+    const darkerContrast = contrastRatio(darker.color, BLACK);
+
+    if (lighterContrast >= targetContrast && darkerContrast < targetContrast) {
+      const denominator = lighterContrast - darkerContrast;
+      const mix =
+        denominator > EPSILON ? (lighterContrast - targetContrast) / denominator : 0;
+      const clippedDistance =
+        lighter.distance + (darker.distance - lighter.distance) * clamp(mix, 0, 1);
+      return Math.max(clippedDistance - lightBudget, 0);
+    }
+  }
+
+  return darkBudget;
+}
+
+function darkBudgetForMinimumLightness(
+  points: readonly FinePathPoint[],
+  seedPointIndex: number,
+  lightBudget: number,
+  darkBudget: number,
+  minimumLightness: number,
+): number {
+  if (
+    darkBudget <= EPSILON ||
+    points.length <= seedPointIndex + 1 ||
+    points[points.length - 1].color.l >= minimumLightness
+  ) {
+    return darkBudget;
+  }
+
+  for (let index = points.length - 2; index >= seedPointIndex; index--) {
+    const lighter = points[index];
+    const darker = points[index + 1];
+
+    if (lighter.color.l >= minimumLightness && darker.color.l < minimumLightness) {
+      const denominator = lighter.color.l - darker.color.l;
+      const mix =
+        denominator > EPSILON ? (lighter.color.l - minimumLightness) / denominator : 0;
+      const clippedDistance =
+        lighter.distance + (darker.distance - lighter.distance) * clamp(mix, 0, 1);
+      return Math.max(clippedDistance - lightBudget, 0);
+    }
+  }
+
+  return darkBudget;
+}
+
+function smoothstep(value: number): number {
+  const clamped = clamp(value, 0, 1);
+  return clamped * clamped * (3 - 2 * clamped);
+}
+
+function mapDarkSamplingBudget(
+  rawDarkBudget: number,
+  clippedDarkBudget: number,
+  progress: number,
+  darkIntervalCount: number,
+): number {
+  const clampedProgress = clamp(progress, 0, 1);
+  if (rawDarkBudget <= EPSILON || clippedDarkBudget >= rawDarkBudget - EPSILON) {
+    return rawDarkBudget * clampedProgress;
+  }
+
+  const rawBudget = rawDarkBudget * clampedProgress;
+  const clippedBudget = clippedDarkBudget * clampedProgress;
+  const blendStart = clamp(2 / Math.max(darkIntervalCount, 1), 0.2, 0.45);
+  if (clampedProgress <= blendStart) return rawBudget;
+
+  const blend = smoothstep(
+    (clampedProgress - blendStart) / Math.max(1 - blendStart, EPSILON),
+  );
+  return rawBudget + (clippedBudget - rawBudget) * blend;
+}
+
 function sampleSolvedPath(
   seed: OklchColor,
   points: FinePathPoint[],
   seedPointIndex: number,
   labels: string[],
   plan?: SamplingPlan,
+  clipDarkTail = false,
 ): SampledPath {
   const lightBudget = points[seedPointIndex].distance;
-  const totalBudget = points[points.length - 1].distance;
-  const darkBudget = Math.max(totalBudget - lightBudget, 0);
+  const rawTotalBudget = points[points.length - 1].distance;
+  const rawDarkBudget = Math.max(rawTotalBudget - lightBudget, 0);
   const { fraction: seedFraction } = deriveSeedIndex(
     lightBudget,
-    darkBudget,
+    rawDarkBudget,
     labels.length,
   );
   const resolvedPlan =
     plan === undefined
-      ? buildSamplingPlan(lightBudget, darkBudget, labels.length)
+      ? buildSamplingPlan(lightBudget, rawDarkBudget, labels.length)
       : {
           seedIndex: clamp(plan.seedIndex, 0, Math.max(labels.length - 1, 0)),
           lightIntervals: plan.lightIntervals,
           darkIntervals: plan.darkIntervals,
         };
   const seedIndex = resolvedPlan.seedIndex;
+  const minimumDarkLightness = minimumDarkEndpointLightness(seed, seedIndex, labels.length);
+  const targetDarkBudget = clipDarkTail
+    ? Math.min(
+        darkBudgetForMinimumContrast(
+          seed,
+          points,
+          seedPointIndex,
+          lightBudget,
+          rawDarkBudget,
+        ),
+        darkBudgetForMinimumLightness(
+          points,
+          seedPointIndex,
+          lightBudget,
+          rawDarkBudget,
+          minimumDarkLightness,
+        ),
+      )
+    : rawDarkBudget;
+  const darkBudgetWeight = clipDarkTail
+    ? darkVisibilityCorrectionWeight(seed, seedIndex, labels.length)
+    : 0;
+  const sampledDarkBudget =
+    rawDarkBudget - (rawDarkBudget - targetDarkBudget) * darkBudgetWeight;
+  const totalBudget = lightBudget + sampledDarkBudget;
   const lightIntervals = normalizeIntervals(resolvedPlan.lightIntervals, seedIndex);
   const darkIntervals = normalizeIntervals(
     resolvedPlan.darkIntervals,
@@ -725,10 +915,18 @@ function sampleSolvedPath(
           seed,
         ];
 
-  let darkCumulative = 0;
+  let darkProgress = 0;
   const darkColors = darkIntervals.map((interval) => {
-    darkCumulative += interval * darkBudget;
-    return sanitizeSolvedColor(interpolateFinePath(points, lightBudget + darkCumulative));
+    darkProgress += interval;
+    const mappedBudget = clipDarkTail
+      ? mapDarkSamplingBudget(
+          rawDarkBudget,
+          sampledDarkBudget,
+          darkProgress,
+          darkIntervals.length,
+        )
+      : darkProgress * rawDarkBudget;
+    return sanitizeSolvedColor(interpolateFinePath(points, lightBudget + mappedBudget));
   });
 
   return {
@@ -737,7 +935,7 @@ function sampleSolvedPath(
     ),
     seedIndex,
     lightBudget,
-    darkBudget,
+    darkBudget: sampledDarkBudget,
     totalBudget,
     seedFraction,
   };
@@ -774,6 +972,104 @@ function coefficientOfVariation(values: number[]): number {
   if (mean <= EPSILON) return 0;
   const variance = average(values.map((value) => (value - mean) ** 2));
   return Math.sqrt(variance) / mean;
+}
+
+function interpolatePriorPathTarget(
+  samples: readonly V6SoftPriorComparison["prior"]["path"]["light"][number][],
+  progress: number,
+): {
+  flow: number;
+  radial: number;
+  normal: number;
+  occupancy: number;
+} {
+  if (samples.length === 0) {
+    return { flow: 0, radial: 0, normal: 0, occupancy: 0 };
+  }
+
+  if (progress <= samples[0].progress) {
+    return {
+      flow: samples[0].flow.mean,
+      radial: samples[0].radial.mean,
+      normal: samples[0].normal.mean,
+      occupancy: samples[0].occupancy.mean,
+    };
+  }
+
+  for (let index = 1; index < samples.length; index++) {
+    const current = samples[index];
+    if (progress <= current.progress) {
+      const previous = samples[index - 1];
+      const span = Math.max(current.progress - previous.progress, EPSILON);
+      const mix = clamp((progress - previous.progress) / span, 0, 1);
+      return {
+        flow: previous.flow.mean + (current.flow.mean - previous.flow.mean) * mix,
+        radial: previous.radial.mean + (current.radial.mean - previous.radial.mean) * mix,
+        normal: previous.normal.mean + (current.normal.mean - previous.normal.mean) * mix,
+        occupancy:
+          previous.occupancy.mean +
+          (current.occupancy.mean - previous.occupancy.mean) * mix,
+      };
+    }
+  }
+
+  const last = samples[samples.length - 1];
+  return {
+    flow: last.flow.mean,
+    radial: last.radial.mean,
+    normal: last.normal.mean,
+    occupancy: last.occupancy.mean,
+  };
+}
+
+function lightTopTintPenalty(
+  seed: OklchColor,
+  params: V6SolverParameters,
+  colors: readonly OklchColor[],
+  sampledDistances: readonly number[],
+  seedIndex: number,
+  softPrior: V6SoftPriorComparison,
+): number {
+  const edgeBias = clamp((0.55 - stopFractionForIndex(seedIndex, colors.length)) / 0.4, 0, 1);
+  const chromaBias = clamp((seed.c - NEUTRAL_CHROMA) / 0.18, 0, 1);
+  const endpointHueRestraint =
+    Math.max(Math.abs(hueDelta(seed.h, params.lightEndpoint.color.h)) - 4.5, 0) / 3.5;
+  const endpointPenalty = rmsPenalty([
+    softPrior.parameterDeltas.lightLightness.normalized,
+    softPrior.parameterDeltas.lightIntensity.normalized * 1.4,
+    endpointHueRestraint,
+  ]);
+
+  if (seedIndex <= 0) return endpointPenalty;
+
+  const lightBudget = sampledDistances
+    .slice(0, seedIndex)
+    .reduce((sum, distance) => sum + distance, 0);
+  if (lightBudget <= EPSILON) return endpointPenalty;
+
+  const values: number[] = [];
+  const weights: number[] = [];
+  let distanceFromSeed = 0;
+
+  for (let index = seedIndex - 1; index >= 0; index--) {
+    distanceFromSeed += sampledDistances[index];
+    const progress = clamp(distanceFromSeed / lightBudget, 0, 1);
+    if (progress < 0.3) continue;
+
+    const target = interpolatePriorPathTarget(softPrior.prior.path.light, progress);
+    const weight = 0.35 + progress * progress * 1.65;
+    values.push((occupancy(colors[index]) - target.occupancy) / TOP_TINT_OCCUPANCY_FLOOR);
+    weights.push(weight * 1.15);
+
+    const allowedHueDrift = 1.5 + progress * 3.5;
+    values.push(
+      Math.max(Math.abs(hueDelta(seed.h, colors[index].h)) - allowedHueDrift, 0) / 4,
+    );
+    weights.push(weight);
+  }
+
+  const sampledPenalty = weightedRmsPenalty(values, weights);
+  return (endpointPenalty * 0.7 + sampledPenalty) * chromaBias * (0.3 + edgeBias * 0.7);
 }
 
 function normalizedAdjacentDelta(values: readonly number[]): number {
@@ -1082,11 +1378,15 @@ function buildOptimizedSamplingPlan(
   points: FinePathPoint[],
   seedPointIndex: number,
   labels: string[],
+  fixedSeedIndex?: number,
 ): SamplingPlan {
   const lightBudget = points[seedPointIndex].distance;
   const totalBudget = points[points.length - 1].distance;
   const darkBudget = Math.max(totalBudget - lightBudget, 0);
-  const seedIndices = candidateSeedIndices(lightBudget, darkBudget, labels.length);
+  const seedIndices =
+    fixedSeedIndex === undefined
+      ? candidateSeedIndices(lightBudget, darkBudget, labels.length)
+      : [clamp(fixedSeedIndex, 0, Math.max(labels.length - 1, 0))];
 
   let best:
     | { plan: SamplingPlan; sampled: SampledPath; objective: number }
@@ -1123,8 +1423,16 @@ function computePathMetrics(
   points: FinePathPoint[],
   seedPointIndex: number,
   samplingPlan?: SamplingPlan,
+  clipDarkTail = false,
 ): { colors: OklchColor[]; metrics: PathMetrics } {
-  const sampled = sampleSolvedPath(seed, points, seedPointIndex, labels, samplingPlan);
+  const sampled = sampleSolvedPath(
+    seed,
+    points,
+    seedPointIndex,
+    labels,
+    samplingPlan,
+    clipDarkTail,
+  );
   const colors = sampled.colors;
 
   const gamutPenalty = average(
@@ -1204,19 +1512,9 @@ function computePathMetrics(
     sampledDistances,
     sampled.seedIndex,
   );
-  const occupancy = average(
-    points.map((point) => {
-      const localMax = maxChroma(point.color.l, point.color.h);
-      return localMax > EPSILON ? point.color.c / localMax : 0;
-    }),
-  );
+  const meanOccupancy = average(points.map((point) => occupancy(point.color)));
   const endpointOccupancy =
-    average(
-      [params.lightEndpoint.color, params.darkEndpoint.color].map((color) => {
-        const localMax = maxChroma(color.l, color.h);
-        return localMax > EPSILON ? color.c / localMax : 0;
-      }),
-    ) || 0;
+    average([params.lightEndpoint.color, params.darkEndpoint.color].map(occupancy)) || 0;
   const spanReward = sampled.totalBudget;
   const lightReservePenalty = Math.max(
     0,
@@ -1256,11 +1554,19 @@ function computePathMetrics(
       spacingDistortion: discreteSpacing,
       seedNeighborhoodAsymmetry: localSeedAsymmetry,
       endpointHuePenalty,
-      occupancyReward: occupancy,
+      occupancyReward: meanOccupancy,
       endpointOccupancyReward: endpointOccupancy,
       spanReward,
     },
     pathProfile,
+  );
+  const lightTopTintPenaltyValue = lightTopTintPenalty(
+    seed,
+    params,
+    colors,
+    sampledDistances,
+    sampled.seedIndex,
+    softPrior,
   );
   const endpointReservePriorPenalty = rmsPenalty([
     softPrior.parameterDeltas.lightLightness.normalized,
@@ -1320,7 +1626,7 @@ function computePathMetrics(
     discreteSeedPlacementPenalty * 68 +
     localSeedAsymmetry * 18 -
     endpointOccupancy * 2 +
-    occupancy * 1.5 -
+    meanOccupancy * 1.5 -
     spanReward * 1 +
     endpointHuePenalty * 0.35 +
     selectedSoftPriorPenalty;
@@ -1341,10 +1647,11 @@ function computePathMetrics(
     worstThreeStepWindowPenalty,
     localStepSpreadPenalty: worstLocalStepSpread,
     lightEntrancePenalty,
+    lightTopTintPenalty: lightTopTintPenaltyValue,
     seedPlacementPenalty: discreteSeedPlacementPenalty,
     seedNeighborhoodAsymmetry: localSeedAsymmetry,
     endpointHuePenalty,
-    occupancyReward: occupancy,
+    occupancyReward: meanOccupancy,
     endpointOccupancyReward: endpointOccupancy,
     spanReward,
     endpointReservePriorPenalty,
@@ -1422,12 +1729,24 @@ function computeFinalPathScore(
   points: FinePathPoint[],
   seedPointIndex: number,
 ): { colors: OklchColor[]; metrics: PathMetrics } {
-  const baseline = computePathMetrics(seed, params, labels, points, seedPointIndex);
+  const lightBudget = points[seedPointIndex].distance;
+  const totalBudget = points[points.length - 1].distance;
+  const darkBudget = Math.max(totalBudget - lightBudget, 0);
+  const fixedSeedIndex = buildSamplingPlan(lightBudget, darkBudget, labels.length).seedIndex;
+  const baseline = computePathMetrics(
+    seed,
+    params,
+    labels,
+    points,
+    seedPointIndex,
+    undefined,
+  );
   const optimizedPlan = buildOptimizedSamplingPlan(
     seed,
     points,
     seedPointIndex,
     labels,
+    fixedSeedIndex,
   );
   const optimized = computePathMetrics(
     seed,
@@ -1437,9 +1756,20 @@ function computeFinalPathScore(
     seedPointIndex,
     optimizedPlan,
   );
-  return samplingHardeningRank(optimized.metrics) <= samplingHardeningRank(baseline.metrics)
-    ? optimized
-    : baseline;
+  const winnerPlan =
+    samplingHardeningRank(optimized.metrics) <= samplingHardeningRank(baseline.metrics)
+      ? optimizedPlan
+      : undefined;
+
+  return computePathMetrics(
+    seed,
+    params,
+    labels,
+    points,
+    seedPointIndex,
+    winnerPlan,
+    true,
+  );
 }
 
 function archetypeVectorFromPrior(seed: OklchColor): V6ParameterVector {
@@ -1641,6 +1971,431 @@ function refineParameterVector(
   return best;
 }
 
+function evaluateFinalParameterVector(
+  context: EndpointSearchContext,
+  labels: string[],
+  vector: V6ParameterVector,
+):
+  | {
+      colors: OklchColor[];
+      metrics: PathMetrics;
+      parameters: V6SolverParameters;
+      vector: V6ParameterVector;
+    }
+  | null {
+  const clampedVector = clampParameterVector(vector);
+  const parameters = buildParametersFromVector(context, clampedVector);
+  if (!parameters) return null;
+  const { points, seedPointIndex } = buildFinePath(context.seed, parameters);
+  const scored = computeFinalPathScore(
+    context.seed,
+    parameters,
+    labels,
+    points,
+    seedPointIndex,
+  );
+  return {
+    colors: scored.colors,
+    metrics: scored.metrics,
+    parameters,
+    vector: clampedVector,
+  };
+}
+
+function lightTintRepairRank(
+  metrics: PathMetrics,
+  baseline: PathMetrics,
+): number {
+  const { breakdown } = metrics;
+  const baselineBreakdown = baseline.breakdown;
+  const invalidPenalty =
+    Number.isFinite(metrics.score) &&
+    Number.isFinite(breakdown.total) &&
+    Number.isFinite(breakdown.lightTopTintPenalty) &&
+    Number.isFinite(breakdown.lightEntrancePenalty) &&
+    Number.isFinite(breakdown.seedPlacementPenalty)
+      ? 0
+      : 1_000_000_000;
+
+  return (
+    invalidPenalty +
+    Math.max(
+      breakdown.lightEntrancePenalty - baselineBreakdown.lightEntrancePenalty,
+      0,
+    ) *
+      1800 +
+    Math.max(
+      breakdown.lightEdgeParityPenalty - baselineBreakdown.lightEdgeParityPenalty,
+      0,
+    ) *
+      1400 +
+    Math.max(
+      breakdown.worstAdjacentStepPenalty - baselineBreakdown.worstAdjacentStepPenalty,
+      0,
+    ) *
+      1200 +
+    Math.max(
+      breakdown.worstThreeStepWindowPenalty -
+        baselineBreakdown.worstThreeStepWindowPenalty,
+      0,
+    ) *
+      900 +
+    Math.max(
+      breakdown.seedPlacementPenalty - baselineBreakdown.seedPlacementPenalty,
+      0,
+    ) *
+      1200 +
+    Math.max(
+      breakdown.seedStopTargetPenalty - baselineBreakdown.seedStopTargetPenalty,
+      0,
+    ) *
+      1800 +
+    Math.max(
+      breakdown.lightReservePenalty - baselineBreakdown.lightReservePenalty,
+      0,
+    ) *
+      1400 +
+    breakdown.lightTopTintPenalty * 200 +
+    breakdown.lightEntrancePenalty * 260 +
+    breakdown.seedPlacementPenalty * 220 +
+    breakdown.seedStopTargetPenalty * 260 +
+    breakdown.lightReservePenalty * 260 +
+    breakdown.lightEdgeParityPenalty * 220 +
+    metrics.score * 0.12
+  );
+}
+
+function repairLightEndpoint(
+  context: EndpointSearchContext,
+  labels: string[],
+  start: V6ParameterVector,
+):
+  | {
+      colors: OklchColor[];
+      metrics: PathMetrics;
+      parameters: V6SolverParameters;
+      vector: V6ParameterVector;
+    }
+  | null {
+  if (context.seed.c < NEUTRAL_CHROMA || labels.length < 7) return null;
+
+  let best = evaluateFinalParameterVector(context, labels, start);
+  if (!best) return null;
+
+  const baseline = best.metrics;
+  const tweaks: Array<{
+    apply: (vector: V6ParameterVector, delta: number) => V6ParameterVector;
+    step: number;
+  }> = [
+    {
+      apply: (vector, delta) => ({ ...vector, lightHueOffset: vector.lightHueOffset + delta }),
+      step: 1.5,
+    },
+    {
+      apply: (vector, delta) => ({ ...vector, lightLightness: vector.lightLightness + delta }),
+      step: 0.015,
+    },
+    {
+      apply: (vector, delta) => ({ ...vector, lightIntensity: vector.lightIntensity + delta }),
+      step: 0.045,
+    },
+    {
+      apply: (vector, delta) => ({
+        ...vector,
+        curve: {
+          ...vector.curve,
+          lightSeedHandleScale: vector.curve.lightSeedHandleScale + delta,
+        },
+      }),
+      step: 0.025,
+    },
+    {
+      apply: (vector, delta) => ({
+        ...vector,
+        curve: { ...vector.curve, lightHandleScale: vector.curve.lightHandleScale + delta },
+      }),
+      step: 0.025,
+    },
+  ];
+
+  for (let pass = 0; pass < 2; pass++) {
+    let improved = true;
+    while (improved) {
+      improved = false;
+      for (const tweak of tweaks) {
+        const scaledStep = tweak.step / 2 ** pass;
+        for (const delta of [-scaledStep, scaledStep]) {
+          const candidate = evaluateFinalParameterVector(
+            context,
+            labels,
+            tweak.apply(best.vector, delta),
+          );
+          if (!candidate) continue;
+          if (
+            lightTintRepairRank(candidate.metrics, baseline) + 1e-9 <
+            lightTintRepairRank(best.metrics, baseline)
+          ) {
+            best = candidate;
+            improved = true;
+          }
+        }
+      }
+    }
+  }
+
+  return best;
+}
+
+function labelNumber(label: string): number | null {
+  const value = Number(label);
+  return Number.isFinite(value) ? value : null;
+}
+
+function mixHue(from: number, to: number, t: number): number {
+  return normalizeHue(from + hueDelta(from, to) * clamp(t, 0, 1));
+}
+
+function tintOccupancyForSeed(seed: OklchColor): number {
+  const intensity = chromaIntensity(seed);
+  const baseOccupancy = clamp(0.32 + intensity * 0.18, 0.28, 0.5);
+  const greenCyanWeight = clamp(1 - Math.abs(hueDelta(165, seed.h)) / 34, 0, 1);
+  const cyanAquaWeight = clamp(1 - Math.abs(hueDelta(205, seed.h)) / 38, 0, 1);
+  const greenCyanOccupancy =
+    baseOccupancy + (0.7 - baseOccupancy) * greenCyanWeight;
+  const cyanAquaOccupancy =
+    baseOccupancy + (0.86 - baseOccupancy) * cyanAquaWeight;
+  return clamp(
+    Math.max(baseOccupancy, greenCyanOccupancy, cyanAquaOccupancy),
+    0.28,
+    0.86,
+  );
+}
+
+function tintEndpointForSeed(seed: OklchColor): OklchColor {
+  const l = clamp(Math.max(seed.l + 0.02, 0.958), L_FLOOR, L_MAX);
+  const h = normalizeHue(seed.h + hueDelta(seed.h, seed.h - 3) * chromaIntensity(seed) * 0.4);
+  const c = maxChroma(l, h) * tintOccupancyForSeed(seed);
+  return sanitizeSolvedColor({ l, c, h });
+}
+
+function blueVioletTailWeight(seed: OklchColor): number {
+  const hueWeight = clamp(1 - Math.abs(hueDelta(280, seed.h)) / 58, 0, 1);
+  const midDarkWeight = clamp((0.72 - seed.l) / 0.25, 0, 1);
+  return hueWeight * midDarkWeight;
+}
+
+function inkEndpointForSeed(seed: OklchColor): OklchColor {
+  const intensity = chromaIntensity(seed);
+  const blueVioletDepth = blueVioletTailWeight(seed) * 0.024;
+  const idealLightness =
+    0.235 + intensity * 0.035 + Math.max(seed.l - 0.65, 0) * 0.02 - blueVioletDepth;
+  const minimumTailGap = clamp(0.085 + intensity * 0.035, 0.085, 0.13);
+  const lowerBound = seed.l <= 0.24 ? L_FLOOR : 0.16;
+  const l = clamp(Math.min(idealLightness, seed.l - minimumTailGap), lowerBound, 0.3);
+  const h = seed.h;
+  const c = maxChroma(l, h) * clamp(0.62 + intensity * 0.25, 0.58, 0.84);
+  return sanitizeSolvedColor({ l, c, h });
+}
+
+function neutralTintEndpointForSeed(seed: OklchColor): OklchColor {
+  const l = clamp(Math.max(seed.l + 0.18, 0.955), L_FLOOR, L_MAX);
+  const c = Math.min(seed.c * 0.25, maxChroma(l, seed.h) * 0.14);
+  return sanitizeSolvedColor({ l, c, h: seed.h });
+}
+
+function neutralInkEndpointForSeed(seed: OklchColor): OklchColor {
+  const l = clamp(Math.min(seed.l - 0.34, 0.22), 0.18, 0.24);
+  const c = Math.min(seed.c * 0.55, maxChroma(l, seed.h) * 0.22);
+  return sanitizeSolvedColor({ l, c, h: seed.h });
+}
+
+function isHighLightnessCuspSeed(seed: OklchColor): boolean {
+  const yellowGreenWeight = clamp(1 - Math.abs(hueDelta(121, seed.h)) / 44, 0, 1);
+  return (
+    seed.l >= 0.88 &&
+    seed.c >= 0.16 &&
+    occupancy(seed) >= 0.72 &&
+    yellowGreenWeight > 0.15
+  );
+}
+
+function cuspBodyHueDrift(seed: OklchColor, progress: number): number {
+  const yellowGreenWeight = clamp(1 - Math.abs(hueDelta(121, seed.h)) / 44, 0, 1);
+  const crest = Math.sin((Math.PI * Math.min(progress, 0.86)) / 0.86);
+  const tailFade = 1 - smoothstep(clamp((progress - 0.78) / 0.22, 0, 1));
+  return 8 * yellowGreenWeight * crest * tailFade;
+}
+
+function cuspBodyRoleColor(
+  seed: OklchColor,
+  ink: OklchColor,
+  progress: number,
+): OklchColor {
+  const shapedProgress = clamp(progress, 0, 1);
+  const l =
+    seed.l + (ink.l - seed.l) * shapedProgress ** 0.88;
+  const h = normalizeHue(seed.h + cuspBodyHueDrift(seed, shapedProgress));
+  const targetOccupancy = clamp(
+    0.99 - 0.14 * shapedProgress ** 1.4,
+    0.84,
+    0.99,
+  );
+  const c = maxChroma(l, h) * targetOccupancy;
+  return sanitizeSolvedColor({ l, c, h });
+}
+
+function cuspTopBridgeColor(
+  seed: OklchColor,
+  tint: OklchColor,
+  progress: number,
+): OklchColor {
+  const bridgeProgress = clamp(progress, 0, 1) ** 1.15;
+  return sanitizeSolvedColor({
+    l: tint.l + (seed.l - tint.l) * bridgeProgress,
+    c: tint.c + (seed.c - tint.c) * bridgeProgress ** 0.85,
+    h: mixHue(tint.h, seed.h, bridgeProgress),
+  });
+}
+
+function darkRoleProgressExponent(
+  seed: OklchColor,
+  roleSeedIndex: number,
+  lastIndex: number,
+): number {
+  const darkCount = Math.max(lastIndex - roleSeedIndex, 1);
+  const blueVioletWeight = blueVioletTailWeight(seed);
+  if (darkCount === 5) return 0.78 + blueVioletWeight * 0.08;
+  return darkCount === 6 ? 0.86 : 0.78;
+}
+
+function applyNeutralRoleEnvelope(
+  seed: OklchColor,
+  labels: readonly string[],
+  seedIndex: number,
+): TonalRoleEnvelopeResult {
+  const tint = neutralTintEndpointForSeed(seed);
+  const ink = neutralInkEndpointForSeed(seed);
+  const lastIndex = labels.length - 1;
+  const colors = labels.map((_, index) => {
+    if (index === seedIndex) return seed;
+    if (index < seedIndex) {
+      const progress = index / Math.max(seedIndex, 1);
+      return sanitizeSolvedColor({
+        l: tint.l + (seed.l - tint.l) * progress,
+        c: tint.c + (seed.c - tint.c) * progress,
+        h: mixHue(tint.h, seed.h, progress),
+      });
+    }
+
+    const progress = (index - seedIndex) / Math.max(lastIndex - seedIndex, 1);
+    const shapedProgress = progress ** 0.95;
+    return sanitizeSolvedColor({
+      l: seed.l + (ink.l - seed.l) * shapedProgress,
+      c: seed.c + (ink.c - seed.c) * shapedProgress,
+      h: mixHue(seed.h, ink.h, shapedProgress),
+    });
+  });
+
+  colors[seedIndex] = seed;
+  return { colors, seedIndex };
+}
+
+function applyTonalRoleEnvelope(
+  seed: OklchColor,
+  labels: readonly string[],
+  colors: readonly OklchColor[],
+  seedIndex: number,
+): TonalRoleEnvelopeResult {
+  const hasSemanticTonalLabels =
+    labels.length === SEMANTIC_TONAL_LABELS.length &&
+    labels.every((label, index) => label === SEMANTIC_TONAL_LABELS[index]);
+
+  if (!hasSemanticTonalLabels) {
+    return {
+      colors: colors.map((color, index) =>
+        index === seedIndex ? seed : sanitizeSolvedColor(color),
+      ),
+      seedIndex,
+    };
+  }
+
+  if (seed.c < NEUTRAL_CHROMA) {
+    return applyNeutralRoleEnvelope(seed, labels, seedIndex);
+  }
+
+  const tint = tintEndpointForSeed(seed);
+  const ink = inkEndpointForSeed(seed);
+  const lastIndex = labels.length - 1;
+  const highLightnessCuspSeed = isHighLightnessCuspSeed(seed);
+  const roleSeedIndex =
+    highLightnessCuspSeed && seedIndex <= 1 && labels[2] === "200" ? 2 : seedIndex;
+  const shaped = colors.map((color, index) => {
+    if (index === roleSeedIndex) return seed;
+
+    const numericLabel = labelNumber(labels[index]);
+    if (numericLabel === 50 && index < roleSeedIndex) return tint;
+
+    if (index < roleSeedIndex) {
+      if (highLightnessCuspSeed) {
+        return cuspTopBridgeColor(seed, tint, index / Math.max(roleSeedIndex, 1));
+      }
+
+      const sideProgress = (roleSeedIndex - index) / Math.max(roleSeedIndex, 1);
+      const roleMix = sideProgress ** 0.85;
+      const roleColor = sanitizeSolvedColor({
+        l: seed.l + (tint.l - seed.l) * roleMix,
+        c: seed.c + (tint.c - seed.c) * roleMix,
+        h: mixHue(seed.h, tint.h, roleMix),
+      });
+      const strength = clamp(0.75 * sideProgress + (numericLabel === 100 ? 0.12 : 0), 0, 0.88);
+      return sanitizeSolvedColor({
+        l: color.l + (roleColor.l - color.l) * strength,
+        c: color.c + (roleColor.c - color.c) * strength,
+        h: mixHue(color.h, roleColor.h, strength),
+      });
+    }
+
+    const darkCount = Math.max(lastIndex - roleSeedIndex, 1);
+    const sideProgress = (index - roleSeedIndex) / darkCount;
+    if (highLightnessCuspSeed) {
+      return cuspBodyRoleColor(seed, ink, sideProgress);
+    }
+
+    const roleProgress =
+      sideProgress ** darkRoleProgressExponent(seed, roleSeedIndex, lastIndex);
+    return sanitizeSolvedColor({
+      l: seed.l + (ink.l - seed.l) * roleProgress,
+      c: seed.c + (ink.c - seed.c) * roleProgress,
+      h: mixHue(seed.h, ink.h, roleProgress),
+    });
+  });
+
+  for (let index = 1; index < shaped.length; index++) {
+    if (index === roleSeedIndex) continue;
+    if (shaped[index].l >= shaped[index - 1].l - 0.001) {
+      shaped[index] = sanitizeSolvedColor({
+        ...shaped[index],
+        l: Math.max(shaped[index - 1].l - 0.001, L_FLOOR),
+      });
+    }
+  }
+
+  for (let index = roleSeedIndex - 1; index >= 0; index--) {
+    if (shaped[index].l <= shaped[index + 1].l + 0.001) {
+      shaped[index] = sanitizeSolvedColor({
+        ...shaped[index],
+        l: Math.min(shaped[index + 1].l + 0.001, L_MAX),
+      });
+    }
+  }
+
+  shaped[roleSeedIndex] = seed;
+  return {
+    colors: shaped,
+    seedIndex: roleSeedIndex,
+  };
+}
+
 function solvePath(
   seed: OklchColor,
   labels: string[],
@@ -1748,6 +2503,7 @@ function solvePath(
           darkEdgeParityPenalty: 0,
           localStepSpreadPenalty: 0,
           lightEntrancePenalty: 0,
+          lightTopTintPenalty: 0,
           worstAdjacentStepPenalty: 0,
           worstThreeStepWindowPenalty: 0,
           seedNeighborhoodAsymmetry: 0,
@@ -1801,6 +2557,15 @@ function solvePath(
   const refined = refineParameterVector(context, labels, best.vector);
   if (refined) {
     best = refined;
+  }
+
+  const lightRepaired = repairLightEndpoint(context, labels, best.vector);
+  if (
+    lightRepaired &&
+    lightTintRepairRank(lightRepaired.metrics, best.metrics) + 1e-9 <
+      lightTintRepairRank(best.metrics, best.metrics)
+  ) {
+    best = lightRepaired;
   }
 
   const { points, seedPointIndex } = buildFinePath(seed, best.parameters);
@@ -1889,13 +2654,19 @@ export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
   if (cached) return cached;
 
   const solution = solvePath(sanitizedSeed, labels);
+  const roleAdjustedColors = applyTonalRoleEnvelope(
+    sanitizedSeed,
+    labels,
+    solution.colors,
+    solution.metadata.seedIndex,
+  );
 
   const result: V6SolveResult = {
     stops: labels.map((label, index) => {
       const color =
-        index === solution.metadata.seedIndex
+        index === roleAdjustedColors.seedIndex
           ? sanitizedSeed
-          : sanitizeSolvedColor(solution.colors[index]);
+          : sanitizeSolvedColor(roleAdjustedColors.colors[index]);
       const t = labels.length > 1 ? index / (labels.length - 1) : 0.5;
       return {
         index,
@@ -1906,6 +2677,11 @@ export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
     }),
     metadata: {
       ...solution.metadata,
+      seedIndex: roleAdjustedColors.seedIndex,
+      seedFraction:
+        labels.length > 1
+          ? roleAdjustedColors.seedIndex / (labels.length - 1)
+          : 0.5,
       softPrior: solution.softPrior,
     },
   };

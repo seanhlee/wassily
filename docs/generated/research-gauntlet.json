@@ -1,0 +1,2245 @@
+{
+  "generatedAt": "2026-04-24T00:23:23.040Z",
+  "groups": [
+    {
+      "label": "Neutrals",
+      "note": "Neutral and near-neutral seeds should stay quiet, monotone, and free of chroma theatrics.",
+      "rows": [
+        {
+          "seed": {
+            "id": "warm-neutral",
+            "label": "Warm Neutral",
+            "note": "Warm gray / bone family for neutral-specific behavior and temperature handling.",
+            "color": {
+              "l": 0.62,
+              "c": 0.018,
+              "h": 70
+            }
+          },
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.0866852958686368,
+            "spacingCv": 0.11882213552726852,
+            "worstAdjacent": 1.149295856772919,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.13714285714285712,
+            "topDistance": 0.08381797614473878,
+            "bridgeDistance": 0.08381797614473878,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.0099,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F2F0ED",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#D8D4CF",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#BFB9B2",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#A69E96",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#8D847B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#776F67",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#635C54",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#504A43",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#3E3933",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#2D2924",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#1E1A16",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "cool-neutral",
+            "label": "Cool Neutral",
+            "note": "Cool gray / slate family for neutral-specific behavior and temperature handling.",
+            "color": {
+              "l": 0.62,
+              "c": 0.018,
+              "h": 255
+            }
+          },
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.0867827487604722,
+            "spacingCv": 0.11891687034655984,
+            "worstAdjacent": 1.149521581257558,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.14,
+            "topDistance": 0.08383443819787964,
+            "bridgeDistance": 0.08383443819787964,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.0099,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#EFF0F2",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#D2D5D9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#B5BAC0",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#9AA0A9",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#7F8791",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#6A717A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#585E66",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#464C53",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#363A41",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#262A2F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#181B1F",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "paper-gray",
+            "label": "Paper Gray",
+            "note": "Nearly achromatic warm paper.",
+            "color": {
+              "l": 0.74,
+              "c": 0.006,
+              "h": 72
+            }
+          },
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "300",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.04344101769035179,
+            "worstAdjacent": 1.1422304900178974,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.04465116279069767,
+            "topDistance": 0.07168236262227348,
+            "bridgeDistance": 0.07168236262227348,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.0033000000000000004,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F1F0EF",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#DAD8D6",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#C3C1BE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#ADAAA7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#94918E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#7D7A77",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#676562",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#52514E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#3F3D3B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#2D2B2A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#1C1A19",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "warm-chroma-edge",
+            "label": "Warm Chroma Edge",
+            "note": "Near-neutral just below chromatic behavior.",
+            "color": {
+              "l": 0.62,
+              "c": 0.045,
+              "h": 72
+            }
+          },
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.0880897682783444,
+            "spacingCv": 0.12018849179230047,
+            "worstAdjacent": 1.1525536173962747,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.14,
+            "topDistance": 0.08435373366616827,
+            "bridgeDistance": 0.08435373366616827,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.010312500000000002,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F2F0ED",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#DBD3CA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#C4B8A9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#AE9D88",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#978269",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#7F6D58",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#695B49",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#55493B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#41382E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#2F2921",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#1E1A15",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "cool-chroma-edge",
+            "label": "Cool Chroma Edge",
+            "note": "Cool near-neutral just below chromatic behavior.",
+            "color": {
+              "l": 0.58,
+              "c": 0.045,
+              "h": 250
+            }
+          },
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.1943828850650755,
+            "spacingCv": 0.22811543775337148,
+            "worstAdjacent": 1.4320671668247975,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.14,
+            "topDistance": 0.09433442965927459,
+            "bridgeDistance": 0.09433442965927459,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.013578124999999996,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#EFF0F2",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#CBD2DA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#A8B5C3",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#8798AB",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#667D94",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#56697D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#485869",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#3A4755",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#2E3843",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#212931",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#161B21",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Warm Hues",
+      "note": "Yellows, oranges, reds, and roses should avoid muddy shadows and harsh top clips.",
+      "rows": [
+        {
+          "seed": {
+            "id": "cadmium-yellow",
+            "label": "Cadmium Yellow",
+            "note": "Bright yellow that stresses high-lightness chroma and warm shadow shaping.",
+            "color": {
+              "l": 0.9,
+              "c": 0.165,
+              "h": 98
+            }
+          },
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.1153343146591127,
+            "worstAdjacent": 1.4190020307417948,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.4810847457627119,
+            "topDistance": 0.07067560606155018,
+            "bridgeDistance": 0.07117576884835747,
+            "endpointDarkLightness": 0.271322033898305,
+            "endpointDarkChroma": 0.047148437499999994,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F8F2D7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#FBEA9A",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#FBDE46",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#D7BE14",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#B7A418",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#9B8C19",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#817617",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#6A6014",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#554B11",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#41380C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#2D2708",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "amber",
+            "label": "Amber",
+            "note": "High-energy warm yellow-orange.",
+            "color": {
+              "l": 0.78,
+              "c": 0.16,
+              "h": 82
+            }
+          },
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1.5726428767918588,
+            "spacingCv": 0.32332213951661726,
+            "worstAdjacent": 1.3944456135185772,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.49982439024390235,
+            "topDistance": 0.1190502261565133,
+            "bridgeDistance": 0.10820653771572988,
+            "endpointDarkLightness": 0.27256585365853647,
+            "endpointDarkChroma": 0.04659374999999999,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F8F0E3",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#F4CE87",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#EAAB05",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#C28E0D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#A77A0F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#8F680F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#79590F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#654A0E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#533D0D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#42300B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#322509",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "orange",
+            "label": "Orange",
+            "note": "Saturated orange body color.",
+            "color": {
+              "l": 0.68,
+              "c": 0.18,
+              "h": 48
+            }
+          },
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "300",
+            "seedDelta": 0,
+            "lightEntrance": 1.3978692593735202,
+            "spacingCv": 0.3334734625303446,
+            "worstAdjacent": 1.3944456135185772,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.49498734177215187,
+            "topDistance": 0.11222257949768262,
+            "bridgeDistance": 0.11238166359727461,
+            "endpointDarkLightness": 0.26962531645569615,
+            "endpointDarkChroma": 0.06103125000000001,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F8EFEB",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#FAC4AA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#F89865",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#ED6E12",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#C35A12",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#A74D11",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#8D4110",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#77370E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#622D0C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#4F240A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#3E1C08",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "red",
+            "label": "Red",
+            "note": "Vivid red with difficult dark behavior.",
+            "color": {
+              "l": 0.6,
+              "c": 0.21,
+              "h": 28
+            }
+          },
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.224641448779806,
+            "spacingCv": 0.2924052423082915,
+            "worstAdjacent": 1.3377018235731264,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.47458146964856235,
+            "topDistance": 0.0986967426433883,
+            "bridgeDistance": 0.10591688364746954,
+            "endpointDarkLightness": 0.26505750798722044,
+            "endpointDarkChroma": 0.08999071485623004,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F8EFEE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#FBC7C0",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#FC9B8E",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#F76A5C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#E2352E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#BF2C26",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#A3241F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#891E19",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#721713",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#5C110E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#480C09",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "rose",
+            "label": "Rose",
+            "note": "Cool red-pink crossing into magenta.",
+            "color": {
+              "l": 0.64,
+              "c": 0.18,
+              "h": 355
+            }
+          },
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.0475165541178035,
+            "spacingCv": 0.2013661100419676,
+            "worstAdjacent": 1.2269361905475689,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.44342857142857134,
+            "topDistance": 0.07774780569745238,
+            "bridgeDistance": 0.09107757632252342,
+            "endpointDarkLightness": 0.259,
+            "endpointDarkChroma": 0.08408928571428571,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F7EEF1",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#F8CEDD",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#FAA7C7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#F27CAE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#DB5392",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#B84379",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#9B3665",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#822A53",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#6B2043",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#551634",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#410D26",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Greens",
+      "note": "Green families reveal cusp flash, leafy body drift, teal transitions, and ink retention.",
+      "rows": [
+        {
+          "seed": {
+            "id": "bright-lime",
+            "label": "Bright Lime",
+            "note": "Canonical hard case: luminous yellow-green seed with extreme high-lightness chroma.",
+            "color": {
+              "l": 0.931,
+              "c": 0.223,
+              "h": 121.082
+            }
+          },
+          "group": "Greens",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.11001858730466778,
+            "worstAdjacent": 1.3907170817698418,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.4996475524475524,
+            "topDistance": 0.0795022892631467,
+            "bridgeDistance": 0.0775881412757275,
+            "endpointDarkLightness": 0.2755514685314686,
+            "endpointDarkChroma": 0.05578125,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#EBF9C5",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#E0FC86",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#D3FD05",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#A9DB16",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#89BE19",
+              "textHex": "#111111"
+            },
+            {
+              "label": "500",
+              "hex": "#71A31A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#5E8818",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#506E16",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#435612",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#34400D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#242C08",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "lime-cool-neighbor",
+            "label": "Lime Cool Neighbor",
+            "note": "Slightly cooler high-lightness lime cusp.",
+            "color": {
+              "l": 0.9,
+              "c": 0.18,
+              "h": 132
+            }
+          },
+          "group": "Greens",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.13568865549956197,
+            "worstAdjacent": 1.5120109751430488,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.45735902636916836,
+            "topDistance": 0.0742136948144621,
+            "bridgeDistance": 0.07447844094986518,
+            "endpointDarkLightness": 0.26527899686520373,
+            "endpointDarkChroma": 0.062421875000000016,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E7F8DA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#CDF9A9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#B0F671",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#78DB15",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#5BBE16",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#48A218",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#3D8717",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#366E14",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#305511",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#263F0C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#192B07",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "leaf-green",
+            "label": "Leaf Green",
+            "note": "Mid-light natural green body.",
+            "color": {
+              "l": 0.62,
+              "c": 0.16,
+              "h": 145
+            }
+          },
+          "group": "Greens",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.0482172702677883,
+            "spacingCv": 0.2302303873075779,
+            "worstAdjacent": 1.2641861802262147,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.563557760453579,
+            "topDistance": 0.07477074211513846,
+            "bridgeDistance": 0.08903209495499366,
+            "endpointDarkLightness": 0.2637871485943775,
+            "endpointDarkChroma": 0.0683718624497992,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E1F9E0",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#BFE7BE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#94D394",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#64BB69",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#399E43",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#2E8437",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#256F2D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#1E5D24",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#174C1C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#103C15",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2D0E",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "phthalo-green",
+            "label": "Phthalo Green",
+            "note": "Cool deep green between green and cyan; useful for path-family blending pressure.",
+            "color": {
+              "l": 0.52,
+              "c": 0.16,
+              "h": 165
+            }
+          },
+          "group": "Greens",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.304353503064187,
+            "worstAdjacent": 1.394445613518579,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.7,
+            "topDistance": 0.07405690779836328,
+            "bridgeDistance": 0.08524355427909439,
+            "endpointDarkLightness": 0.27,
+            "endpointDarkChroma": 0.04725,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#D8FBE9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#B9E5D0",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#8FCFB4",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#5FB695",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#2D9A77",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#007C59",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#086548",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#0B543C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0C4632",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0B3929",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2E21",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "teal",
+            "label": "Teal",
+            "note": "Bridge between phthalo and cyan behavior.",
+            "color": {
+              "l": 0.58,
+              "c": 0.14,
+              "h": 185
+            }
+          },
+          "group": "Greens",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.2721760278498073,
+            "spacingCv": 0.3168466547576531,
+            "worstAdjacent": 1.3931468235224451,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.6705263157894736,
+            "topDistance": 0.09463798706439391,
+            "bridgeDistance": 0.10000802874042634,
+            "endpointDarkLightness": 0.27,
+            "endpointDarkChroma": 0.03937499999999999,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#D5FAF4",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#A2E2D9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#69C8BD",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#32ABA0",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#008D82",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#08776E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#0C665E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#0D564F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0D4741",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0C3935",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0B2D29",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Cool Hues",
+      "note": "Cyan through violet should keep fresh tints and avoid dead blue-violet tails.",
+      "rows": [
+        {
+          "seed": {
+            "id": "cyan",
+            "label": "Cyan",
+            "note": "High-energy cyan where gamut geometry shifts quickly between highlights and shadows.",
+            "color": {
+              "l": 0.78,
+              "c": 0.14,
+              "h": 210
+            }
+          },
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1.396914803721412,
+            "spacingCv": 0.29102539386378984,
+            "worstAdjacent": 1.3944456135185768,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.8126315789473684,
+            "topDistance": 0.10500644243448715,
+            "bridgeDistance": 0.1026715201956237,
+            "endpointDarkLightness": 0.27259999999999995,
+            "endpointDarkChroma": 0.03937499999999999,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#DAF7FC",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#85E7F7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#00CEE7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#0CABC0",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#1093A4",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#117E8D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#116B78",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#105964",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0F4952",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0D3A41",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2C32",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "sky-blue",
+            "label": "Sky Blue",
+            "note": "Clean blue-cyan highlight family.",
+            "color": {
+              "l": 0.72,
+              "c": 0.13,
+              "h": 230
+            }
+          },
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "300",
+            "seedDelta": 0,
+            "lightEntrance": 1.1208304765103116,
+            "spacingCv": 0.2395362894530587,
+            "worstAdjacent": 1.3944456135185757,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.6124158757549611,
+            "topDistance": 0.07848364137916698,
+            "bridgeDistance": 0.09325059025664449,
+            "endpointDarkLightness": 0.26822513661202185,
+            "endpointDarkChroma": 0.044625,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E7F3F9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#B7E2F7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#72CFF8",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#32B3E6",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#2992BC",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#227CA0",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#1C6887",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#175670",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#12465C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0E3849",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2A38",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "ultramarine",
+            "label": "Ultramarine",
+            "note": "Deep vivid blue seed that tests dark retention and blue highlight presence.",
+            "color": {
+              "l": 0.47,
+              "c": 0.18,
+              "h": 265
+            }
+          },
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1.1652472610049929,
+            "spacingCv": 0.37690593458080274,
+            "worstAdjacent": 1.6217296492085111,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.4277194805194805,
+            "topDistance": 0.10350774027778178,
+            "bridgeDistance": 0.10728809312735905,
+            "endpointDarkLightness": 0.23815235109717867,
+            "endpointDarkChroma": 0.12566294642857145,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#EEF1F7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#C3D2F0",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#98B1E7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#7091DB",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#4A70CD",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#274FBE",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#1C3FA2",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#14328D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0D277A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#071D69",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#031259",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "violet",
+            "label": "Violet",
+            "note": "Mid-dark vivid violet that often wants richer mids and inkier shadows.",
+            "color": {
+              "l": 0.62,
+              "c": 0.21,
+              "h": 315
+            }
+          },
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.1091463331033506,
+            "spacingCv": 0.2435827891995123,
+            "worstAdjacent": 1.2772753492791495,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.44406153846153845,
+            "topDistance": 0.08690661959976803,
+            "bridgeDistance": 0.09862758568806808,
+            "endpointDarkLightness": 0.2553161803713528,
+            "endpointDarkChroma": 0.09903846153846153,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F4EFF7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#E9CEF6",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#DCA8F4",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#CB7FEB",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#B453DB",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#9643B8",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#7F369C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#6A2B83",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#57206C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#451757",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#340D43",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "purple",
+            "label": "Purple",
+            "note": "Blue-violet bridge into magenta.",
+            "color": {
+              "l": 0.58,
+              "c": 0.18,
+              "h": 295
+            }
+          },
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.3096750822633036,
+            "spacingCv": 0.3228195084386213,
+            "worstAdjacent": 1.3587759018948329,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.4449156626506024,
+            "topDistance": 0.10596423475542743,
+            "bridgeDistance": 0.10924000705799972,
+            "endpointDarkLightness": 0.24932501869547152,
+            "endpointDarkChroma": 0.10848550451807228,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F1F0F7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#D4CBF5",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#B9A5F4",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#9F80ED",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#855DD7",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#6F4BB8",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#5E3D9F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#4F3089",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#412574",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#341961",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#270F4E",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Perturbations",
+      "note": "Nearby hue variants around the tuned hard cases catch overfitting and boundary jumps.",
+      "rows": [
+        {
+          "seed": {
+            "id": "lime-h115",
+            "label": "Lime h115",
+            "note": "Warmer neighbor of the bright lime cusp.",
+            "color": {
+              "l": 0.93,
+              "c": 0.21,
+              "h": 115
+            }
+          },
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.18545871427692062,
+            "worstAdjacent": 1.9517582272386733,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.49986617100371744,
+            "topDistance": 0.056137506707745914,
+            "bridgeDistance": 0.05522233294474892,
+            "endpointDarkLightness": 0.2755739776951672,
+            "endpointDarkChroma": 0.0524609375,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F0F9A9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#EBF974",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#E5F707",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#BCD517",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#9CB81A",
+              "textHex": "#111111"
+            },
+            {
+              "label": "500",
+              "hex": "#829E19",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#6D8418",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#5B6B16",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#4A5412",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#393E0E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#272B08",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "lime-h130",
+            "label": "Lime h130",
+            "note": "Cooler neighbor of the bright lime cusp.",
+            "color": {
+              "l": 0.9,
+              "c": 0.18,
+              "h": 130
+            }
+          },
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.12937802152843528,
+            "worstAdjacent": 1.4904715798107282,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.45378064516129035,
+            "topDistance": 0.07336431429175742,
+            "bridgeDistance": 0.07368444694862754,
+            "endpointDarkLightness": 0.2660129032258064,
+            "endpointDarkChroma": 0.06042968750000001,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E8F8D8",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#D0F8A6",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#B6F56C",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#82D914",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#65BC17",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#51A118",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#448616",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#3B6D14",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#335510",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#293F0D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#1B2B07",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "cyan-h195",
+            "label": "Cyan h195",
+            "note": "Green-leaning cyan perturbation.",
+            "color": {
+              "l": 0.78,
+              "c": 0.13,
+              "h": 195
+            }
+          },
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1.3376321967927254,
+            "spacingCv": 0.27462374168816517,
+            "worstAdjacent": 1.394445613518579,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.7642600619195047,
+            "topDistance": 0.10054356864513532,
+            "bridgeDistance": 0.09689760409273321,
+            "endpointDarkLightness": 0.2718588235294117,
+            "endpointDarkChroma": 0.038718749999999996,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#CEFCFA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#7FE9E9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#1AD1D1",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#1AADAD",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#199595",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#177F7F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#156C6C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#135A5A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#104A4A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0D3B3B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2D2D",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "cyan-h220",
+            "label": "Cyan h220",
+            "note": "Blue-leaning cyan perturbation.",
+            "color": {
+              "l": 0.76,
+              "c": 0.13,
+              "h": 220
+            }
+          },
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "300",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.20883164629751919,
+            "worstAdjacent": 1.3944456135185779,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.7136396074933096,
+            "topDistance": 0.06412343191239861,
+            "bridgeDistance": 0.07894236788778299,
+            "endpointDarkLightness": 0.27010395480225985,
+            "endpointDarkChroma": 0.0406875,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E2F5FB",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#B7E9F8",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#75DBF8",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#2BC4EA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#249FBE",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#1F86A0",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#1B7086",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#175C6F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#134B5A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0E3A46",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2B34",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "phthalo-h155",
+            "label": "Phthalo h155",
+            "note": "Greener phthalo perturbation.",
+            "color": {
+              "l": 0.52,
+              "c": 0.15,
+              "h": 155
+            }
+          },
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.3043456859297056,
+            "worstAdjacent": 1.394445613518579,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.6411764705882352,
+            "topDistance": 0.07455607748899802,
+            "bridgeDistance": 0.0861555428530048,
+            "endpointDarkLightness": 0.27,
+            "endpointDarkChroma": 0.055781250000000004,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#DCFAE4",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#BCE5C9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#91D0A8",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#61B886",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#2E9C64",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#007E46",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#086639",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#0B5530",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0B4728",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0B3A21",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2E1A",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "phthalo-h175",
+            "label": "Phthalo h175",
+            "note": "Tealer phthalo perturbation.",
+            "color": {
+              "l": 0.52,
+              "c": 0.15,
+              "h": 175
+            }
+          },
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1.033649461429929,
+            "spacingCv": 0.2953878525380584,
+            "worstAdjacent": 1.3944456135185788,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.6411764705882352,
+            "topDistance": 0.08215608062506315,
+            "bridgeDistance": 0.08942881923376025,
+            "endpointDarkLightness": 0.27,
+            "endpointDarkChroma": 0.04265625,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#D8FAEF",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#B2E3D5",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#84CBB9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#57B29D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "400",
+              "hex": "#279781",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#007B66",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#086352",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#0B5345",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0B4539",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0B392F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2D25",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

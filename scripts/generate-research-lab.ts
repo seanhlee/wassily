@@ -1,26 +1,68 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { buildResearchLabData } from "../src/engine/researchLab";
+import {
+  buildResearchLabData,
+  type ResearchLabData,
+} from "../src/engine/researchLab";
+import { RESEARCH_SEEDS } from "../src/engine/research";
+import { maxChroma } from "../src/engine/gamut";
 
 const OUTPUT_DIR = path.resolve("docs/generated");
 const HTML_PATH = path.join(OUTPUT_DIR, "research-lab.html");
 const JSON_PATH = path.join(OUTPUT_DIR, "research-lab.json");
 
-type MetricTone = "ok" | "warn" | "bad" | "neutral";
+const FOCUS_SEED_IDS = ["bright-lime", "cyan", "phthalo-green"] as const;
+const FOCUS_STOP_LABELS = [
+  "50",
+  "100",
+  "200",
+  "300",
+  "400",
+  "500",
+  "600",
+  "700",
+  "800",
+  "900",
+  "950",
+] as const;
+const FOCUS_ENGINE = "v6";
+
+type FocusedEngine = ResearchLabData["seeds"][number]["engines"][number];
+
+function buildFocusedVisualData(): ResearchLabData {
+  const seedIds = new Set<string>(FOCUS_SEED_IDS);
+  const stopLabels = new Set<string>(FOCUS_STOP_LABELS);
+  const seeds = RESEARCH_SEEDS.filter((seed) => seedIds.has(seed.id));
+  const data = buildResearchLabData(seeds);
+
+  return {
+    ...data,
+    seeds: data.seeds.map((section) => ({
+      ...section,
+      engines: section.engines
+        .filter((engine) => engine.engine === FOCUS_ENGINE)
+        .map((engine) => ({
+          ...engine,
+          swatches: engine.swatches.filter((swatch) => stopLabels.has(swatch.label)),
+        })),
+    })),
+  };
+}
 
 function renderSwatches(
   swatches: Array<{ label: string; hex: string; textHex: string; oklch: string }>,
   seedLabel: string | null,
 ): string {
   return `
-    <div class="swatches">
+    <div class="swatches" aria-label="Focused highlight stops">
       ${swatches
         .map(
           (swatch) => `
             <div class="swatch${swatch.label === seedLabel ? " swatch--seed" : ""}" style="background:${swatch.hex}; color:${swatch.textHex}">
               <div class="swatch__label">${swatch.label}</div>
-              <div class="swatch__oklch">${swatch.oklch}</div>
-              <div class="swatch__hex">${swatch.hex}</div>
+              <div class="swatch__details">
+                <div>${swatch.hex}</div>
+              </div>
             </div>
           `,
         )
@@ -29,10 +71,70 @@ function renderSwatches(
   `;
 }
 
+function formatDistance(value: number | null): string {
+  return value === null ? "n/a" : value.toFixed(3);
+}
+
+function formatRatio(value: number): string {
+  return `${value.toFixed(2)}x`;
+}
+
+function formatPercent(value: number | null): string {
+  return value === null ? "n/a" : `${Math.round(value * 100)}%`;
+}
+
+function distanceBetweenStops(
+  engine: FocusedEngine,
+  fromLabel: string,
+  toLabel: string,
+): number | null {
+  const labels = engine.run.analysis.labels;
+  const fromIndex = labels.indexOf(fromLabel);
+  const toIndex = labels.indexOf(toLabel);
+  if (fromIndex < 0 || toIndex !== fromIndex + 1) return null;
+  return engine.run.analysis.lightRamp.adjacentDistance.values[fromIndex] ?? null;
+}
+
+function occupancyForStop(engine: FocusedEngine, label: string): number | null {
+  const stop = engine.run.stops.find((candidate) => candidate.label === label);
+  if (!stop) return null;
+  const available = maxChroma(stop.color.l, stop.color.h);
+  return available > 0 ? stop.color.c / available : null;
+}
+
+function renderDiagnostics(engine: FocusedEngine): string {
+  const stop50Occupancy = occupancyForStop(engine, "50");
+  const topDistance = distanceBetweenStops(engine, "50", "100");
+  const bridgeDistance = distanceBetweenStops(engine, "100", "200");
+
+  return `
+    <div class="diagnostics" aria-label="Top-edge diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">${formatPercent(stop50Occupancy)}</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">${formatDistance(topDistance)}</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">${formatDistance(bridgeDistance)}</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">${formatRatio(engine.focus.lightEntranceRatio)}</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">${engine.focus.spacingCv.toFixed(2)}</span>
+      </div>
+    </div>
+  `;
+}
+
 function engineLabel(engine: string): string {
   switch (engine) {
-    case "v6-archetype":
-      return "V6 Archetype";
     case "v6":
       return "V6 Solver";
     default:
@@ -40,100 +142,71 @@ function engineLabel(engine: string): string {
   }
 }
 
-function gateLabel(gate: "pass" | "tighten" | "fail"): string {
-  switch (gate) {
-    case "pass":
-      return "Pass";
-    case "tighten":
-      return "Tighten";
-    default:
-      return "Fail";
-  }
-}
-
-function metric(label: string, value: string, tone: MetricTone = "neutral"): string {
-  return `
-    <div class="metric metric--${tone}">
-      <span>${label}</span>
-      <strong>${value}</strong>
-    </div>
-  `;
-}
-
-function classify(
-  value: number | null,
-  passThreshold: number,
-  failThreshold: number,
-): MetricTone {
-  if (value === null || Number.isNaN(value)) return "bad";
-  if (value > failThreshold) return "bad";
-  if (value > passThreshold) return "warn";
-  return "ok";
-}
-
-function monotoneTone(value: boolean): MetricTone {
-  return value ? "ok" : "bad";
-}
-
-function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
+function renderHtml(data: ResearchLabData): string {
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Wassily Research Lab</title>
+    <link rel="icon" href="data:," />
+    <title>Wassily Highlight Ramp Lab</title>
     <style>
       :root {
-        --bg: #f4efe8;
-        --surface: rgba(255,255,255,0.9);
-        --surface-strong: rgba(255,255,255,0.96);
-        --line: rgba(31, 25, 20, 0.08);
-        --text: #1d1916;
-        --muted: #685d54;
-        --accent: #8a5d2d;
-        --ok-bg: rgba(43, 122, 68, 0.09);
-        --ok-line: rgba(43, 122, 68, 0.22);
-        --ok-text: #245236;
-        --warn-bg: rgba(191, 125, 32, 0.11);
-        --warn-line: rgba(191, 125, 32, 0.22);
-        --warn-text: #81520f;
-        --bad-bg: rgba(162, 54, 42, 0.11);
-        --bad-line: rgba(162, 54, 42, 0.22);
-        --bad-text: #7e261d;
+        --bg: #f7f8f5;
+        --ink: #111816;
+        --muted: #68736d;
+        --line: rgba(17, 24, 22, 0.12);
+        --panel: rgba(255, 255, 255, 0.72);
+        --accent: #0b6b61;
+        --accent-2: #3656a3;
       }
 
       * { box-sizing: border-box; }
 
       body {
         margin: 0;
-        color: var(--text);
+        color: var(--ink);
         font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
         background:
-          radial-gradient(circle at top left, rgba(255,255,255,0.9), transparent 38%),
-          linear-gradient(180deg, #fbf8f4 0%, var(--bg) 100%);
+          linear-gradient(90deg, rgba(11, 107, 97, 0.08), rgba(54, 86, 163, 0.08)),
+          var(--bg);
       }
 
       main {
-        max-width: 1500px;
+        width: min(1420px, calc(100vw - 48px));
         margin: 0 auto;
-        padding: 40px 24px 72px;
+        padding: 36px 0 64px;
       }
 
-      h1, h2, h3 {
+      h1,
+      h2,
+      h3,
+      p {
         margin: 0;
-        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-        letter-spacing: -0.02em;
       }
 
       h1 {
-        font-size: clamp(2.5rem, 5vw, 4rem);
-        line-height: 0.95;
+        max-width: 860px;
+        font-size: clamp(2rem, 4.5vw, 4.2rem);
+        line-height: 0.96;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: clamp(1.3rem, 2vw, 2rem);
+        letter-spacing: 0;
+      }
+
+      h3 {
+        font-size: 0.88rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
 
       p {
-        margin: 0;
-        line-height: 1.6;
+        max-width: 760px;
         color: var(--muted);
+        line-height: 1.55;
       }
 
       code,
@@ -144,236 +217,178 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
       .hero {
         display: grid;
         gap: 12px;
-        margin-bottom: 28px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--line);
       }
 
-      .hero__pillars {
+      .hero__meta {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
-        margin-top: 6px;
+        margin-top: 8px;
       }
 
-      .pillar {
-        padding: 9px 12px;
-        border-radius: 999px;
+      .pill {
         border: 1px solid var(--line);
-        background: rgba(255,255,255,0.74);
-        font-size: 0.84rem;
+        border-radius: 999px;
+        background: var(--panel);
         color: var(--accent);
+        padding: 8px 11px;
+        font-size: 0.8rem;
       }
 
       .seed {
-        margin-top: 24px;
-        padding: 22px;
-        border-radius: 24px;
-        border: 1px solid var(--line);
-        background: var(--surface);
-        box-shadow: 0 24px 64px rgba(28, 20, 14, 0.08);
         display: grid;
-        gap: 18px;
+        gap: 16px;
+        padding: 28px 0;
+        border-bottom: 1px solid var(--line);
       }
 
       .seed__header {
         display: grid;
-        gap: 8px;
+        grid-template-columns: 180px minmax(260px, 1fr) auto;
+        align-items: start;
+        gap: 24px;
       }
 
       .seed__meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        font-size: 0.8rem;
+        gap: 8px;
+        margin-top: 4px;
       }
 
       .chip {
-        padding: 8px 11px;
-        border-radius: 999px;
         border: 1px solid var(--line);
-        background: rgba(255,255,255,0.72);
-        color: var(--accent);
-      }
-
-      .engine-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-        gap: 18px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.66);
+        color: var(--accent-2);
+        padding: 7px 10px;
+        font-size: 0.76rem;
       }
 
       .engine {
         display: grid;
-        gap: 16px;
-        padding: 18px;
-        border-radius: 20px;
-        border: 1px solid var(--line);
-        background: var(--surface-strong);
-      }
-
-      .engine__header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-      }
-
-      .engine__header p {
-        font-size: 0.9rem;
-      }
-
-      .gate {
-        padding: 7px 11px;
-        border-radius: 999px;
-        border: 1px solid var(--line);
-        font-size: 0.76rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        font-weight: 700;
-        white-space: nowrap;
-      }
-
-      .gate--pass {
-        background: var(--ok-bg);
-        border-color: var(--ok-line);
-        color: var(--ok-text);
-      }
-
-      .gate--tighten {
-        background: var(--warn-bg);
-        border-color: var(--warn-line);
-        color: var(--warn-text);
-      }
-
-      .gate--fail {
-        background: var(--bad-bg);
-        border-color: var(--bad-line);
-        color: var(--bad-text);
-      }
-
-      .metric-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
         gap: 10px;
+        min-width: 0;
       }
 
-      .metric {
-        display: grid;
-        gap: 4px;
-        padding: 11px 12px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 25, 20, 0.06);
-        background: rgba(248, 245, 240, 0.92);
+      .engine__bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
       }
 
-      .metric span {
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
+      .anchor {
         color: var(--muted);
+        font-size: 0.82rem;
       }
 
-      .metric strong {
-        font-size: 0.96rem;
-      }
-
-      .metric--ok {
-        background: var(--ok-bg);
-        border-color: var(--ok-line);
-      }
-
-      .metric--ok strong {
-        color: var(--ok-text);
-      }
-
-      .metric--warn {
-        background: var(--warn-bg);
-        border-color: var(--warn-line);
-      }
-
-      .metric--warn strong {
-        color: var(--warn-text);
-      }
-
-      .metric--bad {
-        background: var(--bad-bg);
-        border-color: var(--bad-line);
-      }
-
-      .metric--bad strong {
-        color: var(--bad-text);
-      }
-
-      .reasons {
+      .diagnostics {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 6px;
       }
 
-      .reason {
-        padding: 6px 9px;
-        border-radius: 999px;
+      .diagnostic {
+        display: grid;
+        grid-template-columns: auto auto;
+        align-items: baseline;
+        gap: 7px;
+        min-height: 30px;
         border: 1px solid var(--line);
-        background: rgba(247, 243, 237, 0.95);
-        font-size: 0.72rem;
-        color: var(--muted);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.5);
+        padding: 6px 9px;
       }
 
-      .reason--pass {
-        color: var(--ok-text);
-        border-color: var(--ok-line);
-        background: var(--ok-bg);
+      .diagnostic__label {
+        color: var(--muted);
+        font-size: 0.68rem;
+      }
+
+      .diagnostic__value {
+        color: var(--ink);
+        font-size: 0.76rem;
       }
 
       .swatches {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
-        gap: 10px;
+        grid-template-columns: repeat(11, minmax(0, 1fr));
+        gap: 6px;
       }
 
       .swatch {
-        min-height: 112px;
-        padding: 12px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 25, 20, 0.08);
+        min-height: 156px;
+        border: 1px solid rgba(17, 24, 22, 0.16);
+        border-radius: 8px;
         display: grid;
         align-content: space-between;
+        padding: 10px;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
       }
 
       .swatch--seed {
-        outline: 2px solid rgba(138, 93, 45, 0.52);
-        outline-offset: 2px;
+        outline: 3px solid rgba(17, 24, 22, 0.42);
+        outline-offset: -7px;
       }
 
       .swatch__label,
-      .swatch__oklch,
-      .swatch__hex {
+      .swatch__details {
         font-family: "IBM Plex Mono", ui-monospace, monospace;
       }
 
       .swatch__label {
-        font-size: 0.76rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
+        font-size: clamp(1.25rem, 2.15vw, 2.35rem);
+        line-height: 0.9;
       }
 
-      .swatch__oklch,
-      .swatch__hex {
-        font-size: 0.69rem;
-        line-height: 1.45;
+      .swatch__details {
+        display: grid;
+        gap: 4px;
+        font-size: 0.72rem;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      @media (max-width: 820px) {
+        main {
+          width: min(100vw - 28px, 680px);
+          padding-top: 24px;
+        }
+
+        .seed {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        .seed__header {
+          display: grid;
+          gap: 10px;
+        }
+
+        .swatches {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .swatch {
+          min-height: 132px;
+        }
       }
     </style>
   </head>
   <body>
     <main>
       <section class="hero">
-        <h1>Wassily Research Lab</h1>
-        <p>Strict evaluation board for the real bar: exact anchor truth, correct seed placement, and perceptually even travel from <code>50</code> through <code>950</code> with no visible jumps.</p>
-        <div class="hero__pillars">
-          <div class="pillar mono">Exact seed lock</div>
-          <div class="pillar mono">Proper stop placement</div>
-          <div class="pillar mono">No local step spikes</div>
-          <div class="pillar mono">Monotone 50 → 950</div>
+        <h1>Highlight Ramp Lab</h1>
+        <p>Visual-only pass for the full anchor-seeded solver path. This board is scoped to lime, cyan, and phthalo-green so the complete ramp can be judged without metric noise.</p>
+        <div class="hero__meta">
+          <div class="pill mono">Stops: ${FOCUS_STOP_LABELS.join(" / ")}</div>
+          <div class="pill mono">Engine: ${engineLabel(FOCUS_ENGINE)}</div>
+          <div class="pill mono">Generated ${new Date(data.generatedAt).toLocaleString()}</div>
         </div>
-        <p>Generated ${new Date(data.generatedAt).toLocaleString()}</p>
       </section>
       ${data.seeds
         .map(
@@ -383,79 +398,23 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
                 <h2>${section.seed.label}</h2>
                 <p>${section.seed.note}</p>
                 <div class="seed__meta">
-                  <div class="chip mono">${`oklch(${section.seed.color.l.toFixed(3)} ${section.seed.color.c.toFixed(3)} ${section.seed.color.h.toFixed(1)})`}</div>
+                  <div class="chip mono">seed oklch(${section.seed.color.l.toFixed(3)} ${section.seed.color.c.toFixed(3)} ${section.seed.color.h.toFixed(1)})</div>
                 </div>
               </div>
-              <div class="engine-grid">
-                ${section.engines
-                  .map(
-                    (engine) => `
-                      <article class="engine">
-                        <div class="engine__header">
-                          <div>
-                            <h3>${engineLabel(engine.engine)}</h3>
-                            <p>Judge only seed truth, placement, and cadence.</p>
-                          </div>
-                          <div class="gate gate--${engine.focus.gate}">${gateLabel(engine.focus.gate)}</div>
-                        </div>
-                        <div class="metric-grid">
-                          ${metric("Seed Stop", engine.focus.seedStopLabel ?? "n/a")}
-                          ${metric(
-                            "Seed Delta",
-                            engine.focus.seedDelta === null
-                              ? "n/a"
-                              : engine.focus.seedDelta.toFixed(4),
-                            classify(engine.focus.seedDelta, 1e-6, 1e-4),
-                          )}
-                          ${metric(
-                            "Split Balance",
-                            engine.focus.seedPlacementImbalance === null
-                              ? "n/a"
-                              : engine.focus.seedPlacementImbalance.toFixed(3),
-                            classify(engine.focus.seedPlacementImbalance, 0.04, 0.08),
-                          )}
-                          ${metric(
-                            "Worst Adj",
-                            `${engine.focus.worstAdjacentRatio.toFixed(3)}x`,
-                            classify(engine.focus.worstAdjacentRatio, 1.04, 1.08),
-                          )}
-                          ${metric(
-                            "Worst 3-Step",
-                            `${engine.focus.worstThreeStepRatio.toFixed(3)}x`,
-                            classify(engine.focus.worstThreeStepRatio, 1.05, 1.1),
-                          )}
-                          ${metric(
-                            "Light Edge",
-                            `${engine.focus.lightEntranceRatio.toFixed(3)}x`,
-                            classify(engine.focus.lightEntranceRatio, 1.04, 1.08),
-                          )}
-                          ${metric(
-                            "Distance CV",
-                            engine.focus.spacingCv.toFixed(3),
-                            classify(engine.focus.spacingCv, 0.02, 0.05),
-                          )}
-                          ${metric(
-                            "Monotone",
-                            engine.focus.monotone ? "yes" : "no",
-                            monotoneTone(engine.focus.monotone),
-                          )}
-                          ${metric("Solved Split", engine.focus.seedSplitLabel ?? "n/a")}
-                        </div>
-                        <div class="reasons">
-                          ${
-                            engine.focus.reasons.length === 0
-                              ? `<span class="reason reason--pass">meets the current high bar</span>`
-                              : engine.focus.reasons
-                                  .map((reason) => `<span class="reason">${reason}</span>`)
-                                  .join("")
-                          }
-                        </div>
-                        ${renderSwatches(engine.swatches, engine.focus.seedStopLabel)}
-                      </article>
-                    `,
-                  )
-                  .join("")}
-              </div>
+              ${section.engines
+                .map(
+                  (engine) => `
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>${engineLabel(engine.engine)}</h3>
+                        <div class="anchor mono">anchor stop ${engine.focus.seedStopLabel ?? "n/a"}</div>
+                      </div>
+                      ${renderDiagnostics(engine)}
+                      ${renderSwatches(engine.swatches, engine.focus.seedStopLabel)}
+                    </article>
+                  `,
+                )
+                .join("")}
             </section>
           `,
         )
@@ -466,7 +425,7 @@ function renderHtml(data: ReturnType<typeof buildResearchLabData>): string {
 }
 
 async function main(): Promise<void> {
-  const data = buildResearchLabData();
+  const data = buildFocusedVisualData();
   await mkdir(OUTPUT_DIR, { recursive: true });
   await Promise.all([
     writeFile(JSON_PATH, JSON.stringify(data, null, 2), "utf8"),
