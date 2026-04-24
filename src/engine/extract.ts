@@ -131,12 +131,6 @@ function normalizeChroma(colors: OklchColor[]): OklchColor[] {
  * source pixel coordinate on each sample. Coordinates are in the provided
  * imageData's pixel space; normalization happens once at the end of the
  * pipeline in `runExtraction`.
- *
- * TODO(phase 1.5): optional natural-size peak-chroma refinement. Current
- * peaks come from whatever resolution imageData arrives at (today that's
- * the 200px downscale from `dataUrlToImageData`). For sharper peak colors
- * and sub-downscale marker placement, we can re-sample the peak's local
- * region from a full-resolution canvas.
  */
 function samplePixels(imageData: ImageData, maxSamples: number): SampledPixel[] {
   const { data, width, height } = imageData;

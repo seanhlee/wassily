@@ -328,10 +328,12 @@ When selecting the peak-chroma representative for a cluster, keep the pixel coor
 
 ### Coordinate Spaces
 
-Two sampling paths, one asymmetry. Commit to it explicitly so it does not drift:
+Both sampling paths operate at display resolution; normalization bridges the gap between clustering resolution and drag resolution, so the two paths stay self-consistent.
 
-- **Initial extraction** samples from a full-resolution canvas so the normalized source coordinate maps back to a visually correct pixel at any future display size. `dataUrlToImageData` keeps its 200px downscale for clustering speed; a separate natural-size canvas is drawn only to look up peak-chroma pixel coordinates.
-- **Marker drag** reuses the existing display-size offscreen ctx that eyedropper primes via `primeImageCanvas`. Accuracy loss at display scale is acceptable for a pointer gesture, and keeps sampling code shared with eyedropper.
+- **Initial extraction** runs `dataUrlToImageData`, which downscales to 200px max dimension for clustering speed. Peak pixels are kept at that resolution, then emitted as normalized `0..1` coords in `ExtractionSample.source`. Normalized coordinates map correctly at any future display size.
+- **Marker drag** reuses the same display-size offscreen ctx that the eyedropper primes via `primeImageCanvas` — the sampled color at a given normalized coord matches what extraction produced, so dragging a marker back to its original source pixel returns the swatch to its original color.
+
+A natural-size peak-chroma refinement (re-sampling peaks from the full-resolution image) was considered and rejected: it would make extraction slightly more vivid than what the drag path can reproduce, breaking the "drag back to origin returns original color" invariant, and the memory cost is meaningful for large images (48MB of raw ImageData for a 4K photo).
 
 ### Color Preservation
 
