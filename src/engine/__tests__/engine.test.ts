@@ -528,7 +528,7 @@ describe("extraction", () => {
     expect(hasBlue).toBe(true);
   });
 
-  it("single-color image returns purified result", () => {
+  it("single-color image gets a gentle source-aware chroma lift", () => {
     // All pixels at basically the same color
     const pixels = Array.from({ length: 100 }, () => ({
       l: 0.55,
@@ -538,8 +538,9 @@ describe("extraction", () => {
     const result = extractFromPixels(pixels);
     expect(result.isSingleColor).toBe(true);
     expect(result.colors).toHaveLength(1);
-    // Should be purified (chroma maximized)
+    // Should be lifted, but not purified to the gamut wall.
     expect(result.colors[0].c).toBeGreaterThan(0.1);
+    expect(result.colors[0].c).toBeLessThan(maxChroma(0.55, 260) * 0.8);
   });
 
   it("peak-chroma representative is used (not averaged centroid)", () => {
@@ -569,7 +570,7 @@ describe("extraction", () => {
     expect(blueColor!.c).toBeGreaterThan(0.1);
   });
 
-  it("normalize-to-peak preserves relative chroma between colors", () => {
+  it("gentle normalize-to-peak preserves relative chroma between colors", () => {
     // Two hues: one vivid, one subdued
     const vividOrange: OklchColor = { l: 0.6, c: 0.2, h: 50 };
     const mutedBlue: OklchColor = { l: 0.5, c: 0.08, h: 260 };
@@ -581,9 +582,9 @@ describe("extraction", () => {
     const blueOut = result[1];
     expect(orangeOut.c).toBeGreaterThan(blueOut.c);
 
-    // Orange should be near 95% of its gamut max
+    // Orange should keep a healthy gamut-relative intensity.
     const orangeMax = maxChroma(vividOrange.l, vividOrange.h);
-    expect(orangeOut.c / orangeMax).toBeGreaterThan(0.85);
+    expect(orangeOut.c / orangeMax).toBeGreaterThan(0.7);
     expect(orangeOut.c / orangeMax).toBeLessThanOrEqual(1.0);
 
     // Blue should be proportionally lower
@@ -591,7 +592,7 @@ describe("extraction", () => {
     expect(blueOut.c / blueMax).toBeLessThan(orangeOut.c / orangeMax);
   });
 
-  it("normalize-to-peak leaves neutrals unchanged", () => {
+  it("gentle normalize-to-peak leaves neutrals unchanged", () => {
     const neutral: OklchColor = { l: 0.5, c: 0.02, h: 0 };
     const vivid: OklchColor = { l: 0.5, c: 0.2, h: 120 };
 
@@ -610,6 +611,67 @@ describe("extraction", () => {
     }));
     const result = extractFromPixels(pixels);
     expect(result.colors.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("treats tonal neutral images as palettes, not single color swatches", () => {
+    const pixels = Array.from({ length: 240 }, (_, i) => ({
+      l: 0.25 + (i % 12) * 0.045,
+      c: 0.012,
+      h: 0,
+    }));
+    const result = extractFromPixels(pixels);
+    expect(result.isSingleColor).toBe(false);
+    expect(result.colors.length).toBeGreaterThanOrEqual(2);
+    expect(result.colors.every((c) => c.c < 0.05)).toBe(true);
+  });
+
+  it("keeps meaningful neutrals alongside chromatic colors", () => {
+    const pixels = [
+      ...Array.from({ length: 500 }, (_, i) => ({
+        l: 0.78 + (i % 8) * 0.01,
+        c: 0.012,
+        h: 80,
+      })),
+      ...Array.from({ length: 300 }, (_, i) => ({
+        l: 0.46 + (i % 8) * 0.015,
+        c: 0.07 + (i % 4) * 0.004,
+        h: 138 + (i % 5),
+      })),
+      ...Array.from({ length: 80 }, (_, i) => ({
+        l: 0.55 + (i % 5) * 0.01,
+        c: 0.17 + (i % 3) * 0.01,
+        h: 24 + (i % 4),
+      })),
+    ];
+    const result = extractFromPixels(pixels);
+    const hues = result.colors.map((c) => c.h);
+    expect(result.colors.length).toBeGreaterThanOrEqual(3);
+    expect(result.colors.length).toBeLessThanOrEqual(7);
+    expect(result.colors.some((c) => c.c < 0.05)).toBe(true);
+    expect(hues.some((h) => h >= 125 && h <= 150)).toBe(true);
+    expect(hues.some((h) => h >= 15 && h <= 35)).toBe(true);
+  });
+
+  it("ignores tiny vivid outliers when they are below palette coverage", () => {
+    const pixels = [
+      ...Array.from({ length: 900 }, (_, i) => ({
+        l: 0.5 + (i % 8) * 0.01,
+        c: 0.09 + (i % 4) * 0.005,
+        h: 230 + (i % 4),
+      })),
+      ...Array.from({ length: 180 }, (_, i) => ({
+        l: 0.82 + (i % 6) * 0.01,
+        c: 0.012,
+        h: 0,
+      })),
+      ...Array.from({ length: 4 }, (_, i) => ({
+        l: 0.58,
+        c: 0.25,
+        h: 24 + i,
+      })),
+    ];
+    const result = extractFromPixels(pixels);
+    expect(result.colors.some((c) => c.h >= 15 && c.h <= 35)).toBe(false);
   });
 
   it("gamut-relative scoring does not favor yellow over blue", () => {

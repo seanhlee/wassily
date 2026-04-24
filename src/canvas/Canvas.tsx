@@ -743,7 +743,7 @@ export function Canvas() {
         color,
       }));
       snapshot();
-      createSwatches(swatches);
+      createSwatches(swatches, { preserveColors: true });
     },
     [state.objects, createSwatches, snapshot],
   );

@@ -369,6 +369,24 @@ describe("CREATE_SWATCHES purification", () => {
     expect(sw.color.l).toBe(0.5);
     expect(sw.color.h).toBe(250);
   });
+
+  it("can preserve source chroma for extracted palettes", () => {
+    const state = makeBaseState();
+    const extractedColor = { l: 0.5, c: 0.08, h: 250 };
+    const result = reducer(state, {
+      type: "CREATE_SWATCHES",
+      preserveColors: true,
+      swatches: [
+        {
+          position: { x: 0, y: 0 },
+          color: extractedColor,
+          id: "extracted_test",
+        },
+      ],
+    });
+    const sw = result.objects["extracted_test"] as Swatch;
+    expect(sw.color).toEqual(extractedColor);
+  });
 });
 
 describe("HARMONIZE_SELECTED with external IDs", () => {

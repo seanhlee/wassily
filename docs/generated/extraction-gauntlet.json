@@ -1,0 +1,714 @@
+{
+  "generatedAt": "2026-04-24T13:35:13.206Z",
+  "rows": [
+    {
+      "id": "flat-single-color",
+      "label": "Flat Color Control",
+      "note": "A solid crop should get a gentle source-aware lift instead of full purification.",
+      "source": [
+        {
+          "label": "source",
+          "hex": "#4C77A8",
+          "oklch": "oklch(0.560 0.090 252.0)",
+          "coverage": 1
+        }
+      ],
+      "extracted": [
+        {
+          "hex": "#3977B9",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.560 0.120 252.0)",
+          "color": {
+            "l": 0.560000000000002,
+            "c": 0.12037500000000001,
+            "h": 251.99999999999952
+          },
+          "role": "accent"
+        }
+      ],
+      "checks": [
+        {
+          "label": ">= 1 colors",
+          "pass": true
+        },
+        {
+          "label": "<= 1 colors",
+          "pass": true
+        },
+        {
+          "label": "source delta <= 0.05",
+          "pass": true
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "two-color-poster",
+      "label": "Two Color Poster",
+      "note": "Two clean chromatic regions should remain a compact two-color palette.",
+      "source": [
+        {
+          "label": "teal field",
+          "hex": "#0C827D",
+          "oklch": "oklch(0.550 0.093 190.0)",
+          "coverage": 0.6
+        },
+        {
+          "label": "coral block",
+          "hex": "#E66F62",
+          "oklch": "oklch(0.680 0.150 28.0)",
+          "coverage": 0.4
+        }
+      ],
+      "extracted": [
+        {
+          "hex": "#0E857E",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.557 0.094 188.3)",
+          "color": {
+            "l": 0.5569415066030342,
+            "c": 0.094171875,
+            "h": 188.31081122125033
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#ED7364",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.695 0.153 28.6)",
+          "color": {
+            "l": 0.695220412070601,
+            "c": 0.1532611544135216,
+            "h": 28.632081491676217
+          },
+          "role": "accent"
+        }
+      ],
+      "checks": [
+        {
+          "label": ">= 2 colors",
+          "pass": true
+        },
+        {
+          "label": "<= 3 colors",
+          "pass": true
+        },
+        {
+          "label": "has teal",
+          "pass": true
+        },
+        {
+          "label": "has coral",
+          "pass": true
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "product-neutral-accent",
+      "label": "Product Neutral + Accent",
+      "note": "A big neutral surface, a muted body color, and a small accent should all survive.",
+      "source": [
+        {
+          "label": "warm paper",
+          "hex": "#C8C3BC",
+          "oklch": "oklch(0.820 0.012 78.0)",
+          "coverage": 0.5058365758754864
+        },
+        {
+          "label": "olive body",
+          "hex": "#4D6D46",
+          "oklch": "oklch(0.500 0.072 140.0)",
+          "coverage": 0.321011673151751
+        },
+        {
+          "label": "orange detail",
+          "hex": "#CF413D",
+          "oklch": "oklch(0.580 0.180 26.0)",
+          "coverage": 0.08560311284046693
+        },
+        {
+          "label": "shadow",
+          "hex": "#1E252A",
+          "oklch": "oklch(0.260 0.014 245.0)",
+          "coverage": 0.08754863813229571
+        }
+      ],
+      "extracted": [
+        {
+          "hex": "#D33938",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.578 0.192 25.8)",
+          "color": {
+            "l": 0.5782739175449242,
+            "c": 0.19178873635153285,
+            "h": 25.83885219615331
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#C4BFB8",
+          "textHex": "#111111",
+          "oklch": "oklch(0.807 0.011 77.8)",
+          "color": {
+            "l": 0.8071941036315547,
+            "c": 0.011259750476994668,
+            "h": 77.80778565584842
+          },
+          "role": "neutral"
+        },
+        {
+          "hex": "#476737",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.476 0.082 136.1)",
+          "color": {
+            "l": 0.4756500034715282,
+            "c": 0.08194630317325936,
+            "h": 136.1454641338587
+          },
+          "role": "body"
+        },
+        {
+          "hex": "#1E252B",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.259 0.015 246.0)",
+          "color": {
+            "l": 0.2591821727682691,
+            "c": 0.014531407474831212,
+            "h": 246.0221943121287
+          },
+          "role": "shadow neutral"
+        }
+      ],
+      "checks": [
+        {
+          "label": ">= 3 colors",
+          "pass": true
+        },
+        {
+          "label": "<= 5 colors",
+          "pass": true
+        },
+        {
+          "label": "keeps neutral",
+          "pass": true
+        },
+        {
+          "label": "has olive",
+          "pass": true
+        },
+        {
+          "label": "has orange",
+          "pass": true
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "tonal-neutrals",
+      "label": "Tonal Neutrals",
+      "note": "A gray/beige tonal source should produce a useful neutral palette, not one average gray.",
+      "source": [
+        {
+          "label": "paper",
+          "hex": "#D5D0CA",
+          "oklch": "oklch(0.860 0.010 75.0)",
+          "coverage": 0.3829787234042553
+        },
+        {
+          "label": "stone",
+          "hex": "#8A867D",
+          "oklch": "oklch(0.620 0.014 88.0)",
+          "coverage": 0.3404255319148936
+        },
+        {
+          "label": "charcoal",
+          "hex": "#242A2F",
+          "oklch": "oklch(0.280 0.012 248.0)",
+          "coverage": 0.2765957446808511
+        }
+      ],
+      "extracted": [
+        {
+          "hex": "#D8D3CD",
+          "textHex": "#111111",
+          "oklch": "oklch(0.870 0.010 74.3)",
+          "color": {
+            "l": 0.8696053971473884,
+            "c": 0.010413614829871222,
+            "h": 74.2816464320058
+          },
+          "role": "neutral"
+        },
+        {
+          "hex": "#868178",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.605 0.014 84.7)",
+          "color": {
+            "l": 0.6053406357945641,
+            "c": 0.014413560954487025,
+            "h": 84.7085155894747
+          },
+          "role": "neutral"
+        },
+        {
+          "hex": "#20252A",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.262 0.012 244.7)",
+          "color": {
+            "l": 0.262408762953477,
+            "c": 0.012413560954487025,
+            "h": 244.7085155894747
+          },
+          "role": "shadow neutral"
+        }
+      ],
+      "checks": [
+        {
+          "label": ">= 2 colors",
+          "pass": true
+        },
+        {
+          "label": "<= 4 colors",
+          "pass": true
+        },
+        {
+          "label": "keeps neutral",
+          "pass": true
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "tiny-hot-pixel",
+      "label": "Tiny Hot Pixel",
+      "note": "A vivid speck below useful coverage should not become an extracted accent.",
+      "source": [
+        {
+          "label": "blue fabric",
+          "hex": "#26789C",
+          "oklch": "oklch(0.540 0.095 232.0)",
+          "coverage": 0.8302583025830258
+        },
+        {
+          "label": "light neutral",
+          "hex": "#D0C9C2",
+          "oklch": "oklch(0.840 0.012 70.0)",
+          "coverage": 0.16605166051660517
+        },
+        {
+          "label": "noise speck",
+          "hex": "#E30F2D",
+          "oklch": "oklch(0.580 0.230 24.0)",
+          "coverage": 0.0036900369003690036
+        }
+      ],
+      "extracted": [
+        {
+          "hex": "#0B7296",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.517 0.100 229.4)",
+          "color": {
+            "l": 0.5167777330962418,
+            "c": 0.09953125,
+            "h": 229.3770494476048
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#D0C9C2",
+          "textHex": "#111111",
+          "oklch": "oklch(0.839 0.012 70.9)",
+          "color": {
+            "l": 0.8393457382146152,
+            "c": 0.012398555606123409,
+            "h": 70.89442002311262
+          },
+          "role": "neutral"
+        }
+      ],
+      "checks": [
+        {
+          "label": ">= 2 colors",
+          "pass": true
+        },
+        {
+          "label": "<= 4 colors",
+          "pass": true
+        },
+        {
+          "label": "keeps neutral",
+          "pass": true
+        },
+        {
+          "label": "omits noise orange",
+          "pass": true
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "analogous-greens",
+      "label": "Analogous Greens",
+      "note": "Neighboring botanical hues should stay distinct enough to be useful.",
+      "source": [
+        {
+          "label": "lime leaf",
+          "hex": "#9BA83F",
+          "oklch": "oklch(0.700 0.130 116.0)",
+          "coverage": 0.24528301886792453
+        },
+        {
+          "label": "leaf",
+          "hex": "#38853E",
+          "oklch": "oklch(0.550 0.130 145.0)",
+          "coverage": 0.33962264150943394
+        },
+        {
+          "label": "teal shade",
+          "hex": "#075D4E",
+          "oklch": "oklch(0.430 0.078 176.0)",
+          "coverage": 0.2641509433962264
+        },
+        {
+          "label": "soil neutral",
+          "hex": "#3F362E",
+          "oklch": "oklch(0.340 0.018 65.0)",
+          "coverage": 0.1509433962264151
+        }
+      ],
+      "extracted": [
+        {
+          "hex": "#065649",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.406 0.073 177.5)",
+          "color": {
+            "l": 0.4057010824001918,
+            "c": 0.07273437500000002,
+            "h": 177.51805850873643
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#94A329",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.681 0.141 116.5)",
+          "color": {
+            "l": 0.681432146443467,
+            "c": 0.14146477802461596,
+            "h": 116.46390365518164
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#1F823A",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.535 0.140 148.0)",
+          "color": {
+            "l": 0.5346127993017217,
+            "c": 0.14006751349847765,
+            "h": 147.99798796419054
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#3F362E",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.339 0.019 66.3)",
+          "color": {
+            "l": 0.3393457382146153,
+            "c": 0.018531407474831212,
+            "h": 66.27774289016088
+          },
+          "role": "shadow neutral"
+        }
+      ],
+      "checks": [
+        {
+          "label": ">= 3 colors",
+          "pass": true
+        },
+        {
+          "label": "<= 6 colors",
+          "pass": true
+        },
+        {
+          "label": "has lime",
+          "pass": true
+        },
+        {
+          "label": "has leaf",
+          "pass": true
+        },
+        {
+          "label": "has teal shade",
+          "pass": true
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "screenshot-ui",
+      "label": "Screenshot UI",
+      "note": "Interface imagery should keep neutrals while still catching product accents.",
+      "source": [
+        {
+          "label": "surface",
+          "hex": "#E2E5E8",
+          "oklch": "oklch(0.920 0.006 250.0)",
+          "coverage": 0.578420467185762
+        },
+        {
+          "label": "ink",
+          "hex": "#212428",
+          "oklch": "oklch(0.260 0.009 250.0)",
+          "coverage": 0.2335928809788654
+        },
+        {
+          "label": "blue action",
+          "hex": "#2877D3",
+          "oklch": "oklch(0.570 0.160 255.0)",
+          "coverage": 0.15016685205784205
+        },
+        {
+          "label": "red badge",
+          "hex": "#CF4238",
+          "oklch": "oklch(0.580 0.180 28.0)",
+          "coverage": 0.03781979977753059
+        }
+      ],
+      "extracted": [
+        {
+          "hex": "#0B74CE",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.556 0.162 251.9)",
+          "color": {
+            "l": 0.5559298826822486,
+            "c": 0.1621178542812413,
+            "h": 251.94417856263317
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#CD3A31",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.568 0.186 28.1)",
+          "color": {
+            "l": 0.5680888485783944,
+            "c": 0.18573164123564492,
+            "h": 28.129570246841467
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#E0E3E6",
+          "textHex": "#111111",
+          "oklch": "oklch(0.914 0.006 249.8)",
+          "color": {
+            "l": 0.9138531697431463,
+            "c": 0.005629875238497334,
+            "h": 249.84622852467874
+          },
+          "role": "neutral"
+        },
+        {
+          "hex": "#1F2327",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.254 0.010 253.2)",
+          "color": {
+            "l": 0.2537506468903739,
+            "c": 0.009650166493662253,
+            "h": 253.20577082026284
+          },
+          "role": "shadow neutral"
+        }
+      ],
+      "checks": [
+        {
+          "label": ">= 3 colors",
+          "pass": true
+        },
+        {
+          "label": "<= 6 colors",
+          "pass": true
+        },
+        {
+          "label": "keeps neutral",
+          "pass": true
+        },
+        {
+          "label": "has blue action",
+          "pass": true
+        },
+        {
+          "label": "has red badge",
+          "pass": true
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "busy-market",
+      "label": "Busy Market",
+      "note": "A high-variety scene should expand toward the upper bound without duplicates.",
+      "source": [
+        {
+          "label": "yellow fruit",
+          "hex": "#E9C025",
+          "oklch": "oklch(0.820 0.160 92.0)",
+          "coverage": 0.17757009345794392
+        },
+        {
+          "label": "tomato",
+          "hex": "#D02E1E",
+          "oklch": "oklch(0.560 0.200 30.0)",
+          "coverage": 0.14953271028037382
+        },
+        {
+          "label": "herbs",
+          "hex": "#13702F",
+          "oklch": "oklch(0.480 0.130 148.0)",
+          "coverage": 0.19626168224299065
+        },
+        {
+          "label": "cyan sign",
+          "hex": "#11A5B2",
+          "oklch": "oklch(0.660 0.110 205.0)",
+          "coverage": 0.11214953271028037
+        },
+        {
+          "label": "indigo cloth",
+          "hex": "#3D43A8",
+          "oklch": "oklch(0.440 0.160 275.0)",
+          "coverage": 0.12149532710280374
+        },
+        {
+          "label": "paper",
+          "hex": "#D6D0C7",
+          "oklch": "oklch(0.860 0.014 78.0)",
+          "coverage": 0.1588785046728972
+        },
+        {
+          "label": "shadow",
+          "hex": "#161B21",
+          "oklch": "oklch(0.220 0.014 250.0)",
+          "coverage": 0.08411214953271028
+        }
+      ],
+      "extracted": [
+        {
+          "hex": "#CF2A08",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.554 0.204 32.4)",
+          "color": {
+            "l": 0.5544394104135427,
+            "c": 0.20365625,
+            "h": 32.40566909260451
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#086F2C",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.473 0.132 148.3)",
+          "color": {
+            "l": 0.4731515225152834,
+            "c": 0.13245312500000003,
+            "h": 148.33718597859843
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#EEBD16",
+          "textHex": "#111111",
+          "oklch": "oklch(0.819 0.164 88.9)",
+          "color": {
+            "l": 0.8188061264983116,
+            "c": 0.16384375,
+            "h": 88.87747577384653
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#11A3B1",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.655 0.109 205.3)",
+          "color": {
+            "l": 0.6546190534048656,
+            "c": 0.10948437500000001,
+            "h": 205.2809883154987
+          },
+          "role": "accent"
+        },
+        {
+          "hex": "#3A3FAE",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.436 0.172 274.6)",
+          "color": {
+            "l": 0.43614089294482256,
+            "c": 0.1724936519857438,
+            "h": 274.6205001587805
+          },
+          "role": "body"
+        },
+        {
+          "hex": "#D6D0C6",
+          "textHex": "#111111",
+          "oklch": "oklch(0.859 0.015 79.3)",
+          "color": {
+            "l": 0.8593457382146152,
+            "c": 0.014531407474831212,
+            "h": 79.27774289016088
+          },
+          "role": "neutral"
+        },
+        {
+          "hex": "#161B21",
+          "textHex": "#f8f8f8",
+          "oklch": "oklch(0.219 0.015 251.0)",
+          "color": {
+            "l": 0.21934573821461525,
+            "c": 0.014531407474831212,
+            "h": 251.0221943121287
+          },
+          "role": "shadow neutral"
+        }
+      ],
+      "checks": [
+        {
+          "label": ">= 5 colors",
+          "pass": true
+        },
+        {
+          "label": "<= 7 colors",
+          "pass": true
+        },
+        {
+          "label": "keeps neutral",
+          "pass": true
+        },
+        {
+          "label": "has yellow",
+          "pass": true
+        },
+        {
+          "label": "has red/orange",
+          "pass": true
+        },
+        {
+          "label": "has green",
+          "pass": true
+        },
+        {
+          "label": "has cyan",
+          "pass": true
+        },
+        {
+          "label": "has indigo",
+          "pass": true
+        }
+      ],
+      "status": "pass"
+    }
+  ]
+}

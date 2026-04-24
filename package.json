@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "research:family-board": "node node_modules/vite-node/vite-node.mjs --script scripts/generate-family-profile-board.ts",
     "research:gauntlet": "node node_modules/vite-node/vite-node.mjs --script scripts/generate-research-gauntlet.ts",
+    "research:extraction": "node node_modules/vite-node/vite-node.mjs --script scripts/generate-extraction-gauntlet.ts",
     "research:lab": "node node_modules/vite-node/vite-node.mjs --script scripts/generate-research-lab.ts",
     "test": "vitest",
     "test:run": "vitest run"

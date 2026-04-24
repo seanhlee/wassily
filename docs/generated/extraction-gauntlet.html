@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Wassily Extraction Gauntlet</title>
+    <style>
+      :root {
+        --bg: #f6f7f4;
+        --ink: #111816;
+        --muted: #647069;
+        --line: rgba(17, 24, 22, 0.13);
+        --panel: rgba(255, 255, 255, 0.76);
+        --pass: #0b6b61;
+        --watch: #9a6500;
+        --cool: #3459a6;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background:
+          linear-gradient(90deg, rgba(11, 107, 97, 0.08), rgba(154, 101, 0, 0.08)),
+          var(--bg);
+        color: var(--ink);
+        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(1500px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 30px 0 64px;
+      }
+
+      h1, h2, p { margin: 0; }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 4rem);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 1rem;
+        letter-spacing: 0;
+      }
+
+      p {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .mono {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .hero {
+        display: grid;
+        gap: 10px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill {
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .rows {
+        display: grid;
+        gap: 18px;
+        margin-top: 22px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.72fr) minmax(360px, 1fr);
+        gap: 18px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+      }
+
+      .row-head {
+        display: grid;
+        gap: 8px;
+        align-content: start;
+      }
+
+      .row-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .status {
+        padding: 4px 8px;
+        border-radius: 999px;
+        color: #fff;
+        background: var(--pass);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .status-watch {
+        background: var(--watch);
+      }
+
+      .source-preview {
+        width: 100%;
+        height: 76px;
+        border: 1px solid var(--line);
+      }
+
+      .source-list,
+      .checks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .source-item,
+      .check {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 7px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.52);
+        font-size: 0.78rem;
+      }
+
+      .source-chip {
+        width: 12px;
+        height: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.16);
+      }
+
+      .check {
+        color: var(--pass);
+      }
+
+      .check-watch {
+        color: var(--watch);
+      }
+
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+        min-height: 148px;
+        border: 1px solid var(--line);
+      }
+
+      .swatch {
+        min-height: 148px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 9px;
+      }
+
+      .swatch-label {
+        font-size: 0.78rem;
+      }
+
+      .swatch-meta {
+        display: grid;
+        gap: 2px;
+        font-size: 0.76rem;
+        line-height: 1.25;
+      }
+
+      .swatch-meta span {
+        opacity: 0.76;
+      }
+
+      .result {
+        display: grid;
+        gap: 10px;
+      }
+
+      @media (max-width: 880px) {
+        main {
+          width: min(100vw - 24px, 720px);
+        }
+
+        .row {
+          grid-template-columns: 1fr;
+          padding: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <h1>Wassily Extraction Gauntlet</h1>
+        <p>
+          Synthetic visual fixtures for checking whether image extraction returns coherent 2-7 color palettes with meaningful neutrals, durable accents, and resistance to tiny vivid noise.
+        </p>
+        <div class="summary">
+          <span class="pill mono">8 fixtures</span>
+          <span class="pill mono">8 pass</span>
+          <span class="pill mono">0 watch</span>
+          <span class="pill mono">2026-04-24T13:35:13.206Z</span>
+        </div>
+      </section>
+
+      <section class="rows">
+
+              <article class="row">
+                <div class="row-head">
+                  <div class="row-title">
+                    <h2>Flat Color Control</h2>
+                    <span class="status ">pass</span>
+                  </div>
+                  <p>A solid crop should get a gentle source-aware lift instead of full purification.</p>
+                  <div class="source-preview" style="background: linear-gradient(90deg, #4C77A8 0.00% 100.00%);"></div>
+
+    <div class="source-list">
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#4C77A8"></span>
+              <span>source</span>
+              <span class="mono">100%</span>
+            </div>
+
+    </div>
+
+                </div>
+                <div class="result">
+
+    <div class="swatches">
+
+            <div class="swatch" style="background:#3977B9; color:#f8f8f8">
+              <div class="swatch-label mono">1</div>
+              <div class="swatch-meta">
+                <strong>#3977B9</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+    </div>
+
+
+    <div class="checks">
+
+            <span class="check check-pass">
+              pass &gt;= 1 colors
+            </span>
+
+            <span class="check check-pass">
+              pass &lt;= 1 colors
+            </span>
+
+            <span class="check check-pass">
+              pass source delta &lt;= 0.05
+            </span>
+
+    </div>
+
+                </div>
+              </article>
+
+              <article class="row">
+                <div class="row-head">
+                  <div class="row-title">
+                    <h2>Two Color Poster</h2>
+                    <span class="status ">pass</span>
+                  </div>
+                  <p>Two clean chromatic regions should remain a compact two-color palette.</p>
+                  <div class="source-preview" style="background: linear-gradient(90deg, #0C827D 0.00% 60.00%, #E66F62 60.00% 100.00%);"></div>
+
+    <div class="source-list">
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#0C827D"></span>
+              <span>teal field</span>
+              <span class="mono">60%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#E66F62"></span>
+              <span>coral block</span>
+              <span class="mono">40%</span>
+            </div>
+
+    </div>
+
+                </div>
+                <div class="result">
+
+    <div class="swatches">
+
+            <div class="swatch" style="background:#0E857E; color:#f8f8f8">
+              <div class="swatch-label mono">1</div>
+              <div class="swatch-meta">
+                <strong>#0E857E</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#ED7364; color:#f8f8f8">
+              <div class="swatch-label mono">2</div>
+              <div class="swatch-meta">
+                <strong>#ED7364</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+    </div>
+
+
+    <div class="checks">
+
+            <span class="check check-pass">
+              pass &gt;= 2 colors
+            </span>
+
+            <span class="check check-pass">
+              pass &lt;= 3 colors
+            </span>
+
+            <span class="check check-pass">
+              pass has teal
+            </span>
+
+            <span class="check check-pass">
+              pass has coral
+            </span>
+
+    </div>
+
+                </div>
+              </article>
+
+              <article class="row">
+                <div class="row-head">
+                  <div class="row-title">
+                    <h2>Product Neutral + Accent</h2>
+                    <span class="status ">pass</span>
+                  </div>
+                  <p>A big neutral surface, a muted body color, and a small accent should all survive.</p>
+                  <div class="source-preview" style="background: linear-gradient(90deg, #C8C3BC 0.00% 50.58%, #4D6D46 50.58% 82.68%, #CF413D 82.68% 91.25%, #1E252A 91.25% 100.00%);"></div>
+
+    <div class="source-list">
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#C8C3BC"></span>
+              <span>warm paper</span>
+              <span class="mono">51%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#4D6D46"></span>
+              <span>olive body</span>
+              <span class="mono">32%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#CF413D"></span>
+              <span>orange detail</span>
+              <span class="mono">9%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#1E252A"></span>
+              <span>shadow</span>
+              <span class="mono">9%</span>
+            </div>
+
+    </div>
+
+                </div>
+                <div class="result">
+
+    <div class="swatches">
+
+            <div class="swatch" style="background:#D33938; color:#f8f8f8">
+              <div class="swatch-label mono">1</div>
+              <div class="swatch-meta">
+                <strong>#D33938</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#C4BFB8; color:#111111">
+              <div class="swatch-label mono">2</div>
+              <div class="swatch-meta">
+                <strong>#C4BFB8</strong>
+                <span>neutral</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#476737; color:#f8f8f8">
+              <div class="swatch-label mono">3</div>
+              <div class="swatch-meta">
+                <strong>#476737</strong>
+                <span>body</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#1E252B; color:#f8f8f8">
+              <div class="swatch-label mono">4</div>
+              <div class="swatch-meta">
+                <strong>#1E252B</strong>
+                <span>shadow neutral</span>
+              </div>
+            </div>
+
+    </div>
+
+
+    <div class="checks">
+
+            <span class="check check-pass">
+              pass &gt;= 3 colors
+            </span>
+
+            <span class="check check-pass">
+              pass &lt;= 5 colors
+            </span>
+
+            <span class="check check-pass">
+              pass keeps neutral
+            </span>
+
+            <span class="check check-pass">
+              pass has olive
+            </span>
+
+            <span class="check check-pass">
+              pass has orange
+            </span>
+
+    </div>
+
+                </div>
+              </article>
+
+              <article class="row">
+                <div class="row-head">
+                  <div class="row-title">
+                    <h2>Tonal Neutrals</h2>
+                    <span class="status ">pass</span>
+                  </div>
+                  <p>A gray/beige tonal source should produce a useful neutral palette, not one average gray.</p>
+                  <div class="source-preview" style="background: linear-gradient(90deg, #D5D0CA 0.00% 38.30%, #8A867D 38.30% 72.34%, #242A2F 72.34% 100.00%);"></div>
+
+    <div class="source-list">
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#D5D0CA"></span>
+              <span>paper</span>
+              <span class="mono">38%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#8A867D"></span>
+              <span>stone</span>
+              <span class="mono">34%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#242A2F"></span>
+              <span>charcoal</span>
+              <span class="mono">28%</span>
+            </div>
+
+    </div>
+
+                </div>
+                <div class="result">
+
+    <div class="swatches">
+
+            <div class="swatch" style="background:#D8D3CD; color:#111111">
+              <div class="swatch-label mono">1</div>
+              <div class="swatch-meta">
+                <strong>#D8D3CD</strong>
+                <span>neutral</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#868178; color:#f8f8f8">
+              <div class="swatch-label mono">2</div>
+              <div class="swatch-meta">
+                <strong>#868178</strong>
+                <span>neutral</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#20252A; color:#f8f8f8">
+              <div class="swatch-label mono">3</div>
+              <div class="swatch-meta">
+                <strong>#20252A</strong>
+                <span>shadow neutral</span>
+              </div>
+            </div>
+
+    </div>
+
+
+    <div class="checks">
+
+            <span class="check check-pass">
+              pass &gt;= 2 colors
+            </span>
+
+            <span class="check check-pass">
+              pass &lt;= 4 colors
+            </span>
+
+            <span class="check check-pass">
+              pass keeps neutral
+            </span>
+
+    </div>
+
+                </div>
+              </article>
+
+              <article class="row">
+                <div class="row-head">
+                  <div class="row-title">
+                    <h2>Tiny Hot Pixel</h2>
+                    <span class="status ">pass</span>
+                  </div>
+                  <p>A vivid speck below useful coverage should not become an extracted accent.</p>
+                  <div class="source-preview" style="background: linear-gradient(90deg, #26789C 0.00% 83.03%, #D0C9C2 83.03% 99.63%, #E30F2D 99.63% 100.00%);"></div>
+
+    <div class="source-list">
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#26789C"></span>
+              <span>blue fabric</span>
+              <span class="mono">83%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#D0C9C2"></span>
+              <span>light neutral</span>
+              <span class="mono">17%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#E30F2D"></span>
+              <span>noise speck</span>
+              <span class="mono">0%</span>
+            </div>
+
+    </div>
+
+                </div>
+                <div class="result">
+
+    <div class="swatches">
+
+            <div class="swatch" style="background:#0B7296; color:#f8f8f8">
+              <div class="swatch-label mono">1</div>
+              <div class="swatch-meta">
+                <strong>#0B7296</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#D0C9C2; color:#111111">
+              <div class="swatch-label mono">2</div>
+              <div class="swatch-meta">
+                <strong>#D0C9C2</strong>
+                <span>neutral</span>
+              </div>
+            </div>
+
+    </div>
+
+
+    <div class="checks">
+
+            <span class="check check-pass">
+              pass &gt;= 2 colors
+            </span>
+
+            <span class="check check-pass">
+              pass &lt;= 4 colors
+            </span>
+
+            <span class="check check-pass">
+              pass keeps neutral
+            </span>
+
+            <span class="check check-pass">
+              pass omits noise orange
+            </span>
+
+    </div>
+
+                </div>
+              </article>
+
+              <article class="row">
+                <div class="row-head">
+                  <div class="row-title">
+                    <h2>Analogous Greens</h2>
+                    <span class="status ">pass</span>
+                  </div>
+                  <p>Neighboring botanical hues should stay distinct enough to be useful.</p>
+                  <div class="source-preview" style="background: linear-gradient(90deg, #9BA83F 0.00% 24.53%, #38853E 24.53% 58.49%, #075D4E 58.49% 84.91%, #3F362E 84.91% 100.00%);"></div>
+
+    <div class="source-list">
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#9BA83F"></span>
+              <span>lime leaf</span>
+              <span class="mono">25%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#38853E"></span>
+              <span>leaf</span>
+              <span class="mono">34%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#075D4E"></span>
+              <span>teal shade</span>
+              <span class="mono">26%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#3F362E"></span>
+              <span>soil neutral</span>
+              <span class="mono">15%</span>
+            </div>
+
+    </div>
+
+                </div>
+                <div class="result">
+
+    <div class="swatches">
+
+            <div class="swatch" style="background:#065649; color:#f8f8f8">
+              <div class="swatch-label mono">1</div>
+              <div class="swatch-meta">
+                <strong>#065649</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#94A329; color:#f8f8f8">
+              <div class="swatch-label mono">2</div>
+              <div class="swatch-meta">
+                <strong>#94A329</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#1F823A; color:#f8f8f8">
+              <div class="swatch-label mono">3</div>
+              <div class="swatch-meta">
+                <strong>#1F823A</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#3F362E; color:#f8f8f8">
+              <div class="swatch-label mono">4</div>
+              <div class="swatch-meta">
+                <strong>#3F362E</strong>
+                <span>shadow neutral</span>
+              </div>
+            </div>
+
+    </div>
+
+
+    <div class="checks">
+
+            <span class="check check-pass">
+              pass &gt;= 3 colors
+            </span>
+
+            <span class="check check-pass">
+              pass &lt;= 6 colors
+            </span>
+
+            <span class="check check-pass">
+              pass has lime
+            </span>
+
+            <span class="check check-pass">
+              pass has leaf
+            </span>
+
+            <span class="check check-pass">
+              pass has teal shade
+            </span>
+
+    </div>
+
+                </div>
+              </article>
+
+              <article class="row">
+                <div class="row-head">
+                  <div class="row-title">
+                    <h2>Screenshot UI</h2>
+                    <span class="status ">pass</span>
+                  </div>
+                  <p>Interface imagery should keep neutrals while still catching product accents.</p>
+                  <div class="source-preview" style="background: linear-gradient(90deg, #E2E5E8 0.00% 57.84%, #212428 57.84% 81.20%, #2877D3 81.20% 96.22%, #CF4238 96.22% 100.00%);"></div>
+
+    <div class="source-list">
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#E2E5E8"></span>
+              <span>surface</span>
+              <span class="mono">58%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#212428"></span>
+              <span>ink</span>
+              <span class="mono">23%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#2877D3"></span>
+              <span>blue action</span>
+              <span class="mono">15%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#CF4238"></span>
+              <span>red badge</span>
+              <span class="mono">4%</span>
+            </div>
+
+    </div>
+
+                </div>
+                <div class="result">
+
+    <div class="swatches">
+
+            <div class="swatch" style="background:#0B74CE; color:#f8f8f8">
+              <div class="swatch-label mono">1</div>
+              <div class="swatch-meta">
+                <strong>#0B74CE</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#CD3A31; color:#f8f8f8">
+              <div class="swatch-label mono">2</div>
+              <div class="swatch-meta">
+                <strong>#CD3A31</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#E0E3E6; color:#111111">
+              <div class="swatch-label mono">3</div>
+              <div class="swatch-meta">
+                <strong>#E0E3E6</strong>
+                <span>neutral</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#1F2327; color:#f8f8f8">
+              <div class="swatch-label mono">4</div>
+              <div class="swatch-meta">
+                <strong>#1F2327</strong>
+                <span>shadow neutral</span>
+              </div>
+            </div>
+
+    </div>
+
+
+    <div class="checks">
+
+            <span class="check check-pass">
+              pass &gt;= 3 colors
+            </span>
+
+            <span class="check check-pass">
+              pass &lt;= 6 colors
+            </span>
+
+            <span class="check check-pass">
+              pass keeps neutral
+            </span>
+
+            <span class="check check-pass">
+              pass has blue action
+            </span>
+
+            <span class="check check-pass">
+              pass has red badge
+            </span>
+
+    </div>
+
+                </div>
+              </article>
+
+              <article class="row">
+                <div class="row-head">
+                  <div class="row-title">
+                    <h2>Busy Market</h2>
+                    <span class="status ">pass</span>
+                  </div>
+                  <p>A high-variety scene should expand toward the upper bound without duplicates.</p>
+                  <div class="source-preview" style="background: linear-gradient(90deg, #E9C025 0.00% 17.76%, #D02E1E 17.76% 32.71%, #13702F 32.71% 52.34%, #11A5B2 52.34% 63.55%, #3D43A8 63.55% 75.70%, #D6D0C7 75.70% 91.59%, #161B21 91.59% 100.00%);"></div>
+
+    <div class="source-list">
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#E9C025"></span>
+              <span>yellow fruit</span>
+              <span class="mono">18%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#D02E1E"></span>
+              <span>tomato</span>
+              <span class="mono">15%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#13702F"></span>
+              <span>herbs</span>
+              <span class="mono">20%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#11A5B2"></span>
+              <span>cyan sign</span>
+              <span class="mono">11%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#3D43A8"></span>
+              <span>indigo cloth</span>
+              <span class="mono">12%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#D6D0C7"></span>
+              <span>paper</span>
+              <span class="mono">16%</span>
+            </div>
+
+            <div class="source-item">
+              <span class="source-chip" style="background:#161B21"></span>
+              <span>shadow</span>
+              <span class="mono">8%</span>
+            </div>
+
+    </div>
+
+                </div>
+                <div class="result">
+
+    <div class="swatches">
+
+            <div class="swatch" style="background:#CF2A08; color:#f8f8f8">
+              <div class="swatch-label mono">1</div>
+              <div class="swatch-meta">
+                <strong>#CF2A08</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#086F2C; color:#f8f8f8">
+              <div class="swatch-label mono">2</div>
+              <div class="swatch-meta">
+                <strong>#086F2C</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#EEBD16; color:#111111">
+              <div class="swatch-label mono">3</div>
+              <div class="swatch-meta">
+                <strong>#EEBD16</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#11A3B1; color:#f8f8f8">
+              <div class="swatch-label mono">4</div>
+              <div class="swatch-meta">
+                <strong>#11A3B1</strong>
+                <span>accent</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#3A3FAE; color:#f8f8f8">
+              <div class="swatch-label mono">5</div>
+              <div class="swatch-meta">
+                <strong>#3A3FAE</strong>
+                <span>body</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#D6D0C6; color:#111111">
+              <div class="swatch-label mono">6</div>
+              <div class="swatch-meta">
+                <strong>#D6D0C6</strong>
+                <span>neutral</span>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#161B21; color:#f8f8f8">
+              <div class="swatch-label mono">7</div>
+              <div class="swatch-meta">
+                <strong>#161B21</strong>
+                <span>shadow neutral</span>
+              </div>
+            </div>
+
+    </div>
+
+
+    <div class="checks">
+
+            <span class="check check-pass">
+              pass &gt;= 5 colors
+            </span>
+
+            <span class="check check-pass">
+              pass &lt;= 7 colors
+            </span>
+
+            <span class="check check-pass">
+              pass keeps neutral
+            </span>
+
+            <span class="check check-pass">
+              pass has yellow
+            </span>
+
+            <span class="check check-pass">
+              pass has red/orange
+            </span>
+
+            <span class="check check-pass">
+              pass has green
+            </span>
+
+            <span class="check check-pass">
+              pass has cyan
+            </span>
+
+            <span class="check check-pass">
+              pass has indigo
+            </span>
+
+    </div>
+
+                </div>
+              </article>
+
+      </section>
+    </main>
+  </body>
+</html>

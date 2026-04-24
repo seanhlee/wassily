@@ -132,6 +132,7 @@ export type Action =
   | {
       type: "CREATE_SWATCHES";
       swatches: { position: Point; color: OklchColor; id?: string }[];
+      preserveColors?: boolean;
     }
   | {
       type: "ADD_REFERENCE_IMAGE";

@@ -75,8 +75,8 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       for (const s of action.swatches) {
         const id = s.id ?? genId();
         newIds.push(id);
-        // Purify unless intentionally neutral (match CREATE_SWATCH behavior)
-        const color = s.color.c < NEUTRAL_CHROMA
+        // Purify unless explicitly preserving source colors or intentionally neutral.
+        const color = action.preserveColors || s.color.c < NEUTRAL_CHROMA
           ? s.color
           : purifyColor(s.color);
         newObjects[id] = {
@@ -900,8 +900,15 @@ export function useCanvasState(activeBoardId: string) {
   );
 
   const createSwatches = useCallback(
-    (swatches: { position: Point; color: OklchColor }[]) =>
-      dispatch({ type: "CREATE_SWATCHES", swatches }),
+    (
+      swatches: { position: Point; color: OklchColor }[],
+      options?: { preserveColors?: boolean },
+    ) =>
+      dispatch({
+        type: "CREATE_SWATCHES",
+        swatches,
+        preserveColors: options?.preserveColors,
+      }),
     [dispatch],
   );
 
