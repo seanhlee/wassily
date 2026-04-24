@@ -759,7 +759,7 @@ export function Canvas() {
       snapshot();
       if (img.extraction) clearImageExtraction(imageId);
       createExtraction(imageId, samples);
-      // Image stays selected so markers render once Phase 3 ships.
+      // Image stays selected so markers stay visible.
       select(imageId);
     },
     [state.objects, createExtraction, clearImageExtraction, select, snapshot],

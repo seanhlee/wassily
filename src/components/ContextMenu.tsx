@@ -369,22 +369,6 @@ export function CanvasContextMenu({
 
             {ctx?.type === "image" && (
               <>
-                {(() => {
-                  const img = objects[ctx.objectId] as ReferenceImage | undefined;
-                  const hasExtraction = !!img?.extraction;
-                  return (
-                    <>
-                      {hasExtraction && (
-                        <ContextMenu.Item
-                          style={(state) => getItemStyle(lightMode, state)}
-                          onClick={() => onSelect(ctx.objectId)}
-                        >
-                          Edit extraction
-                        </ContextMenu.Item>
-                      )}
-                    </>
-                  );
-                })()}
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
                   onClick={() => onExtractColors?.(ctx.objectId)}

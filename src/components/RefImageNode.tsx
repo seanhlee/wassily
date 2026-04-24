@@ -284,8 +284,6 @@ export function RefImageNode({
           return (
             <div
               key={m.id}
-              role="button"
-              tabIndex={-1}
               aria-label={`Extraction sample ${i + 1}`}
               onPointerDown={(e) => handleMarkerPointerDown(e, m)}
               onPointerMove={handleMarkerPointerMove}
@@ -293,6 +291,7 @@ export function RefImageNode({
               onPointerCancel={handleMarkerPointerCancel}
               onPointerEnter={() => onHoverMarker(m.swatchId)}
               onPointerLeave={() => onHoverMarker(null)}
+              onMouseDown={(e) => e.stopPropagation()}
               style={{
                 position: "absolute",
                 left: m.position.x * image.size.width,
