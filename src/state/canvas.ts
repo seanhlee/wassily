@@ -11,6 +11,8 @@ import type {
   Connection,
   Camera,
   Point,
+  ExtractionMarker,
+  ImageExtraction,
 } from "../types";
 import { randomPurifiedColor, purifyColor } from "../engine/purify";
 import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "../engine/gamut";
@@ -45,6 +47,51 @@ export const initialState: CanvasState = {
 let nextId = 1;
 function genId(): string {
   return `obj_${nextId++}`;
+}
+
+function markerId(): string {
+  return `mkr_${nextId++}`;
+}
+
+/**
+ * Remove markers whose swatchId is in the given set from every reference-image.
+ * If an image's markers array becomes empty, drops the `extraction` field.
+ * Returns the original objects record when nothing changed (preserves reference
+ * equality so reducer no-op detection in historyReducer works).
+ */
+function clearMarkersBySwatchIds(
+  objects: CanvasState["objects"],
+  swatchIds: Set<string>,
+): CanvasState["objects"] {
+  if (swatchIds.size === 0) return objects;
+  let changed = false;
+  const next: CanvasState["objects"] = { ...objects };
+  for (const [id, obj] of Object.entries(objects)) {
+    if (obj.type !== "reference-image") continue;
+    const img = obj as ReferenceImage;
+    if (!img.extraction) continue;
+    const remaining = img.extraction.markers.filter(
+      (m) => !swatchIds.has(m.swatchId),
+    );
+    if (remaining.length === img.extraction.markers.length) continue;
+    changed = true;
+    const nextImg: ReferenceImage =
+      remaining.length === 0
+        ? (() => {
+            const { extraction: _omit, ...rest } = img;
+            return rest as ReferenceImage;
+          })()
+        : {
+            ...img,
+            extraction: {
+              ...img.extraction,
+              markers: remaining,
+              updatedAt: Date.now(),
+            },
+          };
+    next[id] = nextImg;
+  }
+  return changed ? next : objects;
 }
 
 function reducer(state: CanvasState, action: Action): CanvasState {
@@ -89,6 +136,100 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       return {
         ...state,
         objects: newObjects,
+      };
+    }
+
+    case "CREATE_EXTRACTION": {
+      const img = state.objects[action.imageId];
+      if (!img || img.type !== "reference-image") return state;
+
+      const newObjects = { ...state.objects };
+      const markers: ExtractionMarker[] = [];
+
+      for (const sample of action.samples) {
+        const swatchId = sample.id ?? genId();
+        // Source-exact: never purify extraction swatches.
+        newObjects[swatchId] = {
+          id: swatchId,
+          type: "swatch",
+          color: sample.color,
+          position: sample.position,
+        } as Swatch;
+        markers.push({
+          id: markerId(),
+          swatchId,
+          position: sample.source,
+          color: sample.color,
+        });
+      }
+
+      const now = Date.now();
+      const existing = (img as ReferenceImage).extraction;
+      const extraction: ImageExtraction = {
+        markers,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+      };
+
+      newObjects[action.imageId] = {
+        ...(img as ReferenceImage),
+        extraction,
+      } as ReferenceImage;
+
+      return { ...state, objects: newObjects };
+    }
+
+    case "MOVE_EXTRACTION_MARKER": {
+      const img = state.objects[action.imageId];
+      if (!img || img.type !== "reference-image") return state;
+      const refImg = img as ReferenceImage;
+      if (!refImg.extraction) return state;
+
+      const marker = refImg.extraction.markers.find((m) => m.id === action.markerId);
+      if (!marker) return state;
+
+      const swatch = state.objects[marker.swatchId];
+      if (!swatch || swatch.type !== "swatch") return state;
+
+      const now = Date.now();
+      const nextMarkers = refImg.extraction.markers.map((m) =>
+        m.id === action.markerId
+          ? { ...m, position: action.position, color: action.color }
+          : m,
+      );
+
+      return {
+        ...state,
+        objects: {
+          ...state.objects,
+          [action.imageId]: {
+            ...refImg,
+            extraction: {
+              ...refImg.extraction,
+              markers: nextMarkers,
+              updatedAt: now,
+            },
+          } as ReferenceImage,
+          [marker.swatchId]: {
+            ...(swatch as Swatch),
+            color: action.color,
+          } as Swatch,
+        },
+      };
+    }
+
+    case "CLEAR_IMAGE_EXTRACTION": {
+      const img = state.objects[action.imageId];
+      if (!img || img.type !== "reference-image") return state;
+      const refImg = img as ReferenceImage;
+      if (!refImg.extraction) return state;
+      const { extraction: _omit, ...rest } = refImg;
+      return {
+        ...state,
+        objects: {
+          ...state.objects,
+          [action.imageId]: rest as ReferenceImage,
+        },
       };
     }
 
@@ -149,19 +290,23 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       return { ...state, selectedIds: [] };
 
     case "DELETE_SELECTED": {
-      const objects = { ...state.objects };
+      let objects: CanvasState["objects"] = { ...state.objects };
+      const deletedSwatchIds = new Set<string>();
       for (const id of state.selectedIds) {
+        const obj = objects[id];
+        if (obj?.type === "swatch") deletedSwatchIds.add(id);
         delete objects[id];
-        for (const [connId, obj] of Object.entries(objects)) {
+        for (const [connId, o] of Object.entries(objects)) {
           if (
-            obj.type === "connection" &&
-            ((obj as Connection).fromId === id ||
-              (obj as Connection).toId === id)
+            o.type === "connection" &&
+            ((o as Connection).fromId === id ||
+              (o as Connection).toId === id)
           ) {
             delete objects[connId];
           }
         }
       }
+      objects = clearMarkersBySwatchIds(objects, deletedSwatchIds);
       return { ...state, objects, selectedIds: [] };
     }
 
@@ -328,10 +473,14 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         seedLightness: swatch.color.l,
       };
 
-      return {
-        ...state,
-        objects: { ...state.objects, [swatch.id]: ramp },
-      };
+      // A promoted swatch is no longer swatch-shaped, so any marker pointing
+      // at it must be dropped. Markers bind to swatches only (see Non-Goals).
+      const nextObjects = clearMarkersBySwatchIds(
+        { ...state.objects, [swatch.id]: ramp },
+        new Set([swatch.id]),
+      );
+
+      return { ...state, objects: nextObjects };
     }
 
     case "CHANGE_STOP_COUNT": {
@@ -571,9 +720,12 @@ function reducer(state: CanvasState, action: Action): CanvasState {
     }
 
     case "DELETE_OBJECTS": {
-      const objects = { ...state.objects };
+      let objects: CanvasState["objects"] = { ...state.objects };
       const removing = new Set(action.ids);
+      const deletedSwatchIds = new Set<string>();
       for (const id of action.ids) {
+        const obj = objects[id];
+        if (obj?.type === "swatch") deletedSwatchIds.add(id);
         delete objects[id];
       }
       // Clean up orphaned connections
@@ -586,6 +738,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
           delete objects[connId];
         }
       }
+      objects = clearMarkersBySwatchIds(objects, deletedSwatchIds);
       // Remove deleted IDs from selection
       const selectedIds = state.selectedIds.filter(id => !removing.has(id));
       return { ...state, objects, selectedIds };
@@ -629,7 +782,14 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         if (!obj || obj.type === "connection") continue;
         const newId = action.idMap?.[id] ?? genId();
         newIds.push(newId);
-        objects[newId] = { ...obj, id: newId } as typeof obj;
+        if (obj.type === "reference-image") {
+          // Duplicated images do not carry markers — those still point at
+          // the original swatches. Fresh image, fresh extraction on re-extract.
+          const { extraction: _omit, ...rest } = obj as ReferenceImage;
+          objects[newId] = { ...rest, id: newId } as ReferenceImage;
+        } else {
+          objects[newId] = { ...obj, id: newId } as typeof obj;
+        }
       }
       return { ...state, objects, selectedIds: newIds };
     }
@@ -645,8 +805,37 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       return { ...state, objects };
     }
 
-    case "LOAD_BOARD":
-      return action.state;
+    case "LOAD_BOARD": {
+      // Defensive: drop markers whose swatch no longer exists. Keeps the
+      // UI honest against any future bug that could orphan markers at save time.
+      const swatchIds = new Set(
+        Object.values(action.state.objects)
+          .filter((o) => o.type === "swatch")
+          .map((o) => o.id),
+      );
+      let changedObjects: CanvasState["objects"] | null = null;
+      for (const [id, obj] of Object.entries(action.state.objects)) {
+        if (obj.type !== "reference-image") continue;
+        const img = obj as ReferenceImage;
+        if (!img.extraction) continue;
+        const kept = img.extraction.markers.filter((m) => swatchIds.has(m.swatchId));
+        if (kept.length === img.extraction.markers.length) continue;
+        if (!changedObjects) changedObjects = { ...action.state.objects };
+        changedObjects[id] =
+          kept.length === 0
+            ? (() => {
+                const { extraction: _o, ...rest } = img;
+                return rest as ReferenceImage;
+              })()
+            : ({
+                ...img,
+                extraction: { ...img.extraction, markers: kept },
+              } as ReferenceImage);
+      }
+      return changedObjects
+        ? { ...action.state, objects: changedObjects }
+        : action.state;
+    }
 
     case "LOAD_STATE": {
       // Restore nextId from loaded state
@@ -681,6 +870,7 @@ const SKIP_HISTORY: Set<string> = new Set([
   "ROTATE_HUE",
   "UPDATE_SWATCH_COLOR",
   "ADJUST_SWATCH_COLOR",
+  "MOVE_EXTRACTION_MARKER",
   "LOAD_STATE",
   "LOAD_BOARD",
   "RESTORE_IMAGE_URLS",
@@ -912,6 +1102,42 @@ export function useCanvasState(activeBoardId: string) {
     [dispatch],
   );
 
+  const createExtraction = useCallback(
+    (
+      imageId: string,
+      samples: {
+        id?: string;
+        color: OklchColor;
+        source: Point;
+        position: Point;
+      }[],
+    ) => dispatch({ type: "CREATE_EXTRACTION", imageId, samples }),
+    [dispatch],
+  );
+
+  const moveExtractionMarker = useCallback(
+    (
+      imageId: string,
+      markerIdArg: string,
+      position: Point,
+      color: OklchColor,
+    ) =>
+      dispatch({
+        type: "MOVE_EXTRACTION_MARKER",
+        imageId,
+        markerId: markerIdArg,
+        position,
+        color,
+      }),
+    [dispatch],
+  );
+
+  const clearImageExtraction = useCallback(
+    (imageId: string) =>
+      dispatch({ type: "CLEAR_IMAGE_EXTRACTION", imageId }),
+    [dispatch],
+  );
+
   const addReferenceImage = useCallback(
     (
       blob: Blob,
@@ -1033,6 +1259,9 @@ export function useCanvasState(activeBoardId: string) {
     updateSwatchColor,
     adjustSwatchColor,
     createSwatches,
+    createExtraction,
+    moveExtractionMarker,
+    clearImageExtraction,
     addReferenceImage,
     promoteToRamp,
     changeStopCount,

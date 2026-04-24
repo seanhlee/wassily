@@ -8,16 +8,29 @@
  */
 
 import { oklch } from "culori";
-import type { OklchColor } from "../types";
+import type { OklchColor, Point } from "../types";
 import { maxChroma } from "./gamut";
 
-interface ExtractionResult {
-  colors: OklchColor[];
+export interface ExtractionSample {
+  color: OklchColor;
+  source: Point; // normalized 0..1, relative to the image
+}
+
+export interface ExtractionResult {
+  samples: ExtractionSample[];
+  colors: OklchColor[]; // parallel to samples[].color; kept for existing callsites
   isSingleColor: boolean;
 }
 
-interface PaletteCandidate {
+interface SampledPixel {
   color: OklchColor;
+  x: number; // pixel x in the sampled image
+  y: number; // pixel y in the sampled image
+}
+
+interface PaletteCandidate {
+  peak: SampledPixel;
+  color: OklchColor; // alias for peak.color, kept to minimize diff in scoring code
   center: OklchColor;
   count: number;
   coverage: number;
@@ -34,10 +47,12 @@ const CHROMA_LIFT_TARGET = 0.72;
 /**
  * Extract dominant colors from an image element.
  * Returns 1-7 source-aware colors depending on image complexity.
+ * Each returned sample carries a normalized `source` position in [0, 1],
+ * relative to `imageData`'s pixel dimensions.
  */
 export function extractColors(imageData: ImageData): ExtractionResult {
   const pixels = samplePixels(imageData, 2000);
-  return runExtraction(pixels);
+  return runExtraction(pixels, imageData.width, imageData.height);
 }
 
 /**
@@ -111,17 +126,30 @@ function normalizeChroma(colors: OklchColor[]): OklchColor[] {
   });
 }
 
-/** Sample up to N pixels from image data, converting to OKLCH */
-function samplePixels(imageData: ImageData, maxSamples: number): OklchColor[] {
+/**
+ * Sample up to N pixels from image data, converting to OKLCH and keeping the
+ * source pixel coordinate on each sample. Coordinates are in the provided
+ * imageData's pixel space; normalization happens once at the end of the
+ * pipeline in `runExtraction`.
+ *
+ * TODO(phase 1.5): optional natural-size peak-chroma refinement. Current
+ * peaks come from whatever resolution imageData arrives at (today that's
+ * the 200px downscale from `dataUrlToImageData`). For sharper peak colors
+ * and sub-downscale marker placement, we can re-sample the peak's local
+ * region from a full-resolution canvas.
+ */
+function samplePixels(imageData: ImageData, maxSamples: number): SampledPixel[] {
   const { data, width, height } = imageData;
-  const pixels: OklchColor[] = [];
+  const pixels: SampledPixel[] = [];
   const totalPixels = width * height;
 
   if (totalPixels <= maxSamples) {
     for (let i = 0; i < totalPixels; i++) {
       const idx = i * 4;
       const color = pixelToOklch(data, idx);
-      if (color) pixels.push(color);
+      if (color) {
+        pixels.push({ color, x: i % width, y: Math.floor(i / width) });
+      }
     }
     return pixels;
   }
@@ -143,7 +171,7 @@ function samplePixels(imageData: ImageData, maxSamples: number): OklchColor[] {
         Math.floor(((row + 0.25 + jitter.y * 0.5) / rows) * height),
       );
       const color = pixelToOklch(data, (y * width + x) * 4);
-      if (color) pixels.push(color);
+      if (color) pixels.push({ color, x, y });
     }
   }
 
@@ -180,15 +208,15 @@ function deterministicJitter(row: number, col: number): { x: number; y: number }
 }
 
 /** Palette complexity — hue/chroma diversity plus tonal spread. */
-function paletteComplexity(pixels: OklchColor[]): number {
+function paletteComplexity(pixels: SampledPixel[]): number {
   if (pixels.length < 2) return 0;
-  const avgL = pixels.reduce((s, p) => s + p.l, 0) / pixels.length;
-  const avgC = pixels.reduce((s, p) => s + p.c, 0) / pixels.length;
+  const avgL = pixels.reduce((s, p) => s + p.color.l, 0) / pixels.length;
+  const avgC = pixels.reduce((s, p) => s + p.color.c, 0) / pixels.length;
   const lVariance =
-    pixels.reduce((s, p) => s + (p.l - avgL) ** 2, 0) / pixels.length;
+    pixels.reduce((s, p) => s + (p.color.l - avgL) ** 2, 0) / pixels.length;
   const cVariance =
-    pixels.reduce((s, p) => s + (p.c - avgC) ** 2, 0) / pixels.length;
-  const hues = pixels.filter((p) => p.c > 0.02).map((p) => p.h);
+    pixels.reduce((s, p) => s + (p.color.c - avgC) ** 2, 0) / pixels.length;
+  const hues = pixels.filter((p) => p.color.c > 0.02).map((p) => p.color.h);
   const hueSpread = hues.length > 1 ? hueRange(hues) / 360 : 0;
   const hueConfidence = Math.min(1, avgC / 0.12);
 
@@ -249,7 +277,7 @@ function oklchDistance(a: OklchColor, b: OklchColor): number {
 
 interface Cluster {
   center: OklchColor; // averaged center (used for k-means convergence)
-  peak: OklchColor; // vivid, dense-ish actual pixel in cluster
+  peak: SampledPixel; // vivid, dense-ish actual pixel in cluster
   count: number;
 }
 
@@ -264,26 +292,31 @@ function isExtractNeutral(color: OklchColor): boolean {
 }
 
 function nearestToCenter(
-  members: OklchColor[],
+  members: SampledPixel[],
   center: OklchColor,
-): OklchColor {
+): SampledPixel {
   return members.reduce((best, p) =>
-    oklchDistance(p, center) < oklchDistance(best, center) ? p : best,
+    oklchDistance(p.color, center) < oklchDistance(best.color, center)
+      ? p
+      : best,
   );
 }
 
 function pickRepresentative(
-  members: OklchColor[],
+  members: SampledPixel[],
   center: OklchColor,
-): OklchColor {
-  if (members.length === 0) return center;
+): SampledPixel {
+  if (members.length === 0) {
+    // Defensive fallback — kMeans doesn't actually call this with 0 members.
+    return { color: center, x: 0, y: 0 };
+  }
   if (isExtractNeutral(center)) return nearestToCenter(members, center);
 
   const scored = members
     .map((pixel) => ({
       pixel,
-      intensity: gamutIntensity(pixel),
-      distance: oklchDistance(pixel, center),
+      intensity: gamutIntensity(pixel.color),
+      distance: oklchDistance(pixel.color, center),
     }))
     .sort((a, b) => b.intensity - a.intensity);
   const poolSize = Math.max(1, Math.ceil(scored.length * 0.12));
@@ -306,21 +339,21 @@ function mulberry32(seed: number): () => number {
 }
 
 /** Derive a deterministic seed from pixel data */
-function pixelSeed(pixels: OklchColor[]): number {
+function pixelSeed(pixels: SampledPixel[]): number {
   let h = 0;
   const step = Math.max(1, Math.floor(pixels.length / 64));
   for (let i = 0; i < pixels.length; i += step) {
-    const p = pixels[i];
-    h = (h * 31 + ((p.l * 1000) | 0)) | 0;
-    h = (h * 31 + ((p.c * 1000) | 0)) | 0;
-    h = (h * 31 + ((p.h * 10) | 0)) | 0;
+    const { color } = pixels[i];
+    h = (h * 31 + ((color.l * 1000) | 0)) | 0;
+    h = (h * 31 + ((color.c * 1000) | 0)) | 0;
+    h = (h * 31 + ((color.h * 10) | 0)) | 0;
   }
   return h;
 }
 
 /** Run k-means N times with different seeds, return the best clustering (lowest WCSS) */
 function bestOfN(
-  pixels: OklchColor[],
+  pixels: SampledPixel[],
   k: number,
   maxIter: number,
   n: number,
@@ -342,18 +375,20 @@ function bestOfN(
 
 /** K-means clustering in OKLCH space */
 function kMeans(
-  pixels: OklchColor[],
+  pixels: SampledPixel[],
   k: number,
   maxIter: number,
   random: () => number,
 ): { clusters: Cluster[]; wcss: number } {
   // Initialize centers using k-means++
   const centers: OklchColor[] = [];
-  centers.push(pixels[Math.floor(random() * pixels.length)]);
+  centers.push(pixels[Math.floor(random() * pixels.length)].color);
 
   for (let i = 1; i < k; i++) {
     const distances = pixels.map((p) => {
-      const minDist = Math.min(...centers.map((c) => oklchDistance(p, c)));
+      const minDist = Math.min(
+        ...centers.map((c) => oklchDistance(p.color, c)),
+      );
       return minDist * minDist;
     });
     const totalDist = distances.reduce((s, d) => s + d, 0);
@@ -361,12 +396,12 @@ function kMeans(
     for (let j = 0; j < pixels.length; j++) {
       r -= distances[j];
       if (r <= 0) {
-        centers.push(pixels[j]);
+        centers.push(pixels[j].color);
         break;
       }
     }
     if (centers.length <= i) {
-      centers.push(pixels[Math.floor(random() * pixels.length)]);
+      centers.push(pixels[Math.floor(random() * pixels.length)].color);
     }
   }
 
@@ -380,7 +415,7 @@ function kMeans(
       let minDist = Infinity;
       let minIdx = 0;
       for (let j = 0; j < centers.length; j++) {
-        const d = oklchDistance(pixels[i], centers[j]);
+        const d = oklchDistance(pixels[i].color, centers[j]);
         if (d < minDist) {
           minDist = d;
           minIdx = j;
@@ -398,7 +433,7 @@ function kMeans(
     for (let j = 0; j < centers.length; j++) {
       const members = pixels.filter((_, idx) => assignments[idx] === j);
       if (members.length > 0) {
-        centers[j] = averageColor(members);
+        centers[j] = averageColor(members.map((m) => m.color));
       }
     }
   }
@@ -406,7 +441,7 @@ function kMeans(
   // Compute WCSS (within-cluster sum of squared distances)
   let wcss = 0;
   for (let i = 0; i < pixels.length; i++) {
-    const d = oklchDistance(pixels[i], centers[assignments[i]]);
+    const d = oklchDistance(pixels[i].color, centers[assignments[i]]);
     wcss += d * d;
   }
 
@@ -450,7 +485,11 @@ function cullForDistinctiveness(colors: OklchColor[]): OklchColor[] {
 }
 
 function targetPaletteCount(complexity: number): number {
-  return Math.min(7, Math.max(2, Math.round(2 + complexity * 42)));
+  // The × 24 coefficient (down from 42) moves the 7-cap saturation point
+  // from complexity ~0.12 to ~0.20. Smooth gradients sit in the 0.12-0.17
+  // range; photos and rich palettes sit at 0.19+. This dampens the gradient
+  // over-extraction case without clipping real palettes.
+  return Math.min(7, Math.max(2, Math.round(2 + complexity * 24)));
 }
 
 function candidateScore(candidate: Omit<PaletteCandidate, "score">): number {
@@ -475,10 +514,12 @@ function toPaletteCandidate(
   totalPixels: number,
 ): PaletteCandidate {
   const coverage = cluster.count / totalPixels;
-  const neutral = isExtractNeutral(cluster.center) || isExtractNeutral(cluster.peak);
-  const intensity = gamutIntensity(cluster.peak);
+  const neutral =
+    isExtractNeutral(cluster.center) || isExtractNeutral(cluster.peak.color);
+  const intensity = gamutIntensity(cluster.peak.color);
   const base = {
-    color: cluster.peak,
+    peak: cluster.peak,
+    color: cluster.peak.color,
     center: cluster.center,
     count: cluster.count,
     coverage,
@@ -494,7 +535,11 @@ function paletteDistanceThreshold(
 ): number {
   if (a.neutral && b.neutral) return 0.11;
   if (a.neutral || b.neutral) return 0.09;
-  return 0.08;
+  // Chromatic-vs-chromatic: was 0.08, raised to 0.12 to cull visually
+  // redundant near-hues on gradients and near-hue photo regions. Pairs
+  // inside 0.12 OKLCH distance usually read as "the same color" to the eye
+  // even when their hues differ by 20-30°.
+  return 0.12;
 }
 
 function isDistinctCandidate(
@@ -512,13 +557,15 @@ function selectCoherentPalette(
   clusters: Cluster[],
   totalPixels: number,
   targetCount: number,
-): OklchColor[] {
+): SampledPixel[] {
   const candidates = clusters
     .filter((cluster) => cluster.count > 0)
     .map((cluster) => toPaletteCandidate(cluster, totalPixels))
     .sort((a, b) => b.score - a.score);
 
-  if (candidates.length === 0) return [{ l: 0.5, c: 0, h: 0 }];
+  if (candidates.length === 0) {
+    return [{ color: { l: 0.5, c: 0, h: 0 }, x: 0, y: 0 }];
+  }
 
   const neutralCoverage = candidates
     .filter((candidate) => candidate.neutral)
@@ -585,21 +632,35 @@ function selectCoherentPalette(
       if (allNeutral && a.neutral && b.neutral) return b.color.l - a.color.l;
       return b.score - a.score;
     })
-    .map((candidate) => candidate.color);
+    .map((candidate) => candidate.peak);
 }
 
-function runExtraction(pixels: OklchColor[]): ExtractionResult {
+function runExtraction(
+  pixels: SampledPixel[],
+  width: number,
+  height: number,
+): ExtractionResult {
   if (pixels.length === 0) {
-    return { colors: [{ l: 0.5, c: 0, h: 0 }], isSingleColor: true };
+    const fallback: OklchColor = { l: 0.5, c: 0, h: 0 };
+    return {
+      samples: [{ color: fallback, source: { x: 0.5, y: 0.5 } }],
+      colors: [fallback],
+      isSingleColor: true,
+    };
   }
 
   // Check if it's basically one color. The complexity metric includes
   // lightness so tonal/neutral images can still produce real palettes.
   const complexity = paletteComplexity(pixels);
   if (complexity < 0.012) {
-    const avg = averageColor(pixels);
-    const [color] = normalizeChroma([avg]);
-    return { colors: [color ?? avg], isSingleColor: true };
+    const avg = averageColor(pixels.map((p) => p.color));
+    const [scaled] = normalizeChroma([avg]);
+    const color = scaled ?? avg;
+    return {
+      samples: [{ color, source: { x: 0.5, y: 0.5 } }],
+      colors: [color],
+      isSingleColor: true,
+    };
   }
 
   // Adaptive k based on palette complexity.
@@ -609,9 +670,18 @@ function runExtraction(pixels: OklchColor[]): ExtractionResult {
   // Run k-means 5 times with seeded PRNG, pick best clustering.
   const clusters = bestOfN(pixels, k, 20, 5);
   const selected = selectCoherentPalette(clusters, pixels.length, targetCount);
-  const colors = normalizeChroma(selected);
+  // normalizeChroma operates on colors only; zip the normalized coords back in.
+  const scaled = normalizeChroma(selected.map((s) => s.color));
+  const samples: ExtractionSample[] = selected.map((s, i) => ({
+    color: scaled[i],
+    source: { x: s.x / width, y: s.y / height },
+  }));
 
-  return { colors, isSingleColor: false };
+  return {
+    samples,
+    colors: samples.map((s) => s.color),
+    isSingleColor: false,
+  };
 }
 
 // ---- Test helpers ----
@@ -619,11 +689,25 @@ function runExtraction(pixels: OklchColor[]): ExtractionResult {
 /**
  * Extract colors from pre-sampled OKLCH pixels (no ImageData needed).
  * Exposed for unit testing — same logic as extractColors minus the
- * pixel sampling step.
+ * pixel sampling step. Tests that only read `.colors` are unaffected by the
+ * samples/source additions; synthetic linear coordinates are attached so the
+ * pipeline is uniform.
  */
 export function extractFromPixels(pixels: OklchColor[]): ExtractionResult {
-  return runExtraction(pixels);
+  const width = Math.max(1, pixels.length);
+  const sampled: SampledPixel[] = pixels.map((color, i) => ({
+    color,
+    x: i,
+    y: 0,
+  }));
+  return runExtraction(sampled, width, 1);
 }
 
 /** Exposed for direct unit testing */
-export { normalizeChroma as _normalizeChroma, cullForDistinctiveness as _cullForDistinctiveness };
+export {
+  normalizeChroma as _normalizeChroma,
+  cullForDistinctiveness as _cullForDistinctiveness,
+  paletteComplexity as _paletteComplexity,
+  targetPaletteCount as _targetPaletteCount,
+  oklchDistance as _oklchDistance,
+};

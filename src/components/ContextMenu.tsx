@@ -8,7 +8,15 @@
 
 import { useState, useCallback } from "react";
 import { ContextMenu } from "@base-ui/react/context-menu";
-import type { CanvasObject, Swatch, Ramp, RampStop, Camera, Point } from "../types";
+import type {
+  CanvasObject,
+  Swatch,
+  Ramp,
+  RampStop,
+  Camera,
+  Point,
+  ReferenceImage,
+} from "../types";
 import { FONT, FONT_SIZE } from "../constants";
 import { toHex, toOklchString } from "../engine/gamut";
 
@@ -361,11 +369,30 @@ export function CanvasContextMenu({
 
             {ctx?.type === "image" && (
               <>
+                {(() => {
+                  const img = objects[ctx.objectId] as ReferenceImage | undefined;
+                  const hasExtraction = !!img?.extraction;
+                  return (
+                    <>
+                      {hasExtraction && (
+                        <ContextMenu.Item
+                          style={(state) => getItemStyle(lightMode, state)}
+                          onClick={() => onSelect(ctx.objectId)}
+                        >
+                          Edit extraction
+                        </ContextMenu.Item>
+                      )}
+                    </>
+                  );
+                })()}
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
                   onClick={() => onExtractColors?.(ctx.objectId)}
                 >
-                  Extract colors
+                  {(objects[ctx.objectId] as ReferenceImage | undefined)
+                    ?.extraction
+                    ? "Re-extract colors"
+                    : "Extract colors"}
                 </ContextMenu.Item>
                 <ContextMenu.Separator style={getSeparatorStyle(lightMode)} />
                 <ContextMenu.Item style={(state) => getItemStyle(lightMode, state)} onClick={onDeleteSelected}>

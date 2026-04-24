@@ -24,6 +24,10 @@ interface SwatchNodeProps {
   onUpdateColor?: (id: string, color: OklchColor) => void;
   onSnapshot?: () => void;
   onDuplicateDrag?: () => void;
+  /** True when the swatch's extraction marker is hovered (reverse link). */
+  highlighted?: boolean;
+  /** Reports hover over the swatch — used to reveal its extraction marker. */
+  onHover?: (id: string | null) => void;
 }
 
 export function SwatchNode({
@@ -39,6 +43,8 @@ export function SwatchNode({
   onUpdateColor,
   onSnapshot,
   onDuplicateDrag,
+  highlighted,
+  onHover,
 }: SwatchNodeProps) {
   const hex = toHex(swatch.color);
   const [editing, setEditing] = useState(false);
@@ -204,6 +210,8 @@ export function SwatchNode({
         e.stopPropagation();
         if (selected) setEditing(true);
       }}
+      onPointerEnter={onHover ? () => onHover(swatch.id) : undefined}
+      onPointerLeave={onHover ? () => onHover(null) : undefined}
       style={{
         position: "absolute",
         left: swatch.position.x,
@@ -220,6 +228,21 @@ export function SwatchNode({
           width={SWATCH_SIZE}
           height={SWATCH_SIZE}
           color={outlineColor}
+        />
+      )}
+      {highlighted && !selected && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: -3,
+            top: -3,
+            width: SWATCH_SIZE + 6,
+            height: SWATCH_SIZE + 6,
+            border: `0.75px solid ${outlineColor}`,
+            pointerEvents: "none",
+            opacity: 0.6,
+          }}
         />
       )}
       {swatch.locked && (

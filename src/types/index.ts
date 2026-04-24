@@ -47,12 +47,26 @@ export interface Connection {
   toStopIndex?: number;
 }
 
+export interface ExtractionMarker {
+  id: string;
+  swatchId: string;
+  position: Point; // normalized 0..1, relative to the image
+  color: OklchColor; // last sampled source-pixel color (provenance; not used for render)
+}
+
+export interface ImageExtraction {
+  markers: ExtractionMarker[];
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface ReferenceImage {
   id: string;
   type: "reference-image";
   dataUrl: string; // base64
   position: Point;
   size: Size;
+  extraction?: ImageExtraction;
 }
 
 export type CanvasObject = Swatch | Ramp | Connection | ReferenceImage;
@@ -190,6 +204,26 @@ export type Action =
 
   // Duplication
   | { type: "DUPLICATE_SELECTED"; idMap?: Record<string, string> }
+
+  // Extraction markers
+  | {
+      type: "CREATE_EXTRACTION";
+      imageId: string;
+      samples: {
+        id?: string;
+        color: OklchColor;
+        source: Point; // normalized 0..1 — marker position
+        position: Point; // canvas position — swatch placement
+      }[];
+    }
+  | {
+      type: "MOVE_EXTRACTION_MARKER";
+      imageId: string;
+      markerId: string;
+      position: Point; // normalized 0..1
+      color: OklchColor;
+    }
+  | { type: "CLEAR_IMAGE_EXTRACTION"; imageId: string }
 
   // State management
   | { type: "RESTORE_IMAGE_URLS"; urls: Record<string, string> }

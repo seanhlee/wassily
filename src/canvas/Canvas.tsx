@@ -5,6 +5,8 @@ import type { BoardState } from "../state/useBoardManager";
 import { useMcpBridge } from "../state/mcpBridge";
 import { migrateFromLegacy } from "../state/boardStore";
 import { SwatchNode, RampNode, RefImageNode } from "../components/SwatchNode";
+import { ExtractionLoupe } from "../components/ExtractionLoupe";
+import type { LoupeState } from "../components/RefImageNode";
 import { CanvasContextMenu } from "../components/ContextMenu";
 import { harmonizeMultiple } from "../engine/harmonize";
 import { showHarmonizeFeedback } from "../components/harmonizeFeedback";
@@ -62,7 +64,9 @@ export function Canvas() {
     moveSelected,
     updateSwatchColor,
     adjustSwatchColor,
-    createSwatches,
+    createExtraction,
+    clearImageExtraction,
+    moveExtractionMarker,
     addReferenceImage,
     promoteToRamp,
     changeStopCount,
@@ -110,6 +114,12 @@ export function Canvas() {
   const marqueeActiveRef = useRef(false);
   const marqueeCompletedRef = useRef(false);
   const [marqueeRect, setMarqueeRect] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+
+  // ---- Extraction marker drag + loupe ----
+  const [loupeState, setLoupeState] = useState<LoupeState | null>(null);
+  // Shared hover state — bidirectional link between a swatch and its
+  // extraction marker. A marker hover and a swatch hover both resolve here.
+  const [hoveredSwatchId, setHoveredSwatchId] = useState<string | null>(null);
 
   useEffect(() => {
     cameraRef.current = state.camera;
@@ -738,14 +748,21 @@ export function Canvas() {
       const img = obj as ReferenceImage;
       const imageData = await dataUrlToImageData(img.dataUrl);
       const result = extractColors(imageData);
-      const swatches = result.colors.map((color, i) => ({
-        position: { x: img.position.x + img.size.width + 16, y: img.position.y + i * 56 },
-        color,
+      const samples = result.samples.map((s, i) => ({
+        color: s.color,
+        source: s.source,
+        position: {
+          x: img.position.x + img.size.width + 16,
+          y: img.position.y + i * 56,
+        },
       }));
       snapshot();
-      createSwatches(swatches, { preserveColors: true });
+      if (img.extraction) clearImageExtraction(imageId);
+      createExtraction(imageId, samples);
+      // Image stays selected so markers render once Phase 3 ships.
+      select(imageId);
     },
-    [state.objects, createSwatches, snapshot],
+    [state.objects, createExtraction, clearImageExtraction, select, snapshot],
   );
 
 
@@ -875,6 +892,8 @@ export function Canvas() {
                 onUpdateColor={updateSwatchColor}
                 onSnapshot={snapshot}
                 onDuplicateDrag={duplicateSelected}
+                highlighted={hoveredSwatchId === obj.id}
+                onHover={setHoveredSwatchId}
               />
             );
           }
@@ -909,6 +928,15 @@ export function Canvas() {
                 onMoveSelected={moveSelected}
                 onSnapshot={snapshot}
                 onDuplicateDrag={duplicateSelected}
+                objects={state.objects}
+                selectedIds={state.selectedIds}
+                sampleCache={eyedropperCanvasCache.current}
+                camera={state.camera}
+                containerRef={containerRef}
+                onMoveExtractionMarker={moveExtractionMarker}
+                onLoupeUpdate={setLoupeState}
+                hoveredSwatchId={hoveredSwatchId}
+                onHoverMarker={setHoveredSwatchId}
               />
             );
           }
@@ -938,6 +966,17 @@ export function Canvas() {
         />
       )}
       <HarmonizeOverlay />
+      {loupeState && (
+        <ExtractionLoupe
+          clientX={loupeState.clientX}
+          clientY={loupeState.clientY}
+          sampleCanvasCtx={
+            eyedropperCanvasCache.current.get(loupeState.imageId) ?? null
+          }
+          samplePixel={loupeState.samplePixel}
+          color={loupeState.color}
+        />
+      )}
     </CanvasContextMenu>
     </>
   );

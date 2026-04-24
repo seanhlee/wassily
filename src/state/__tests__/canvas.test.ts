@@ -6,7 +6,14 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { initialState, __test__ } from "../canvas";
-import type { Action, CanvasState, Swatch, Connection } from "../../types";
+import type {
+  Action,
+  CanvasState,
+  Swatch,
+  Connection,
+  ReferenceImage,
+  Ramp,
+} from "../../types";
 
 const { reducer, historyReducer, applyExternalActionsImpl, setNextId, getNextId } = __test__;
 
@@ -696,5 +703,363 @@ describe("CREATE_SWATCH purification", () => {
     const sw = result.objects["neutral_swatch"] as Swatch;
     expect(sw.color.c).toBe(0.02);
     expect(sw.color.l).toBe(0.5);
+  });
+});
+
+// ---- Extraction markers ----
+
+function makeStateWithImage(imageId = "img_1"): CanvasState {
+  return {
+    objects: {
+      [imageId]: {
+        id: imageId,
+        type: "reference-image",
+        dataUrl: "data:image/png;base64,",
+        position: { x: 0, y: 0 },
+        size: { width: 200, height: 200 },
+      } as ReferenceImage,
+    },
+    selectedIds: [],
+    camera: { x: 0, y: 0, zoom: 1 },
+    lightMode: true,
+    showConnections: true,
+  };
+}
+
+describe("CREATE_EXTRACTION", () => {
+  beforeEach(() => setNextId(500));
+
+  it("creates swatches and links markers on the image", () => {
+    const state = makeStateWithImage();
+    const result = reducer(state, {
+      type: "CREATE_EXTRACTION",
+      imageId: "img_1",
+      samples: [
+        {
+          color: { l: 0.5, c: 0.2, h: 30 },
+          source: { x: 0.25, y: 0.25 },
+          position: { x: 220, y: 0 },
+        },
+        {
+          color: { l: 0.4, c: 0.18, h: 250 },
+          source: { x: 0.75, y: 0.75 },
+          position: { x: 220, y: 56 },
+        },
+      ],
+    });
+
+    const img = result.objects["img_1"] as ReferenceImage;
+    expect(img.extraction).toBeDefined();
+    expect(img.extraction!.markers).toHaveLength(2);
+
+    for (const m of img.extraction!.markers) {
+      const sw = result.objects[m.swatchId] as Swatch;
+      expect(sw).toBeDefined();
+      expect(sw.type).toBe("swatch");
+      expect(sw.color).toEqual(m.color);
+    }
+  });
+
+  it("honors external sample ids", () => {
+    const state = makeStateWithImage();
+    const result = reducer(state, {
+      type: "CREATE_EXTRACTION",
+      imageId: "img_1",
+      samples: [
+        {
+          id: "ext_swatch_a",
+          color: { l: 0.5, c: 0.2, h: 30 },
+          source: { x: 0.3, y: 0.3 },
+          position: { x: 220, y: 0 },
+        },
+      ],
+    });
+
+    expect(result.objects["ext_swatch_a"]).toBeDefined();
+    const img = result.objects["img_1"] as ReferenceImage;
+    expect(img.extraction!.markers[0].swatchId).toBe("ext_swatch_a");
+  });
+
+  it("writes source-exact color without purification", () => {
+    const state = makeStateWithImage();
+    // Use a vivid chromatic color that would be affected by purification.
+    const rawColor = { l: 0.5, c: 0.08, h: 250 };
+    const result = reducer(state, {
+      type: "CREATE_EXTRACTION",
+      imageId: "img_1",
+      samples: [
+        {
+          color: rawColor,
+          source: { x: 0.5, y: 0.5 },
+          position: { x: 220, y: 0 },
+        },
+      ],
+    });
+    const img = result.objects["img_1"] as ReferenceImage;
+    const sw = result.objects[img.extraction!.markers[0].swatchId] as Swatch;
+    expect(sw.color).toEqual(rawColor);
+  });
+
+  it("no-ops if imageId is missing", () => {
+    const state = makeBaseState();
+    const result = reducer(state, {
+      type: "CREATE_EXTRACTION",
+      imageId: "does_not_exist",
+      samples: [
+        {
+          color: { l: 0.5, c: 0.2, h: 30 },
+          source: { x: 0.5, y: 0.5 },
+          position: { x: 0, y: 0 },
+        },
+      ],
+    });
+    expect(result).toBe(state);
+  });
+});
+
+describe("MOVE_EXTRACTION_MARKER", () => {
+  beforeEach(() => setNextId(500));
+
+  function seed(): CanvasState {
+    const base = makeStateWithImage();
+    return reducer(base, {
+      type: "CREATE_EXTRACTION",
+      imageId: "img_1",
+      samples: [
+        {
+          id: "ext_1",
+          color: { l: 0.5, c: 0.2, h: 30 },
+          source: { x: 0.25, y: 0.25 },
+          position: { x: 220, y: 0 },
+        },
+      ],
+    });
+  }
+
+  it("updates marker and linked swatch atomically", () => {
+    const state = seed();
+    const img = state.objects["img_1"] as ReferenceImage;
+    const markerIdBefore = img.extraction!.markers[0].id;
+    const newColor = { l: 0.3, c: 0.18, h: 200 };
+
+    const result = reducer(state, {
+      type: "MOVE_EXTRACTION_MARKER",
+      imageId: "img_1",
+      markerId: markerIdBefore,
+      position: { x: 0.8, y: 0.8 },
+      color: newColor,
+    });
+
+    const nextImg = result.objects["img_1"] as ReferenceImage;
+    const nextMarker = nextImg.extraction!.markers[0];
+    expect(nextMarker.position).toEqual({ x: 0.8, y: 0.8 });
+    expect(nextMarker.color).toEqual(newColor);
+
+    const sw = result.objects["ext_1"] as Swatch;
+    expect(sw.color).toEqual(newColor);
+  });
+
+  it("no-ops if markerId is unknown", () => {
+    const state = seed();
+    const result = reducer(state, {
+      type: "MOVE_EXTRACTION_MARKER",
+      imageId: "img_1",
+      markerId: "missing_marker",
+      position: { x: 0, y: 0 },
+      color: { l: 0.5, c: 0, h: 0 },
+    });
+    expect(result).toBe(state);
+  });
+});
+
+describe("CLEAR_IMAGE_EXTRACTION", () => {
+  beforeEach(() => setNextId(500));
+
+  it("drops the extraction field; swatches remain", () => {
+    const base = makeStateWithImage();
+    const seeded = reducer(base, {
+      type: "CREATE_EXTRACTION",
+      imageId: "img_1",
+      samples: [
+        {
+          id: "ext_1",
+          color: { l: 0.5, c: 0.2, h: 30 },
+          source: { x: 0.25, y: 0.25 },
+          position: { x: 220, y: 0 },
+        },
+      ],
+    });
+
+    const cleared = reducer(seeded, {
+      type: "CLEAR_IMAGE_EXTRACTION",
+      imageId: "img_1",
+    });
+
+    const img = cleared.objects["img_1"] as ReferenceImage;
+    expect(img.extraction).toBeUndefined();
+    expect(cleared.objects["ext_1"]).toBeDefined(); // swatch survives
+  });
+});
+
+describe("marker cleanup cascades", () => {
+  beforeEach(() => setNextId(500));
+
+  function seedWithLinkedSwatches(): CanvasState {
+    const base = makeStateWithImage();
+    return reducer(base, {
+      type: "CREATE_EXTRACTION",
+      imageId: "img_1",
+      samples: [
+        {
+          id: "ext_1",
+          color: { l: 0.5, c: 0.2, h: 30 },
+          source: { x: 0.25, y: 0.25 },
+          position: { x: 220, y: 0 },
+        },
+        {
+          id: "ext_2",
+          color: { l: 0.4, c: 0.18, h: 250 },
+          source: { x: 0.75, y: 0.75 },
+          position: { x: 220, y: 56 },
+        },
+      ],
+    });
+  }
+
+  it("DELETE_OBJECTS on a linked swatch removes its marker", () => {
+    const state = seedWithLinkedSwatches();
+    const result = reducer(state, {
+      type: "DELETE_OBJECTS",
+      ids: ["ext_1"],
+    });
+    const img = result.objects["img_1"] as ReferenceImage;
+    expect(img.extraction!.markers).toHaveLength(1);
+    expect(img.extraction!.markers[0].swatchId).toBe("ext_2");
+  });
+
+  it("DELETE_OBJECTS removing every linked swatch drops extraction field", () => {
+    const state = seedWithLinkedSwatches();
+    const result = reducer(state, {
+      type: "DELETE_OBJECTS",
+      ids: ["ext_1", "ext_2"],
+    });
+    const img = result.objects["img_1"] as ReferenceImage;
+    expect(img.extraction).toBeUndefined();
+  });
+
+  it("DELETE_SELECTED cleans up the marker of a selected linked swatch", () => {
+    const state = { ...seedWithLinkedSwatches(), selectedIds: ["ext_1"] };
+    const result = reducer(state, { type: "DELETE_SELECTED" });
+    const img = result.objects["img_1"] as ReferenceImage;
+    expect(img.extraction!.markers).toHaveLength(1);
+    expect(img.extraction!.markers[0].swatchId).toBe("ext_2");
+  });
+
+  it("PROMOTE_TO_RAMP on a linked swatch removes its marker", () => {
+    const state = seedWithLinkedSwatches();
+    const result = reducer(state, {
+      type: "PROMOTE_TO_RAMP",
+      id: "ext_1",
+      stopCount: 11,
+    });
+    const img = result.objects["img_1"] as ReferenceImage;
+    expect(img.extraction!.markers).toHaveLength(1);
+    expect(img.extraction!.markers[0].swatchId).toBe("ext_2");
+    // The promoted id is now a ramp.
+    expect((result.objects["ext_1"] as Ramp).type).toBe("ramp");
+  });
+
+  it("DUPLICATE_SELECTED on an image with extraction yields a marker-free duplicate", () => {
+    const state = { ...seedWithLinkedSwatches(), selectedIds: ["img_1"] };
+    const result = reducer(state, {
+      type: "DUPLICATE_SELECTED",
+      idMap: { img_1: "img_1_copy" },
+    });
+    const dup = result.objects["img_1_copy"] as ReferenceImage;
+    expect(dup.extraction).toBeUndefined();
+    // Original is untouched.
+    const orig = result.objects["img_1"] as ReferenceImage;
+    expect(orig.extraction!.markers).toHaveLength(2);
+  });
+});
+
+describe("LOAD_BOARD filters orphan markers", () => {
+  it("drops markers whose swatchId is missing in the loaded state", () => {
+    const loaded: CanvasState = {
+      objects: {
+        img_1: {
+          id: "img_1",
+          type: "reference-image",
+          dataUrl: "",
+          position: { x: 0, y: 0 },
+          size: { width: 100, height: 100 },
+          extraction: {
+            markers: [
+              {
+                id: "mkr_alive",
+                swatchId: "sw_alive",
+                position: { x: 0.1, y: 0.1 },
+                color: { l: 0.5, c: 0.2, h: 30 },
+              },
+              {
+                id: "mkr_orphan",
+                swatchId: "sw_missing",
+                position: { x: 0.9, y: 0.9 },
+                color: { l: 0.4, c: 0.18, h: 250 },
+              },
+            ],
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        } as ReferenceImage,
+        sw_alive: {
+          id: "sw_alive",
+          type: "swatch",
+          color: { l: 0.5, c: 0.2, h: 30 },
+          position: { x: 120, y: 0 },
+        } as Swatch,
+      },
+      selectedIds: [],
+      camera: { x: 0, y: 0, zoom: 1 },
+      lightMode: true,
+      showConnections: true,
+    };
+
+    const result = reducer(initialState, { type: "LOAD_BOARD", state: loaded });
+    const img = result.objects["img_1"] as ReferenceImage;
+    expect(img.extraction!.markers).toHaveLength(1);
+    expect(img.extraction!.markers[0].id).toBe("mkr_alive");
+  });
+});
+
+describe("MOVE_EXTRACTION_MARKER skips history", () => {
+  it("does not push a past entry through historyReducer", () => {
+    setNextId(500);
+    const seeded = reducer(makeStateWithImage(), {
+      type: "CREATE_EXTRACTION",
+      imageId: "img_1",
+      samples: [
+        {
+          id: "ext_1",
+          color: { l: 0.5, c: 0.2, h: 30 },
+          source: { x: 0.25, y: 0.25 },
+          position: { x: 220, y: 0 },
+        },
+      ],
+    });
+    const marker = (seeded.objects["img_1"] as ReferenceImage).extraction!.markers[0];
+
+    const history = { current: seeded, past: [], future: [] };
+    const action: Action = {
+      type: "MOVE_EXTRACTION_MARKER",
+      imageId: "img_1",
+      markerId: marker.id,
+      position: { x: 0.6, y: 0.6 },
+      color: { l: 0.3, c: 0.18, h: 200 },
+    };
+    const next = historyReducer(history, action);
+    expect(next.past).toHaveLength(0);
+    expect(next.future).toHaveLength(0);
+    expect(next.current).not.toBe(history.current); // state still changed
   });
 });
