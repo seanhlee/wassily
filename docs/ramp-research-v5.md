@@ -1,6 +1,6 @@
-# Wassily v5 Research Working Doc
+# Wassily Ramp Research Working Doc
 
-Living design memo and research log for the next ramp-generation investigation.
+Living design memo and research log for Wassily's ramp-generation work. This started as the `v5` investigation and now also tracks the `v6` semantic solver direction.
 
 This document should be updated as the work evolves. It is meant to capture:
 
@@ -11,7 +11,9 @@ This document should be updated as the work evolves. It is meant to capture:
 
 ## Context
 
-Wassily's current `v3` ramp engine in `src/engine/ramp.ts` moved in the right direction by sampling an OKLab path at equal arc-length intervals. That gave the system something `v4` lost: perceptual evenness by construction.
+Wassily's `v3` ramp engine in `src/engine/ramp.ts` moved in the right direction by sampling an OKLab path at equal arc-length intervals. That gave the system something `v4` lost: perceptual evenness by construction.
+
+The current `v6` research solver in `src/engine/v6ResearchSolver.ts` keeps that perceptual backbone and adds a seed-constrained path solver plus semantic tonal roles for the 11-stop ladder. The focus has shifted from "smooth ramps" to "beautiful, coherent, design-system ramps from an exact anchor seed."
 
 The failed `v4` experiment is still useful. It showed that "beauty-first" cannot mean replacing perceptual geometry with hand-shaped stop-index curves. Beauty has to enter as path design, endpoint selection, and family-specific behavior while preserving the perceptual backbone.
 
@@ -57,7 +59,7 @@ Why it matters:
 
 Meaning for Wassily:
 
-- `v5` should keep an Oklab or Oklch backbone unless a stronger alternative clearly outperforms it in practice.
+- The solver should keep an Oklab or Oklch backbone unless a stronger alternative clearly outperforms it in practice.
 - Interpolation quality should remain a first-class goal, not an implementation detail.
 - Beauty work should happen on top of this space, not instead of it.
 
@@ -74,7 +76,7 @@ Why it matters:
 Meaning for Wassily:
 
 - Hard colors such as lime, cyan, and violet should not be handled by raw chroma clipping alone.
-- `v5` should be cusp-aware when choosing highlight endpoints, dark endpoints, and shoulder points.
+- The solver should be cusp-aware when choosing highlight endpoints, dark endpoints, and shoulder points.
 - Warm and cool neutral handling should be modeled as trajectories inside the gamut, not as arbitrary low-chroma exceptions.
 
 ### 3. Color Crafting
@@ -105,7 +107,7 @@ Why it matters:
 Meaning for Wassily:
 
 - This validates the best part of `v3` and explains why the stop-index power curves in `v4` felt like a regression.
-- Any `v5` prototype should preserve evenness metrics and monotonic lightness behavior wherever the chosen family intends it.
+- Any prototype should preserve evenness metrics and monotonic lightness behavior wherever the chosen family intends it.
 - Aesthetic priors are useful only if they do not destroy perceptual legibility.
 
 ### 5. HCL / sequential palette design heuristics
@@ -157,7 +159,7 @@ Meaning for Wassily:
 
 ### Working thesis
 
-`v5` should keep `v3`'s perceptual path sampling and make the path itself more intelligent.
+The research direction is to keep `v3`'s perceptual path sampling insight and make the path itself more intelligent. The current `v6` solver follows this direction by optimizing a seed-constrained path before semantic role shaping.
 
 That means:
 
@@ -733,6 +735,36 @@ A prototype should be treated as failed if any of the following occur:
    - local deviation along the path
    That would let us judge whether a miss comes from the family model, the solver objective, or the sampling stage.
 
+## Current Direction After the Semantic Role Pass
+
+The v6 work has shifted the goal from "generate a smooth set of colors" to "generate a semantic design-system ramp from an anchor seed." This is a meaningful distinction.
+
+The 11-stop ladder now carries role meaning:
+
+- `50` should be tinted paper, not white.
+- `100/200` should bridge into high-chroma seeds without a perceptual cliff.
+- The seed should remain exact and should land where its color actually belongs.
+- `700/800/900/950` should read as a deliberate descent into colored ink.
+- `950` should not collapse into generic black.
+
+This role layer does not replace perceptual spacing. It sits on top of the solved OKLab path and gives the tonal labels product meaning. The best ramp should be both perceptually coherent and semantically useful.
+
+Current hard-case reading:
+
+- Bright lime is the stress test for high-lightness, high-chroma cusp behavior.
+- Cyan is the stress test for pale tints that still need family signal.
+- Phthalo green is the stress test for cool green identity through the body and tail.
+- Ultramarine / blue-violet is the stress test for dark-tail cadence and chromatic ink.
+- Neutrals are the stress test for restraint: quiet paper, quiet ink, no accidental color theatrics.
+
+The next algorithmic gains should come from better continuous family priors rather than broad endpoint movement:
+
+1. Keep the semantic role envelope, but make it less hand-shaped over time.
+2. Learn family-specific chroma density along normalized progress.
+3. Add a path-beauty board that exposes the live path, role envelope, and corpus archetype together.
+4. Continue using the gauntlet as the regression gate for hard colors and near-neighbor perturbations.
+5. Treat Tailwind/Web Awesome-style systems as references, not targets to copy exactly.
+
 ### 2026-04-15
 
 - Built the first full `v6` solver path in `src/engine/v6ResearchSolver.ts`.
@@ -753,3 +785,59 @@ A prototype should be treated as failed if any of the following occur:
 - Result:
   - the remaining misses are now much more clearly shape-prior problems rather than anchor-selection mistakes or invalidity bugs
   - the next useful work should focus on continuous family-conditioned path and chroma-distribution priors, not another round of isolated endpoint patches
+
+### 2026-04-23 / 2026-04-24
+
+- Reframed the v6 output around semantic tonal roles for the Tailwind-style 11-stop ladder.
+- Added a tonal role envelope in `src/engine/v6ResearchSolver.ts`:
+  - chromatic `50` now targets tinted paper around `L 0.958`
+  - neutral `50` targets quieter paper around `L 0.955`
+  - chromatic `950` is lifted/deepened into colored ink by family, generally around `L 0.24-0.28`
+  - neutral `950` targets quiet ink around `L 0.22`
+  - exact seed placement remains a hard constraint after role shaping
+- Added high-lightness cusp handling for bright lime:
+  - extreme yellow-green seeds can anchor at `200`
+  - `50/100/200` are shaped as a deliberate tint-to-flash bridge
+  - the body and tail keep lime identity without turning into mud
+- Tuned tint occupancy by family:
+  - cyan/aqua keeps stronger family signal in `50`
+  - phthalo/green-cyan keeps more chroma in the light tint
+  - neutrals stay low chroma
+- Tuned ink behavior by family:
+  - lime keeps colored olive-green ink instead of black
+  - cyan/phthalo keep readable dark color without tail collapse
+  - ultramarine / blue-violet now gets a deeper but still chromatic ink endpoint and a slightly more linear dark-tail cadence
+- Added an anchor-aware dark-tail progression:
+  - `400`-anchored ramps descend more evenly through `700/800/900/950`
+  - `500`-anchored phthalo/ultramarine paths keep a stronger semantic ink curve
+- Added the broader visual stress matrix:
+  - generator: `scripts/generate-research-gauntlet.ts`
+  - command: `npm run research:gauntlet`
+  - outputs:
+    - `docs/generated/research-gauntlet.html`
+    - `docs/generated/research-gauntlet.json`
+- The gauntlet currently covers 26 seeds across:
+  - neutrals
+  - warm hues
+  - greens
+  - cool hues
+  - perturbations around lime, cyan, and phthalo
+- Current gauntlet status after this pass:
+  - `ok 26`
+  - `watch 0`
+  - `fail 0`
+- Focused hard-case readings after the pass:
+  - Bright Lime: `50 L 0.958`, `950 L 0.276`
+  - Cyan: `50 L 0.958`, `950 L 0.273`
+  - Phthalo Green: `50 L 0.958`, `950 L 0.270`
+  - Ultramarine: `950 L 0.238`, still chromatic blue ink rather than black
+- Added/updated tests to protect the new aesthetic contract:
+  - semantic tint and ink roles
+  - neutral endpoint cadence
+  - hard chromatic dark-tail liveliness
+  - blue-violet ink cadence
+- Verification at commit `245725c`:
+  - `npm run test:run`: 173 passed
+  - `npm run lint`: passed
+  - `npm run build`: passed
+- Deployed to GitHub Pages via the existing `main` push workflow.

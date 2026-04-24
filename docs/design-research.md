@@ -16,9 +16,9 @@ Three reference points analyzed for interaction design and color system inspirat
 
 1. **Programmatic generation over hand-picking** — Lyft's core thesis: designer-picked colors create an expiration date. Math doesn't drift. Wassily embodies this already with purification + opinionated ramp generation.
 
-2. **The yellow-blue problem** — Same algorithm applied uniformly to different hues produces inconsistent results. Wassily solves this *more elegantly* with hue-adaptive lightness rescaling (`adaptiveLightness` in `ramp.ts`) that moves the anchor toward each hue's natural chroma peak. ColorBox requires manual per-hue tuning.
+2. **The yellow-blue problem** — Same algorithm applied uniformly to different hues produces inconsistent results. Wassily now handles this through the v6 semantic solver: seed-constrained OKLab path geometry, family-aware tint/ink roles, and special pressure for hard cases like bright lime, cyan, phthalo green, and blue-violet.
 
-3. **Non-uniform lightness distribution** — Lyft needed "pockets of concentration in light and dark shades with only a few middle shades." Wassily's hardcoded L targets already provide this.
+3. **Non-uniform tonal distribution** — Lyft needed "pockets of concentration in light and dark shades with only a few middle shades." Wassily's 11-stop ladder now treats `50`, `100/200`, body stops, and `900/950` as semantic roles, then uses perceptual cadence checks to avoid cliffs and dead tails.
 
 4. **Color naming with numeric scale** — Lyft: hue name + 0-100. Wassily: hue name + Tailwind stops (50-950). Both work.
 
@@ -26,17 +26,19 @@ Three reference points analyzed for interaction design and color system inspirat
 
 **Accessibility encoded in the naming convention.** Every Lyft color 0-50 passes AA on black, 60-100 passes AA on white. Just hearing "Red 60" tells you it's accessible. Wassily has WCAG dots and connection contrast ratios, but stop numbers don't inherently communicate accessibility. A visible threshold marker on ramps could bridge this.
 
-**Easing curves for lightness distribution.** ColorBox uses configurable easing (easeOutQuad, easeInQuart) per dimension. Wassily's lightness targets are fixed. A "lightness bias" parameter could let users weight ramps toward lights or darks.
+**Easing curves for tonal distribution.** ColorBox uses configurable easing (easeOutQuad, easeInQuart) per dimension. Wassily's v6 solver now owns this internally through path scoring and semantic role shaping. A future "tonal bias" gesture could expose that control without turning the tool into a settings panel.
 
-**Hue rotation across the ramp.** ColorBox sweeps hue across a range (e.g., 220-240 degrees). Wassily's warm/cool drift is always toward fixed targets. An optional "hue sweep" would be more expressive.
+**Hue rotation across the ramp.** ColorBox sweeps hue across a range (e.g., 220-240 degrees). Wassily already uses family-aware hue and chroma behavior, but an optional expressive "hue sweep" style could still be useful when the goal is atmosphere rather than neutral design-system output.
 
 **Locked/pinned stops.** ColorBox pins specific steps to exact colors. Wassily only implicitly snaps the closest stop to seed chroma. Multi-pin support would help retrofit existing brand palettes.
 
 ### What Wassily Already Does Better
 
 - OKLCH native (ColorBox was HSV first, OKLCH added later)
-- Automatic hue adaptation (no manual per-hue tuning)
-- Chroma contouring (bell curve vs ColorBox's linear saturation)
+- Seed-constrained OKLab solving with exact anchor preservation
+- Semantic tint/body/ink roles instead of raw per-channel curves
+- Family-aware hard-case handling without manual user tuning
+- Chroma and hue behavior scored perceptually instead of linearly
 - Purification (colors *enter* the system, not just generated from parameters)
 - Dark mode as parallel generation (ColorBox has none)
 - Hue-adaptive warm shadow drift
@@ -54,7 +56,7 @@ Morpho is to sound what Wassily is to color.
 |---|---|
 | Input sound → resynthesized in new style | Input color → purified to ideal expression |
 | "Keeps the overall shape intact" | "Hue is sacred — purification never changes it" |
-| Pre-trained models = aesthetic directions | 6 ramp opinions = aesthetic directions |
+| Pre-trained models = aesthetic directions | Ramp styles / solver priors = aesthetic directions |
 | Mix knob (wet/dry) | M key (opinionated/pure) |
 | Model browser = collection of aesthetics | Currently: one fixed opinion set |
 | Custom model training = your sounds become your instrument | **No equivalent yet** |
@@ -69,14 +71,14 @@ Each Morpho model IS a creative instrument. "Beating Djembe" encodes a specific 
 
 Applied to Wassily: What if there were **ramp styles** — named aesthetic directions:
 
-- **"Natural"** — current default (warm shadows, cool highlights, chroma bell curve)
+- **"Natural"** — current default (semantic tints, perceptual body cadence, chromatic ink)
 - **"Clinical"** — pure math mode but with gamut safety
 - **"Brutalist"** — flat chroma, no drift, maximum contrast between stops
 - **"Sunset"** — heavy warm drift throughout, chroma peaks in 300-500 range
 - **"Deep Sea"** — cool drift in both directions, chroma suppressed in lights
 - **"Neon"** — near-constant high chroma, minimal contouring
 
-Each style would be a set of opinion parameters (lightness curve, chroma contour shape, drift targets, drift intensity). The existing 6 opinions become tunable knobs, and styles are presets for those knobs.
+Each style would be a set of solver priors and semantic role preferences: tonal envelope, chroma density, hue drift, seed-exit geometry, and ink behavior. The current v6 default is one opinionated style; future styles should feel like different instruments, not exposed math parameters.
 
 **2. Custom Model Training → "Learn From Palette"**
 
