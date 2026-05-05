@@ -238,14 +238,14 @@
     <main>
       <section class="hero">
         <h1>Highlight Ramp Lab</h1>
-        <p>Visual-only pass for the full anchor-seeded solver path. This board is scoped to lime, cyan, and phthalo-green so the complete ramp can be judged without metric noise.</p>
+        <p>Visual-only pass for exact-seed ramp quality. This board compares raw v6 against the locked brand-exact fairing algorithm, with top-bridge and dark-tail diagnostics visible beside the full ramp.</p>
         <div class="hero__meta">
           <div class="pill mono">Stops: 50 / 100 / 200 / 300 / 400 / 500 / 600 / 700 / 800 / 900 / 950</div>
-          <div class="pill mono">Engine: V6 Solver</div>
-          <div class="pill mono">Generated 4/23/2026, 8:24:04 PM</div>
+          <div class="pill mono">Engines: V6 Solver / Brand-Exact Fair</div>
+          <div class="pill mono">Generated 5/5/2026, 4:34:32 PM</div>
         </div>
       </section>
-      
+
             <section class="seed">
               <div class="seed__header">
                 <h2>Bright Lime</h2>
@@ -254,14 +254,14 @@
                   <div class="chip mono">seed oklch(0.931 0.223 121.1)</div>
                 </div>
               </div>
-              
+
                     <article class="engine">
                       <div class="engine__bar">
                         <h3>V6 Solver</h3>
                         <div class="anchor mono">anchor stop 200</div>
                       </div>
-                      
-    <div class="diagnostics" aria-label="Top-edge diagnostics">
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
       <div class="diagnostic">
         <span class="diagnostic__label">50 occ</span>
         <span class="diagnostic__value mono">50%</span>
@@ -275,6 +275,18 @@
         <span class="diagnostic__value mono">0.078</span>
       </div>
       <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.077</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.075</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.03x</span>
+      </div>
+      <div class="diagnostic">
         <span class="diagnostic__label">edge</span>
         <span class="diagnostic__value mono">1.00x</span>
       </div>
@@ -283,93 +295,479 @@
         <span class="diagnostic__value mono">0.11</span>
       </div>
     </div>
-  
-                      
+
+
     <div class="swatches" aria-label="Focused highlight stops">
-      
+
             <div class="swatch" style="background:#EBF9C5; color:#111111">
               <div class="swatch__label">50</div>
               <div class="swatch__details">
                 <div>#EBF9C5</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#E0FC86; color:#111111">
               <div class="swatch__label">100</div>
               <div class="swatch__details">
                 <div>#E0FC86</div>
               </div>
             </div>
-          
+
             <div class="swatch swatch--seed" style="background:#D3FD05; color:#111111">
               <div class="swatch__label">200</div>
               <div class="swatch__details">
                 <div>#D3FD05</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#A9DB16; color:#111111">
               <div class="swatch__label">300</div>
               <div class="swatch__details">
                 <div>#A9DB16</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#89BE19; color:#111111">
               <div class="swatch__label">400</div>
               <div class="swatch__details">
                 <div>#89BE19</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#71A31A; color:#f8f8f8">
               <div class="swatch__label">500</div>
               <div class="swatch__details">
                 <div>#71A31A</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#5E8818; color:#f8f8f8">
               <div class="swatch__label">600</div>
               <div class="swatch__details">
                 <div>#5E8818</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#506E16; color:#f8f8f8">
               <div class="swatch__label">700</div>
               <div class="swatch__details">
                 <div>#506E16</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#435612; color:#f8f8f8">
               <div class="swatch__label">800</div>
               <div class="swatch__details">
                 <div>#435612</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#34400D; color:#f8f8f8">
               <div class="swatch__label">900</div>
               <div class="swatch__details">
                 <div>#34400D</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#242C08; color:#f8f8f8">
               <div class="swatch__label">950</div>
               <div class="swatch__details">
                 <div>#242C08</div>
               </div>
             </div>
-          
+
     </div>
-  
+
                     </article>
-                  
+
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>Brand-Exact Fair</h3>
+                        <div class="anchor mono">anchor stop 200</div>
+                      </div>
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">50%</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">0.079</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">0.079</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.085</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.085</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">0.03</span>
+      </div>
+    </div>
+
+
+    <div class="swatches" aria-label="Focused highlight stops">
+
+            <div class="swatch" style="background:#EBF9C5; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__details">
+                <div>#EBF9C5</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#DFFC88; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__details">
+                <div>#DFFC88</div>
+              </div>
+            </div>
+
+            <div class="swatch swatch--seed" style="background:#D3FD05; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__details">
+                <div>#D3FD05</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#BBE00D; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__details">
+                <div>#BBE00D</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#A3C311; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__details">
+                <div>#A3C311</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#8CA812; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__details">
+                <div>#8CA812</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#758D12; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__details">
+                <div>#758D12</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#5F7311; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__details">
+                <div>#5F7311</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#4B5A0F; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__details">
+                <div>#4B5A0F</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#37420C; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__details">
+                <div>#37420C</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#242C08; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__details">
+                <div>#242C08</div>
+              </div>
+            </div>
+
+    </div>
+
+                    </article>
+
             </section>
-          
+
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Cadmium Yellow</h2>
+                <p>Bright yellow that stresses high-lightness chroma and warm shadow shaping.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">seed oklch(0.900 0.165 98.0)</div>
+                </div>
+              </div>
+
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>V6 Solver</h3>
+                        <div class="anchor mono">anchor stop 200</div>
+                      </div>
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">48%</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">0.071</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">0.071</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.072</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.071</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.02x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">0.12</span>
+      </div>
+    </div>
+
+
+    <div class="swatches" aria-label="Focused highlight stops">
+
+            <div class="swatch" style="background:#F8F2D7; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__details">
+                <div>#F8F2D7</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#FBEA9A; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__details">
+                <div>#FBEA9A</div>
+              </div>
+            </div>
+
+            <div class="swatch swatch--seed" style="background:#FBDE46; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__details">
+                <div>#FBDE46</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#D7BE14; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__details">
+                <div>#D7BE14</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#B7A418; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__details">
+                <div>#B7A418</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#9B8C19; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__details">
+                <div>#9B8C19</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#817617; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__details">
+                <div>#817617</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#6A6014; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__details">
+                <div>#6A6014</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#554B11; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__details">
+                <div>#554B11</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#41380C; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__details">
+                <div>#41380C</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#2D2708; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__details">
+                <div>#2D2708</div>
+              </div>
+            </div>
+
+    </div>
+
+                    </article>
+
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>Brand-Exact Fair</h3>
+                        <div class="anchor mono">anchor stop 200</div>
+                      </div>
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">48%</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">0.071</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">0.071</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.080</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.080</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">0.05</span>
+      </div>
+    </div>
+
+
+    <div class="swatches" aria-label="Focused highlight stops">
+
+            <div class="swatch" style="background:#F8F2D7; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__details">
+                <div>#F8F2D7</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#F9E99A; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__details">
+                <div>#F9E99A</div>
+              </div>
+            </div>
+
+            <div class="swatch swatch--seed" style="background:#FBDE46; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__details">
+                <div>#FBDE46</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#DFC53D; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__details">
+                <div>#DFC53D</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#C3AC35; color:#111111">
+              <div class="swatch__label">400</div>
+              <div class="swatch__details">
+                <div>#C3AC35</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#A7942D; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__details">
+                <div>#A7942D</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#8D7C25; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__details">
+                <div>#8D7C25</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#73651D; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__details">
+                <div>#73651D</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#5B4F16; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__details">
+                <div>#5B4F16</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#433B0F; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__details">
+                <div>#433B0F</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#2D2708; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__details">
+                <div>#2D2708</div>
+              </div>
+            </div>
+
+    </div>
+
+                    </article>
+
+            </section>
+
             <section class="seed">
               <div class="seed__header">
                 <h2>Cyan</h2>
@@ -378,14 +776,14 @@
                   <div class="chip mono">seed oklch(0.780 0.140 210.0)</div>
                 </div>
               </div>
-              
+
                     <article class="engine">
                       <div class="engine__bar">
                         <h3>V6 Solver</h3>
                         <div class="anchor mono">anchor stop 200</div>
                       </div>
-                      
-    <div class="diagnostics" aria-label="Top-edge diagnostics">
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
       <div class="diagnostic">
         <span class="diagnostic__label">50 occ</span>
         <span class="diagnostic__value mono">81%</span>
@@ -399,6 +797,18 @@
         <span class="diagnostic__value mono">0.103</span>
       </div>
       <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.053</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.051</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.03x</span>
+      </div>
+      <div class="diagnostic">
         <span class="diagnostic__label">edge</span>
         <span class="diagnostic__value mono">1.40x</span>
       </div>
@@ -407,93 +817,740 @@
         <span class="diagnostic__value mono">0.29</span>
       </div>
     </div>
-  
-                      
+
+
     <div class="swatches" aria-label="Focused highlight stops">
-      
+
             <div class="swatch" style="background:#DAF7FC; color:#111111">
               <div class="swatch__label">50</div>
               <div class="swatch__details">
                 <div>#DAF7FC</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#85E7F7; color:#111111">
               <div class="swatch__label">100</div>
               <div class="swatch__details">
                 <div>#85E7F7</div>
               </div>
             </div>
-          
+
             <div class="swatch swatch--seed" style="background:#00CEE7; color:#111111">
               <div class="swatch__label">200</div>
               <div class="swatch__details">
                 <div>#00CEE7</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#0CABC0; color:#f8f8f8">
               <div class="swatch__label">300</div>
               <div class="swatch__details">
                 <div>#0CABC0</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#1093A4; color:#f8f8f8">
               <div class="swatch__label">400</div>
               <div class="swatch__details">
                 <div>#1093A4</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#117E8D; color:#f8f8f8">
               <div class="swatch__label">500</div>
               <div class="swatch__details">
                 <div>#117E8D</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#116B78; color:#f8f8f8">
               <div class="swatch__label">600</div>
               <div class="swatch__details">
                 <div>#116B78</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#105964; color:#f8f8f8">
               <div class="swatch__label">700</div>
               <div class="swatch__details">
                 <div>#105964</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#0F4952; color:#f8f8f8">
               <div class="swatch__label">800</div>
               <div class="swatch__details">
                 <div>#0F4952</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#0D3A41; color:#f8f8f8">
               <div class="swatch__label">900</div>
               <div class="swatch__details">
                 <div>#0D3A41</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#0A2C32; color:#f8f8f8">
               <div class="swatch__label">950</div>
               <div class="swatch__details">
                 <div>#0A2C32</div>
               </div>
             </div>
-          
+
     </div>
-  
+
                     </article>
-                  
+
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>Brand-Exact Fair</h3>
+                        <div class="anchor mono">anchor stop 300</div>
+                      </div>
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">81%</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">0.069</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">0.069</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.074</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.074</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">0.03</span>
+      </div>
+    </div>
+
+
+    <div class="swatches" aria-label="Focused highlight stops">
+
+            <div class="swatch" style="background:#DAF7FC; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__details">
+                <div>#DAF7FC</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#ABEAF5; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__details">
+                <div>#ABEAF5</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#73DCEE; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__details">
+                <div>#73DCEE</div>
+              </div>
+            </div>
+
+            <div class="swatch swatch--seed" style="background:#00CEE7; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__details">
+                <div>#00CEE7</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#0AB5CA; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__details">
+                <div>#0AB5CA</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#0F9CAF; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__details">
+                <div>#0F9CAF</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#118494; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__details">
+                <div>#118494</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#116C7A; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__details">
+                <div>#116C7A</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#105660; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__details">
+                <div>#105660</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#0E4148; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__details">
+                <div>#0E4148</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#0A2C32; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__details">
+                <div>#0A2C32</div>
+              </div>
+            </div>
+
+    </div>
+
+                    </article>
+
             </section>
-          
+
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Violet</h2>
+                <p>Mid-dark vivid violet that often wants richer mids and inkier shadows.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">seed oklch(0.620 0.210 315.0)</div>
+                </div>
+              </div>
+
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>V6 Solver</h3>
+                        <div class="anchor mono">anchor stop 400</div>
+                      </div>
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">44%</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">0.087</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">0.099</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.057</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.055</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.03x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">1.11x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">0.24</span>
+      </div>
+    </div>
+
+
+    <div class="swatches" aria-label="Focused highlight stops">
+
+            <div class="swatch" style="background:#F4EFF7; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__details">
+                <div>#F4EFF7</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#E9CEF6; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__details">
+                <div>#E9CEF6</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#DCA8F4; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__details">
+                <div>#DCA8F4</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#CB7FEB; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__details">
+                <div>#CB7FEB</div>
+              </div>
+            </div>
+
+            <div class="swatch swatch--seed" style="background:#B453DB; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__details">
+                <div>#B453DB</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#9643B8; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__details">
+                <div>#9643B8</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#7F369C; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__details">
+                <div>#7F369C</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#6A2B83; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__details">
+                <div>#6A2B83</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#57206C; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__details">
+                <div>#57206C</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#451757; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__details">
+                <div>#451757</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#340D43; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__details">
+                <div>#340D43</div>
+              </div>
+            </div>
+
+    </div>
+
+                    </article>
+
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>Brand-Exact Fair</h3>
+                        <div class="anchor mono">anchor stop 500</div>
+                      </div>
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">44%</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">0.078</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">0.078</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.076</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.076</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">1.01x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">0.01</span>
+      </div>
+    </div>
+
+
+    <div class="swatches" aria-label="Focused highlight stops">
+
+            <div class="swatch" style="background:#F4EFF7; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__details">
+                <div>#F4EFF7</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#E8D1F3; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__details">
+                <div>#E8D1F3</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#DCB3EE; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__details">
+                <div>#DCB3EE</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#CF95E9; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__details">
+                <div>#CF95E9</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#C276E2; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__details">
+                <div>#C276E2</div>
+              </div>
+            </div>
+
+            <div class="swatch swatch--seed" style="background:#B453DB; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__details">
+                <div>#B453DB</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#9844BA; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__details">
+                <div>#9844BA</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#7E359A; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__details">
+                <div>#7E359A</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#64287C; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__details">
+                <div>#64287C</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#4B1A5E; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__details">
+                <div>#4B1A5E</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#340D43; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__details">
+                <div>#340D43</div>
+              </div>
+            </div>
+
+    </div>
+
+                    </article>
+
+            </section>
+
+            <section class="seed">
+              <div class="seed__header">
+                <h2>Ultramarine</h2>
+                <p>Deep vivid blue seed that tests dark retention and blue highlight presence.</p>
+                <div class="seed__meta">
+                  <div class="chip mono">seed oklch(0.470 0.180 265.0)</div>
+                </div>
+              </div>
+
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>V6 Solver</h3>
+                        <div class="anchor mono">anchor stop 500</div>
+                      </div>
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">43%</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">0.104</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">0.107</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.042</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.041</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.04x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">1.17x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">0.38</span>
+      </div>
+    </div>
+
+
+    <div class="swatches" aria-label="Focused highlight stops">
+
+            <div class="swatch" style="background:#EEF1F7; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__details">
+                <div>#EEF1F7</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#C3D2F0; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__details">
+                <div>#C3D2F0</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#98B1E7; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__details">
+                <div>#98B1E7</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#7091DB; color:#f8f8f8">
+              <div class="swatch__label">300</div>
+              <div class="swatch__details">
+                <div>#7091DB</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#4A70CD; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__details">
+                <div>#4A70CD</div>
+              </div>
+            </div>
+
+            <div class="swatch swatch--seed" style="background:#274FBE; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__details">
+                <div>#274FBE</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#1C3FA2; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__details">
+                <div>#1C3FA2</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#14328D; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__details">
+                <div>#14328D</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#0D277A; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__details">
+                <div>#0D277A</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#071D69; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__details">
+                <div>#071D69</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#031259; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__details">
+                <div>#031259</div>
+              </div>
+            </div>
+
+    </div>
+
+                    </article>
+
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>Brand-Exact Fair</h3>
+                        <div class="anchor mono">anchor stop 700</div>
+                      </div>
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">43%</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">0.074</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">0.074</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.079</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.079</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">0.03</span>
+      </div>
+    </div>
+
+
+    <div class="swatches" aria-label="Focused highlight stops">
+
+            <div class="swatch" style="background:#EEF1F7; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__details">
+                <div>#EEF1F7</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#D0DAF1; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__details">
+                <div>#D0DAF1</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#B2C4EA; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__details">
+                <div>#B2C4EA</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#94ADE2; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__details">
+                <div>#94ADE2</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#7897DA; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__details">
+                <div>#7897DA</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#5C80D1; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__details">
+                <div>#5C80D1</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#4168C8; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__details">
+                <div>#4168C8</div>
+              </div>
+            </div>
+
+            <div class="swatch swatch--seed" style="background:#274FBE; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__details">
+                <div>#274FBE</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#193A9B; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__details">
+                <div>#193A9B</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#0C2679; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__details">
+                <div>#0C2679</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#031259; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__details">
+                <div>#031259</div>
+              </div>
+            </div>
+
+    </div>
+
+                    </article>
+
+            </section>
+
             <section class="seed">
               <div class="seed__header">
                 <h2>Phthalo Green</h2>
@@ -502,14 +1559,14 @@
                   <div class="chip mono">seed oklch(0.520 0.160 165.0)</div>
                 </div>
               </div>
-              
+
                     <article class="engine">
                       <div class="engine__bar">
                         <h3>V6 Solver</h3>
                         <div class="anchor mono">anchor stop 500</div>
                       </div>
-                      
-    <div class="diagnostics" aria-label="Top-edge diagnostics">
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
       <div class="diagnostic">
         <span class="diagnostic__label">50 occ</span>
         <span class="diagnostic__value mono">70%</span>
@@ -523,6 +1580,18 @@
         <span class="diagnostic__value mono">0.085</span>
       </div>
       <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.044</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.041</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.06x</span>
+      </div>
+      <div class="diagnostic">
         <span class="diagnostic__label">edge</span>
         <span class="diagnostic__value mono">1.00x</span>
       </div>
@@ -531,93 +1600,218 @@
         <span class="diagnostic__value mono">0.30</span>
       </div>
     </div>
-  
-                      
+
+
     <div class="swatches" aria-label="Focused highlight stops">
-      
+
             <div class="swatch" style="background:#D8FBE9; color:#111111">
               <div class="swatch__label">50</div>
               <div class="swatch__details">
                 <div>#D8FBE9</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#B9E5D0; color:#111111">
               <div class="swatch__label">100</div>
               <div class="swatch__details">
                 <div>#B9E5D0</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#8FCFB4; color:#111111">
               <div class="swatch__label">200</div>
               <div class="swatch__details">
                 <div>#8FCFB4</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#5FB695; color:#f8f8f8">
               <div class="swatch__label">300</div>
               <div class="swatch__details">
                 <div>#5FB695</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#2D9A77; color:#f8f8f8">
               <div class="swatch__label">400</div>
               <div class="swatch__details">
                 <div>#2D9A77</div>
               </div>
             </div>
-          
+
             <div class="swatch swatch--seed" style="background:#007C59; color:#f8f8f8">
               <div class="swatch__label">500</div>
               <div class="swatch__details">
                 <div>#007C59</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#086548; color:#f8f8f8">
               <div class="swatch__label">600</div>
               <div class="swatch__details">
                 <div>#086548</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#0B543C; color:#f8f8f8">
               <div class="swatch__label">700</div>
               <div class="swatch__details">
                 <div>#0B543C</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#0C4632; color:#f8f8f8">
               <div class="swatch__label">800</div>
               <div class="swatch__details">
                 <div>#0C4632</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#0B3929; color:#f8f8f8">
               <div class="swatch__label">900</div>
               <div class="swatch__details">
                 <div>#0B3929</div>
               </div>
             </div>
-          
+
             <div class="swatch" style="background:#0A2E21; color:#f8f8f8">
               <div class="swatch__label">950</div>
               <div class="swatch__details">
                 <div>#0A2E21</div>
               </div>
             </div>
-          
+
     </div>
-  
+
                     </article>
-                  
+
+                    <article class="engine">
+                      <div class="engine__bar">
+                        <h3>Brand-Exact Fair</h3>
+                        <div class="anchor mono">anchor stop 600</div>
+                      </div>
+
+    <div class="diagnostics" aria-label="Ramp diagnostics">
+      <div class="diagnostic">
+        <span class="diagnostic__label">50 occ</span>
+        <span class="diagnostic__value mono">70%</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">50->100</span>
+        <span class="diagnostic__value mono">0.074</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">100->200</span>
+        <span class="diagnostic__value mono">0.074</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">0.064</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">0.064</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">edge</span>
+        <span class="diagnostic__value mono">1.00x</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">cv</span>
+        <span class="diagnostic__value mono">0.07</span>
+      </div>
+    </div>
+
+
+    <div class="swatches" aria-label="Focused highlight stops">
+
+            <div class="swatch" style="background:#D8FBE9; color:#111111">
+              <div class="swatch__label">50</div>
+              <div class="swatch__details">
+                <div>#D8FBE9</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#B9E5D0; color:#111111">
+              <div class="swatch__label">100</div>
+              <div class="swatch__details">
+                <div>#B9E5D0</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#9ACFB7; color:#111111">
+              <div class="swatch__label">200</div>
+              <div class="swatch__details">
+                <div>#9ACFB7</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#7CBA9E; color:#111111">
+              <div class="swatch__label">300</div>
+              <div class="swatch__details">
+                <div>#7CBA9E</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#5CA586; color:#f8f8f8">
+              <div class="swatch__label">400</div>
+              <div class="swatch__details">
+                <div>#5CA586</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#3A916F; color:#f8f8f8">
+              <div class="swatch__label">500</div>
+              <div class="swatch__details">
+                <div>#3A916F</div>
+              </div>
+            </div>
+
+            <div class="swatch swatch--seed" style="background:#007C59; color:#f8f8f8">
+              <div class="swatch__label">600</div>
+              <div class="swatch__details">
+                <div>#007C59</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#07674A; color:#f8f8f8">
+              <div class="swatch__label">700</div>
+              <div class="swatch__details">
+                <div>#07674A</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#0B533C; color:#f8f8f8">
+              <div class="swatch__label">800</div>
+              <div class="swatch__details">
+                <div>#0B533C</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#0C402E; color:#f8f8f8">
+              <div class="swatch__label">900</div>
+              <div class="swatch__details">
+                <div>#0C402E</div>
+              </div>
+            </div>
+
+            <div class="swatch" style="background:#0A2E21; color:#f8f8f8">
+              <div class="swatch__label">950</div>
+              <div class="swatch__details">
+                <div>#0A2E21</div>
+              </div>
+            </div>
+
+    </div>
+
+                    </article>
+
             </section>
-          
+
     </main>
   </body>
 </html>

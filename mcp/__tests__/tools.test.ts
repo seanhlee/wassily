@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { stopCountDeltaForTarget } from "../tools.js";
 
 // Boot safety: importing tools.ts triggers all engine imports.
 // If gamut.ts or any DOM-dependent module fails to load, this blows up.
@@ -103,6 +104,35 @@ describe("generate_ramp", () => {
     for (let i = 1; i < stops.length; i++) {
       expect(stops[i].color.l).toBeLessThanOrEqual(stops[i - 1].color.l + 0.001);
     }
+  });
+
+  it("supports the expanded 13-stop preset", () => {
+    const stops = generateRamp({ hue: 210, stopCount: 13, mode: "opinionated" });
+    expect(stops).toHaveLength(13);
+    expect(stops.map((stop) => stop.label)).toEqual([
+      "50",
+      "75",
+      "100",
+      "200",
+      "300",
+      "400",
+      "500",
+      "600",
+      "700",
+      "800",
+      "900",
+      "925",
+      "950",
+    ]);
+  });
+});
+
+describe("set_stop_count", () => {
+  it("computes reducer-compatible deltas from non-preset counts", () => {
+    expect(stopCountDeltaForTarget(12, 11)).toBe(-1);
+    expect(stopCountDeltaForTarget(12, 13)).toBe(1);
+    expect(stopCountDeltaForTarget(10, 9)).toBe(-1);
+    expect(stopCountDeltaForTarget(10, 11)).toBe(1);
   });
 });
 

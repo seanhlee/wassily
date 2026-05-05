@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-24T00:23:23.040Z",
+  "generatedAt": "2026-05-05T20:34:06.618Z",
   "groups": [
     {
       "label": "Neutrals",
@@ -16,6 +16,7 @@
               "h": 70
             }
           },
+          "engine": "v6",
           "group": "Neutrals",
           "metrics": {
             "anchor": "400",
@@ -26,7 +27,12 @@
             "stop50Lightness": 0.955,
             "stop50Occupancy": 0.13714285714285712,
             "topDistance": 0.08381797614473878,
+            "topDistanceRatio": 1.1398317892398402,
             "bridgeDistance": 0.08381797614473878,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.06427105115863761,
+            "darkEdgeDistance": 0.0636271229285964,
+            "darkTailRatio": 0.869636868579481,
             "endpointDarkLightness": 0.21999999999999997,
             "endpointDarkChroma": 0.0099,
             "monotone": true,
@@ -92,6 +98,97 @@
         },
         {
           "seed": {
+            "id": "warm-neutral",
+            "label": "Warm Neutral",
+            "note": "Warm gray / bone family for neutral-specific behavior and temperature handling.",
+            "color": {
+              "l": 0.62,
+              "c": 0.018,
+              "h": 70
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.08813456860812764,
+            "worstAdjacent": 1.1933060856876614,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.13714285714285712,
+            "topDistance": 0.06705438091579098,
+            "topDistanceRatio": 0.9118654313918718,
+            "bridgeDistance": 0.06705438091579109,
+            "topBridgeRatio": 0.9999999999999983,
+            "darkBridgeDistance": 0.08001640081883221,
+            "darkEdgeDistance": 0.08001640081883209,
+            "darkTailRatio": 1.088134568608128,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.0099,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F2F0ED",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#DDD9D5",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#C9C3BE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#B5AEA7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#A19990",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#8D847B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#756D65",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#5E574F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#47413B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#322D28",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#1E1A16",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "cool-neutral",
             "label": "Cool Neutral",
             "note": "Cool gray / slate family for neutral-specific behavior and temperature handling.",
@@ -101,6 +198,7 @@
               "h": 255
             }
           },
+          "engine": "v6",
           "group": "Neutrals",
           "metrics": {
             "anchor": "400",
@@ -111,7 +209,12 @@
             "stop50Lightness": 0.955,
             "stop50Occupancy": 0.14,
             "topDistance": 0.08383443819787964,
+            "topDistanceRatio": 1.1399535763479858,
             "bridgeDistance": 0.08383443819787964,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.06427105115863761,
+            "darkEdgeDistance": 0.06362712292859639,
+            "darkTailRatio": 0.8695590027989669,
             "endpointDarkLightness": 0.21999999999999997,
             "endpointDarkChroma": 0.0099,
             "monotone": true,
@@ -177,6 +280,97 @@
         },
         {
           "seed": {
+            "id": "cool-neutral",
+            "label": "Cool Neutral",
+            "note": "Cool gray / slate family for neutral-specific behavior and temperature handling.",
+            "color": {
+              "l": 0.62,
+              "c": 0.018,
+              "h": 255
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.08803713892161129,
+            "worstAdjacent": 1.1930717635091133,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.14000000000000004,
+            "topDistance": 0.06706755055830367,
+            "topDistanceRatio": 0.9119628610783881,
+            "bridgeDistance": 0.06706755055830378,
+            "topBridgeRatio": 0.9999999999999983,
+            "darkBridgeDistance": 0.08001640081883221,
+            "darkEdgeDistance": 0.0800164008188321,
+            "darkTailRatio": 1.0880371389216115,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.0099,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#EFF0F2",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#D7DADE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#C1C5CA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#AAB0B7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#949BA4",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#7F8791",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#686F78",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#535960",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#3E4349",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#2A2E34",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#181B1F",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "paper-gray",
             "label": "Paper Gray",
             "note": "Nearly achromatic warm paper.",
@@ -186,6 +380,7 @@
               "h": 72
             }
           },
+          "engine": "v6",
           "group": "Neutrals",
           "metrics": {
             "anchor": "300",
@@ -196,7 +391,12 @@
             "stop50Lightness": 0.955,
             "stop50Occupancy": 0.04465116279069767,
             "topDistance": 0.07168236262227348,
+            "topDistanceRatio": 0.975198463248021,
             "bridgeDistance": 0.07168236262227348,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.07143367878742582,
+            "darkEdgeDistance": 0.07083803800920109,
+            "darkTailRatio": 0.9677635788515242,
             "endpointDarkLightness": 0.21999999999999997,
             "endpointDarkChroma": 0.0033000000000000004,
             "monotone": true,
@@ -262,6 +462,97 @@
         },
         {
           "seed": {
+            "id": "paper-gray",
+            "label": "Paper Gray",
+            "note": "Nearly achromatic warm paper.",
+            "color": {
+              "l": 0.74,
+              "c": 0.006,
+              "h": 72
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "300",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.016236417073881924,
+            "worstAdjacent": 1.036331852565205,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.04465116279069767,
+            "topDistance": 0.07168236262227348,
+            "topDistanceRatio": 0.9751984632480207,
+            "bridgeDistance": 0.07168236262227348,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.07428671565259148,
+            "darkEdgeDistance": 0.07428671565259148,
+            "darkTailRatio": 1.0106292300365625,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.0033000000000000004,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F1F0EF",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#DAD8D6",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#C3C1BE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#ADAAA7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#969390",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#807D7A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#6A6865",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#555351",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#413F3D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#2E2C2A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#1C1A19",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "warm-chroma-edge",
             "label": "Warm Chroma Edge",
             "note": "Near-neutral just below chromatic behavior.",
@@ -271,6 +562,7 @@
               "h": 72
             }
           },
+          "engine": "v6",
           "group": "Neutrals",
           "metrics": {
             "anchor": "400",
@@ -281,7 +573,12 @@
             "stop50Lightness": 0.955,
             "stop50Occupancy": 0.14,
             "topDistance": 0.08435373366616827,
+            "topDistanceRatio": 1.141587365894681,
             "bridgeDistance": 0.08435373366616827,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.06449903926224555,
+            "darkEdgeDistance": 0.06385282683156689,
+            "darkTailRatio": 0.8685144234491,
             "endpointDarkLightness": 0.21999999999999997,
             "endpointDarkChroma": 0.010312500000000002,
             "monotone": true,
@@ -347,6 +644,97 @@
         },
         {
           "seed": {
+            "id": "warm-chroma-edge",
+            "label": "Warm Chroma Edge",
+            "note": "Near-neutral just below chromatic behavior.",
+            "color": {
+              "l": 0.62,
+              "c": 0.045,
+              "h": 72
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.08673010728425529,
+            "worstAdjacent": 1.1899331358145389,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.14,
+            "topDistance": 0.06748298693293457,
+            "topDistanceRatio": 0.9132698927157441,
+            "bridgeDistance": 0.06748298693293468,
+            "topBridgeRatio": 0.9999999999999983,
+            "darkBridgeDistance": 0.08030024225523863,
+            "darkEdgeDistance": 0.08030024225523852,
+            "darkTailRatio": 1.0867301072842555,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.010312500000000002,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F2F0ED",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#DFD9D1",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#CDC3B6",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#BBAD9C",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#A99782",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#978269",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#7D6B57",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#635545",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#4B4034",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#332D24",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#1E1A15",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "cool-chroma-edge",
             "label": "Cool Chroma Edge",
             "note": "Cool near-neutral just below chromatic behavior.",
@@ -356,6 +744,7 @@
               "h": 250
             }
           },
+          "engine": "v6",
           "group": "Neutrals",
           "metrics": {
             "anchor": "400",
@@ -366,7 +755,12 @@
             "stop50Lightness": 0.955,
             "stop50Occupancy": 0.14,
             "topDistance": 0.09433442965927459,
+            "topDistanceRatio": 1.2770219376601726,
             "bridgeDistance": 0.09433442965927459,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.05805196357368767,
+            "darkEdgeDistance": 0.057470344050114704,
+            "darkTailRatio": 0.7819230033910456,
             "endpointDarkLightness": 0.21999999999999997,
             "endpointDarkChroma": 0.013578124999999996,
             "monotone": true,
@@ -429,6 +823,97 @@
               "textHex": "#f8f8f8"
             }
           ]
+        },
+        {
+          "seed": {
+            "id": "cool-chroma-edge",
+            "label": "Cool Chroma Edge",
+            "note": "Cool near-neutral just below chromatic behavior.",
+            "color": {
+              "l": 0.58,
+              "c": 0.045,
+              "h": 250
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Neutrals",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1.0106931947275437,
+            "spacingCv": 0.021617550128138215,
+            "worstAdjacent": 1.044190388188115,
+            "stop50Lightness": 0.955,
+            "stop50Occupancy": 0.14000000000000004,
+            "topDistance": 0.07546754372741973,
+            "topDistanceRatio": 1.0216175501281388,
+            "bridgeDistance": 0.07546754372741964,
+            "topBridgeRatio": 1.0000000000000013,
+            "darkBridgeDistance": 0.07227373913905816,
+            "darkEdgeDistance": 0.07227373913905816,
+            "darkTailRatio": 0.9783824498718618,
+            "endpointDarkLightness": 0.21999999999999997,
+            "endpointDarkChroma": 0.013578124999999998,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#EFF0F2",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#D2D8DF",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#B6C1CC",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#9BAAB9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#8093A7",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#667D94",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#55687B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#445363",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#343F4C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#242D36",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#161B21",
+              "textHex": "#f8f8f8"
+            }
+          ]
         }
       ]
     },
@@ -447,6 +932,7 @@
               "h": 98
             }
           },
+          "engine": "v6",
           "group": "Warm Hues",
           "metrics": {
             "anchor": "200",
@@ -457,7 +943,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.4810847457627119,
             "topDistance": 0.07067560606155018,
+            "topDistanceRatio": 0.9022352446160964,
             "bridgeDistance": 0.07117576884835747,
+            "topBridgeRatio": 0.9929728502424343,
+            "darkBridgeDistance": 0.07247745415598586,
+            "darkEdgeDistance": 0.07115013084337292,
+            "darkTailRatio": 0.9167651790114224,
             "endpointDarkLightness": 0.271322033898305,
             "endpointDarkChroma": 0.047148437499999994,
             "monotone": true,
@@ -523,6 +1014,97 @@
         },
         {
           "seed": {
+            "id": "cadmium-yellow",
+            "label": "Cadmium Yellow",
+            "note": "Bright yellow that stresses high-lightness chroma and warm shadow shaping.",
+            "color": {
+              "l": 0.9,
+              "c": 0.165,
+              "h": 98
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.046566485474586986,
+            "worstAdjacent": 1.128371867051242,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.4810847457627119,
+            "topDistance": 0.07085748927246736,
+            "topDistanceRatio": 0.9068670290508257,
+            "bridgeDistance": 0.07085748927246742,
+            "topBridgeRatio": 0.9999999999999992,
+            "darkBridgeDistance": 0.07995359746493735,
+            "darkEdgeDistance": 0.07995359746493741,
+            "darkTailRatio": 1.0232832427372935,
+            "endpointDarkLightness": 0.271322033898305,
+            "endpointDarkChroma": 0.04714843749999999,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F8F2D7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#F9E99A",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#FBDE46",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#DFC53D",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#C3AC35",
+              "textHex": "#111111"
+            },
+            {
+              "label": "500",
+              "hex": "#A7942D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#8D7C25",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#73651D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#5B4F16",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#433B0F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#2D2708",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "amber",
             "label": "Amber",
             "note": "High-energy warm yellow-orange.",
@@ -532,6 +1114,7 @@
               "h": 82
             }
           },
+          "engine": "v6",
           "group": "Warm Hues",
           "metrics": {
             "anchor": "200",
@@ -542,11 +1125,16 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.49982439024390235,
             "topDistance": 0.1190502261565133,
+            "topDistanceRatio": 1.593265292198319,
             "bridgeDistance": 0.10820653771572988,
+            "topBridgeRatio": 1.1002128768713675,
+            "darkBridgeDistance": 0.0530789299136301,
+            "darkEdgeDistance": 0.05143051918294228,
+            "darkTailRatio": 0.6993320522273776,
             "endpointDarkLightness": 0.27256585365853647,
             "endpointDarkChroma": 0.04659374999999999,
             "monotone": true,
-            "status": "ok"
+            "status": "watch"
           },
           "swatches": [
             {
@@ -608,6 +1196,97 @@
         },
         {
           "seed": {
+            "id": "amber",
+            "label": "Amber",
+            "note": "High-energy warm yellow-orange.",
+            "color": {
+              "l": 0.78,
+              "c": 0.16,
+              "h": 82
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "300",
+            "seedDelta": 0,
+            "lightEntrance": 1.013136957344223,
+            "spacingCv": 0.008019789815060394,
+            "worstAdjacent": 1.0175929825460537,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.49982439024390235,
+            "topDistance": 0.07558568685123192,
+            "topDistanceRatio": 1.0122504312950504,
+            "bridgeDistance": 0.07558568685123182,
+            "topBridgeRatio": 1.0000000000000013,
+            "darkBridgeDistance": 0.07427889946932795,
+            "darkEdgeDistance": 0.07427889946932807,
+            "darkTailRatio": 0.994749815159264,
+            "endpointDarkLightness": 0.27256585365853647,
+            "endpointDarkChroma": 0.04659374999999999,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F8F0E3",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#F4DAAC",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#EFC370",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#EAAB05",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#CD960B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#B1820E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#966E0F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#7B5A0F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#62470E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#49360C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#322509",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "orange",
             "label": "Orange",
             "note": "Saturated orange body color.",
@@ -617,6 +1296,7 @@
               "h": 48
             }
           },
+          "engine": "v6",
           "group": "Warm Hues",
           "metrics": {
             "anchor": "300",
@@ -627,11 +1307,16 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.49498734177215187,
             "topDistance": 0.11222257949768262,
+            "topDistanceRatio": 1.4907024332491892,
             "bridgeDistance": 0.11238166359727461,
+            "topBridgeRatio": 0.998584430106302,
+            "darkBridgeDistance": 0.05022307277793875,
+            "darkEdgeDistance": 0.04840567869176595,
+            "darkTailRatio": 0.6550647849226029,
             "endpointDarkLightness": 0.26962531645569615,
             "endpointDarkChroma": 0.06103125000000001,
             "monotone": true,
-            "status": "ok"
+            "status": "watch"
           },
           "swatches": [
             {
@@ -693,6 +1378,97 @@
         },
         {
           "seed": {
+            "id": "orange",
+            "label": "Orange",
+            "note": "Saturated orange body color.",
+            "color": {
+              "l": 0.68,
+              "c": 0.18,
+              "h": 48
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1.0661893045272404,
+            "spacingCv": 0.06572202807464662,
+            "worstAdjacent": 1.1417617186184204,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.49498734177215187,
+            "topDistance": 0.08130704251022254,
+            "topDistanceRatio": 1.0804927168218779,
+            "bridgeDistance": 0.08130704251022254,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.07121191855040257,
+            "darkEdgeDistance": 0.07121191855040257,
+            "darkTailRatio": 0.9463381887854152,
+            "endpointDarkLightness": 0.26962531645569615,
+            "endpointDarkChroma": 0.06103125000000002,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F8EFEB",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#F9D0BC",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#F7B18D",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#F3915C",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#ED6E12",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#CD5F12",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#AE5111",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#904310",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#73350E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#58280B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#3E1C08",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "red",
             "label": "Red",
             "note": "Vivid red with difficult dark behavior.",
@@ -702,6 +1478,7 @@
               "h": 28
             }
           },
+          "engine": "v6",
           "group": "Warm Hues",
           "metrics": {
             "anchor": "400",
@@ -712,7 +1489,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.47458146964856235,
             "topDistance": 0.0986967426433883,
+            "topDistanceRatio": 1.285042310364398,
             "bridgeDistance": 0.10591688364746954,
+            "topBridgeRatio": 0.9318320105781007,
+            "darkBridgeDistance": 0.05311036527146123,
+            "darkEdgeDistance": 0.05163340912562557,
+            "darkTailRatio": 0.6818876603347382,
             "endpointDarkLightness": 0.26505750798722044,
             "endpointDarkChroma": 0.08999071485623004,
             "monotone": true,
@@ -778,6 +1560,97 @@
         },
         {
           "seed": {
+            "id": "red",
+            "label": "Red",
+            "note": "Vivid red with difficult dark behavior.",
+            "color": {
+              "l": 0.6,
+              "c": 0.21,
+              "h": 28
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1.034326857268144,
+            "spacingCv": 0.07109415339238824,
+            "worstAdjacent": 1.153070741565522,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.4745814696485624,
+            "topDistance": 0.0820509134856682,
+            "topDistanceRatio": 1.0710941533923881,
+            "bridgeDistance": 0.0820509134856682,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.07115861198096816,
+            "darkEdgeDistance": 0.07115861198096812,
+            "darkTailRatio": 0.9289058466076118,
+            "endpointDarkLightness": 0.26505750798722044,
+            "endpointDarkChroma": 0.08999071485623006,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F8EFEE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#F9CEC8",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#F7ADA2",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#F38A7D",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#EC6558",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#E2352E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#C12D26",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#A1241E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#821C17",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#641410",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#480C09",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "rose",
             "label": "Rose",
             "note": "Cool red-pink crossing into magenta.",
@@ -787,6 +1660,7 @@
               "h": 355
             }
           },
+          "engine": "v6",
           "group": "Warm Hues",
           "metrics": {
             "anchor": "400",
@@ -797,7 +1671,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.44342857142857134,
             "topDistance": 0.07774780569745238,
+            "topDistanceRatio": 1.0273770366226636,
             "bridgeDistance": 0.09107757632252342,
+            "topBridgeRatio": 0.8536437709116487,
+            "darkBridgeDistance": 0.05864743343979669,
+            "darkEdgeDistance": 0.057016495922917264,
+            "darkTailRatio": 0.7642046224122049,
             "endpointDarkLightness": 0.259,
             "endpointDarkChroma": 0.08408928571428571,
             "monotone": true,
@@ -860,6 +1739,97 @@
               "textHex": "#f8f8f8"
             }
           ]
+        },
+        {
+          "seed": {
+            "id": "rose",
+            "label": "Rose",
+            "note": "Cool red-pink crossing into magenta.",
+            "color": {
+              "l": 0.64,
+              "c": 0.18,
+              "h": 355
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Warm Hues",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.04312105990044474,
+            "worstAdjacent": 1.0901285587829088,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.44342857142857134,
+            "topDistance": 0.07208077933678002,
+            "topDistanceRatio": 0.9568789400995554,
+            "bridgeDistance": 0.07208077933678,
+            "topBridgeRatio": 1.0000000000000002,
+            "darkBridgeDistance": 0.0785773160943528,
+            "darkEdgeDistance": 0.0785773160943528,
+            "darkTailRatio": 1.0431210599004446,
+            "endpointDarkLightness": 0.259,
+            "endpointDarkChroma": 0.08408928571428571,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F7EEF1",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#F5D1DE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#F2B3CA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#EC95B7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#E476A4",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#DB5392",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#BA447A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#9A3564",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#7A274E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#5D1939",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#410D26",
+              "textHex": "#f8f8f8"
+            }
+          ]
         }
       ]
     },
@@ -878,6 +1848,7 @@
               "h": 121.082
             }
           },
+          "engine": "v6",
           "group": "Greens",
           "metrics": {
             "anchor": "200",
@@ -888,7 +1859,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.4996475524475524,
             "topDistance": 0.0795022892631467,
+            "topDistanceRatio": 0.9510155312828747,
             "bridgeDistance": 0.0775881412757275,
+            "topBridgeRatio": 1.0246706256387408,
+            "darkBridgeDistance": 0.07692914671416447,
+            "darkEdgeDistance": 0.0746908849437539,
+            "darkTailRatio": 0.9068481316494759,
             "endpointDarkLightness": 0.2755514685314686,
             "endpointDarkChroma": 0.05578125,
             "monotone": true,
@@ -954,6 +1930,97 @@
         },
         {
           "seed": {
+            "id": "bright-lime",
+            "label": "Bright Lime",
+            "note": "Canonical hard case: luminous yellow-green seed with extreme high-lightness chroma.",
+            "color": {
+              "l": 0.931,
+              "c": 0.223,
+              "h": 121.082
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Greens",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.02894339599831124,
+            "worstAdjacent": 1.0768044534150276,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.4996475524475524,
+            "topDistance": 0.07852433386755486,
+            "topDistanceRatio": 0.9421132080033773,
+            "bridgeDistance": 0.0785243338675549,
+            "topBridgeRatio": 0.9999999999999994,
+            "darkBridgeDistance": 0.08455535241003163,
+            "darkEdgeDistance": 0.08455535241003159,
+            "darkTailRatio": 1.0144716979991557,
+            "endpointDarkLightness": 0.2755514685314686,
+            "endpointDarkChroma": 0.05578125,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#EBF9C5",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#DFFC88",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#D3FD05",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#BBE00D",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#A3C311",
+              "textHex": "#111111"
+            },
+            {
+              "label": "500",
+              "hex": "#8CA812",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#758D12",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#5F7311",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#4B5A0F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#37420C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#242C08",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "lime-cool-neighbor",
             "label": "Lime Cool Neighbor",
             "note": "Slightly cooler high-lightness lime cusp.",
@@ -963,6 +2030,7 @@
               "h": 132
             }
           },
+          "engine": "v6",
           "group": "Greens",
           "metrics": {
             "anchor": "200",
@@ -973,7 +2041,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.45735902636916836,
             "topDistance": 0.0742136948144621,
+            "topDistanceRatio": 0.9045107158399349,
             "bridgeDistance": 0.07447844094986518,
+            "topBridgeRatio": 0.9964453319373148,
+            "darkBridgeDistance": 0.07553941068953314,
+            "darkEdgeDistance": 0.07284258148757441,
+            "darkTailRatio": 0.9042340655414783,
             "endpointDarkLightness": 0.26527899686520373,
             "endpointDarkChroma": 0.062421875000000016,
             "monotone": true,
@@ -1039,6 +2112,97 @@
         },
         {
           "seed": {
+            "id": "lime-cool-neighbor",
+            "label": "Lime Cool Neighbor",
+            "note": "Slightly cooler high-lightness lime cusp.",
+            "color": {
+              "l": 0.9,
+              "c": 0.18,
+              "h": 132
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Greens",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.032284751438861614,
+            "worstAdjacent": 1.0862831379193352,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.45735902636916836,
+            "topDistance": 0.07428075527294001,
+            "topDistanceRatio": 0.9354304971222761,
+            "bridgeDistance": 0.07428075527294008,
+            "topBridgeRatio": 0.9999999999999991,
+            "darkBridgeDistance": 0.08068993192490755,
+            "darkEdgeDistance": 0.08068993192490755,
+            "darkTailRatio": 1.0161423757194306,
+            "endpointDarkLightness": 0.26527899686520373,
+            "endpointDarkChroma": 0.06242187500000001,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E7F8DA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#CCF8A9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#B0F671",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#9BDA62",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#87BF53",
+              "textHex": "#111111"
+            },
+            {
+              "label": "500",
+              "hex": "#73A445",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#5F8A38",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#4D702B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#3B581E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#2A4112",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#192B07",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "leaf-green",
             "label": "Leaf Green",
             "note": "Mid-light natural green body.",
@@ -1048,6 +2212,7 @@
               "h": 145
             }
           },
+          "engine": "v6",
           "group": "Greens",
           "metrics": {
             "anchor": "400",
@@ -1058,7 +2223,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.563557760453579,
             "topDistance": 0.07477074211513846,
+            "topDistanceRatio": 1.0265475829441204,
             "bridgeDistance": 0.08903209495499366,
+            "topBridgeRatio": 0.8398178449348584,
+            "darkBridgeDistance": 0.05490399267516469,
+            "darkEdgeDistance": 0.05337715720720981,
+            "darkTailRatio": 0.7433104817857388,
             "endpointDarkLightness": 0.2637871485943775,
             "endpointDarkChroma": 0.0683718624497992,
             "monotone": true,
@@ -1124,6 +2294,97 @@
         },
         {
           "seed": {
+            "id": "leaf-green",
+            "label": "Leaf Green",
+            "note": "Mid-light natural green body.",
+            "color": {
+              "l": 0.62,
+              "c": 0.16,
+              "h": 145
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Greens",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.013422751229815818,
+            "worstAdjacent": 1.0272107455276265,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.563557760453579,
+            "topDistance": 0.0716131131862002,
+            "topDistanceRatio": 0.9865772487701842,
+            "bridgeDistance": 0.0716131131862002,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.07356175938555104,
+            "darkEdgeDistance": 0.073561759385551,
+            "darkTailRatio": 1.0134227512298155,
+            "endpointDarkLightness": 0.2637871485943775,
+            "endpointDarkChroma": 0.06837186244979919,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E1F9E0",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#C1E7C0",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#A1D5A1",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#81C382",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#5FB063",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#399E43",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#2F8637",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#256E2C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#1B5722",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#124217",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2D0E",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "phthalo-green",
             "label": "Phthalo Green",
             "note": "Cool deep green between green and cyan; useful for path-family blending pressure.",
@@ -1133,6 +2394,7 @@
               "h": 165
             }
           },
+          "engine": "v6",
           "group": "Greens",
           "metrics": {
             "anchor": "500",
@@ -1143,11 +2405,16 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.7,
             "topDistance": 0.07405690779836328,
+            "topDistanceRatio": 1.053287103369039,
             "bridgeDistance": 0.08524355427909439,
+            "topBridgeRatio": 0.868768418030704,
+            "darkBridgeDistance": 0.043503290255388544,
+            "darkEdgeDistance": 0.04114830467366077,
+            "darkTailRatio": 0.6019859312864676,
             "endpointDarkLightness": 0.27,
             "endpointDarkChroma": 0.04725,
             "monotone": true,
-            "status": "ok"
+            "status": "watch"
           },
           "swatches": [
             {
@@ -1209,6 +2476,97 @@
         },
         {
           "seed": {
+            "id": "phthalo-green",
+            "label": "Phthalo Green",
+            "note": "Cool deep green between green and cyan; useful for path-family blending pressure.",
+            "color": {
+              "l": 0.52,
+              "c": 0.16,
+              "h": 165
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Greens",
+          "metrics": {
+            "anchor": "600",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.06594968155124606,
+            "worstAdjacent": 1.1464480580894496,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.6999999999999998,
+            "topDistance": 0.07382683474027711,
+            "topDistanceRatio": 1.053847689499864,
+            "bridgeDistance": 0.07382683474027711,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.06439614443877134,
+            "darkEdgeDistance": 0.06439614443877134,
+            "darkTailRatio": 0.9192284657502029,
+            "endpointDarkLightness": 0.27,
+            "endpointDarkChroma": 0.04725,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#D8FBE9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#B9E5D0",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#9ACFB7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#7CBA9E",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#5CA586",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#3A916F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#007C59",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#07674A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0B533C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0C402E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2E21",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "teal",
             "label": "Teal",
             "note": "Bridge between phthalo and cyan behavior.",
@@ -1218,6 +2576,7 @@
               "h": 185
             }
           },
+          "engine": "v6",
           "group": "Greens",
           "metrics": {
             "anchor": "400",
@@ -1228,7 +2587,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.6705263157894736,
             "topDistance": 0.09463798706439391,
+            "topDistanceRatio": 1.3472924031651052,
             "bridgeDistance": 0.10000802874042634,
+            "topBridgeRatio": 0.9463038943606166,
+            "darkBridgeDistance": 0.047215333684673934,
+            "darkEdgeDistance": 0.04590231358197212,
+            "darkTailRatio": 0.6628242139047001,
             "endpointDarkLightness": 0.27,
             "endpointDarkChroma": 0.03937499999999999,
             "monotone": true,
@@ -1291,6 +2655,97 @@
               "textHex": "#f8f8f8"
             }
           ]
+        },
+        {
+          "seed": {
+            "id": "teal",
+            "label": "Teal",
+            "note": "Bridge between phthalo and cyan behavior.",
+            "color": {
+              "l": 0.58,
+              "c": 0.14,
+              "h": 185
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Greens",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1.045586785016615,
+            "spacingCv": 0.09552840279439817,
+            "worstAdjacent": 1.2112358267291912,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.6705263157894736,
+            "topDistance": 0.07662314106350362,
+            "topDistanceRatio": 1.0955284027943981,
+            "bridgeDistance": 0.07662314106350364,
+            "topBridgeRatio": 0.9999999999999998,
+            "darkBridgeDistance": 0.06326029941701454,
+            "darkEdgeDistance": 0.06326029941701443,
+            "darkTailRatio": 0.904471597205602,
+            "endpointDarkLightness": 0.27,
+            "endpointDarkChroma": 0.039374999999999986,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#D5FAF4",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#B2E4DC",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#90CEC5",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#6CB8AE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#45A398",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#008D82",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#08796F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#0C655C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0D514B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0D3E39",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0B2D29",
+              "textHex": "#f8f8f8"
+            }
+          ]
         }
       ]
     },
@@ -1309,6 +2764,7 @@
               "h": 210
             }
           },
+          "engine": "v6",
           "group": "Cool Hues",
           "metrics": {
             "anchor": "200",
@@ -1319,11 +2775,16 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.8126315789473684,
             "topDistance": 0.10500644243448715,
+            "topDistanceRatio": 1.450392017074781,
             "bridgeDistance": 0.1026715201956237,
+            "topBridgeRatio": 1.0227416739755546,
+            "darkBridgeDistance": 0.05270697255965828,
+            "darkEdgeDistance": 0.05107011327687347,
+            "darkTailRatio": 0.7167058199619364,
             "endpointDarkLightness": 0.27259999999999995,
             "endpointDarkChroma": 0.03937499999999999,
             "monotone": true,
-            "status": "ok"
+            "status": "watch"
           },
           "swatches": [
             {
@@ -1385,6 +2846,97 @@
         },
         {
           "seed": {
+            "id": "cyan",
+            "label": "Cyan",
+            "note": "High-energy cyan where gamut geometry shifts quickly between highlights and shadows.",
+            "color": {
+              "l": 0.78,
+              "c": 0.14,
+              "h": 210
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "300",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.03221496884527509,
+            "worstAdjacent": 1.0739372149047852,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.8126315789473684,
+            "topDistance": 0.06868034705195832,
+            "topDistanceRatio": 0.9507908222519614,
+            "bridgeDistance": 0.06868034705195822,
+            "topBridgeRatio": 1.0000000000000013,
+            "darkBridgeDistance": 0.07375838063167418,
+            "darkEdgeDistance": 0.07375838063167424,
+            "darkTailRatio": 1.0210896476063025,
+            "endpointDarkLightness": 0.27259999999999995,
+            "endpointDarkChroma": 0.03937499999999998,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#DAF7FC",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#ABEAF5",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#73DCEE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#00CEE7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#0AB5CA",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#0F9CAF",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#118494",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#116C7A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#105660",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0E4148",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2C32",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "sky-blue",
             "label": "Sky Blue",
             "note": "Clean blue-cyan highlight family.",
@@ -1394,6 +2946,7 @@
               "h": 230
             }
           },
+          "engine": "v6",
           "group": "Cool Hues",
           "metrics": {
             "anchor": "300",
@@ -1404,7 +2957,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.6124158757549611,
             "topDistance": 0.07848364137916698,
+            "topDistanceRatio": 1.0797405337115948,
             "bridgeDistance": 0.09325059025664449,
+            "topBridgeRatio": 0.8416423012783525,
+            "darkBridgeDistance": 0.054043188608504274,
+            "darkEdgeDistance": 0.05208755813943115,
+            "darkTailRatio": 0.730048116544476,
             "endpointDarkLightness": 0.26822513661202185,
             "endpointDarkChroma": 0.044625,
             "monotone": true,
@@ -1470,6 +3028,97 @@
         },
         {
           "seed": {
+            "id": "sky-blue",
+            "label": "Sky Blue",
+            "note": "Clean blue-cyan highlight family.",
+            "color": {
+              "l": 0.72,
+              "c": 0.13,
+              "h": 230
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "400",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.07159371595313592,
+            "worstAdjacent": 1.1601857980851824,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.6124158757549611,
+            "topDistance": 0.06604847977828364,
+            "topDistanceRatio": 0.9123159635625305,
+            "bridgeDistance": 0.06604847977828363,
+            "topBridgeRatio": 1.0000000000000002,
+            "darkBridgeDistance": 0.07662850822388104,
+            "darkEdgeDistance": 0.07662850822388098,
+            "darkTailRatio": 1.0584560242916463,
+            "endpointDarkLightness": 0.26822513661202185,
+            "endpointDarkChroma": 0.044625,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E7F3F9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#C1E4F5",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#99D4F1",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#6DC3EC",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#32B3E6",
+              "textHex": "#111111"
+            },
+            {
+              "label": "500",
+              "hex": "#2B9AC6",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#2482A7",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#1D6A8A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#16546D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#103E51",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2A38",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "ultramarine",
             "label": "Ultramarine",
             "note": "Deep vivid blue seed that tests dark retention and blue highlight presence.",
@@ -1479,6 +3128,7 @@
               "h": 265
             }
           },
+          "engine": "v6",
           "group": "Cool Hues",
           "metrics": {
             "anchor": "500",
@@ -1489,11 +3139,16 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.4277194805194805,
             "topDistance": 0.10350774027778178,
+            "topDistanceRatio": 1.3699902791341272,
             "bridgeDistance": 0.10728809312735905,
+            "topBridgeRatio": 0.9647644697618989,
+            "darkBridgeDistance": 0.042357956663112144,
+            "darkEdgeDistance": 0.04067116318977882,
+            "darkTailRatio": 0.5494714056082023,
             "endpointDarkLightness": 0.23815235109717867,
             "endpointDarkChroma": 0.12566294642857145,
             "monotone": true,
-            "status": "ok"
+            "status": "watch"
           },
           "swatches": [
             {
@@ -1555,6 +3210,97 @@
         },
         {
           "seed": {
+            "id": "ultramarine",
+            "label": "Ultramarine",
+            "note": "Deep vivid blue seed that tests dark retention and blue highlight presence.",
+            "color": {
+              "l": 0.47,
+              "c": 0.18,
+              "h": 265
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "700",
+            "seedDelta": 0,
+            "lightEntrance": 1.0000000000000004,
+            "spacingCv": 0.03321579886364546,
+            "worstAdjacent": 1.074093977536425,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.4277194805194805,
+            "topDistance": 0.07390101228252044,
+            "topDistanceRatio": 0.9782551553484169,
+            "bridgeDistance": 0.07390101228252044,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.0793766322265006,
+            "darkEdgeDistance": 0.07937663222650057,
+            "darkTailRatio": 1.0507379708536946,
+            "endpointDarkLightness": 0.23815235109717867,
+            "endpointDarkChroma": 0.12566294642857145,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#EEF1F7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#D0DAF1",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#B2C4EA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#94ADE2",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#7897DA",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#5C80D1",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#4168C8",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#274FBE",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#193A9B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0C2679",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#031259",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "violet",
             "label": "Violet",
             "note": "Mid-dark vivid violet that often wants richer mids and inkier shadows.",
@@ -1564,6 +3310,7 @@
               "h": 315
             }
           },
+          "engine": "v6",
           "group": "Cool Hues",
           "metrics": {
             "anchor": "400",
@@ -1574,7 +3321,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.44406153846153845,
             "topDistance": 0.08690661959976803,
+            "topDistanceRatio": 1.122499975059784,
             "bridgeDistance": 0.09862758568806808,
+            "topBridgeRatio": 0.8811593530701417,
+            "darkBridgeDistance": 0.05690163066694359,
+            "darkEdgeDistance": 0.05531924250802102,
+            "darkTailRatio": 0.724731487199746,
             "endpointDarkLightness": 0.2553161803713528,
             "endpointDarkChroma": 0.09903846153846153,
             "monotone": true,
@@ -1640,6 +3392,97 @@
         },
         {
           "seed": {
+            "id": "violet",
+            "label": "Violet",
+            "note": "Mid-dark vivid violet that often wants richer mids and inkier shadows.",
+            "color": {
+              "l": 0.62,
+              "c": 0.21,
+              "h": 315
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "500",
+            "seedDelta": 0,
+            "lightEntrance": 1.0066126504289012,
+            "spacingCv": 0.01331333730343238,
+            "worstAdjacent": 1.026985947630117,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.44406153846153845,
+            "topDistance": 0.07829560663713804,
+            "topDistanceRatio": 1.0133133373034322,
+            "bridgeDistance": 0.07829560663713804,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.07623824534095495,
+            "darkEdgeDistance": 0.076238245340955,
+            "darkTailRatio": 0.9866866626965671,
+            "endpointDarkLightness": 0.2553161803713528,
+            "endpointDarkChroma": 0.09903846153846153,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F4EFF7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#E8D1F3",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#DCB3EE",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#CF95E9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#C276E2",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#B453DB",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#9844BA",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#7E359A",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#64287C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#4B1A5E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#340D43",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "purple",
             "label": "Purple",
             "note": "Blue-violet bridge into magenta.",
@@ -1649,6 +3492,7 @@
               "h": 295
             }
           },
+          "engine": "v6",
           "group": "Cool Hues",
           "metrics": {
             "anchor": "400",
@@ -1659,11 +3503,16 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.4449156626506024,
             "topDistance": 0.10596423475542743,
+            "topDistanceRatio": 1.4023099412020437,
             "bridgeDistance": 0.10924000705799972,
+            "topBridgeRatio": 0.9700130713024117,
+            "darkBridgeDistance": 0.0505020714369556,
+            "darkEdgeDistance": 0.049097649825373756,
+            "darkTailRatio": 0.65904160771549,
             "endpointDarkLightness": 0.24932501869547152,
             "endpointDarkChroma": 0.10848550451807228,
             "monotone": true,
-            "status": "ok"
+            "status": "watch"
           },
           "swatches": [
             {
@@ -1722,6 +3571,97 @@
               "textHex": "#f8f8f8"
             }
           ]
+        },
+        {
+          "seed": {
+            "id": "purple",
+            "label": "Purple",
+            "note": "Blue-violet bridge into magenta.",
+            "color": {
+              "l": 0.58,
+              "c": 0.18,
+              "h": 295
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Cool Hues",
+          "metrics": {
+            "anchor": "600",
+            "seedDelta": 0,
+            "lightEntrance": 1.0000000000000009,
+            "spacingCv": 0.10074856565145504,
+            "worstAdjacent": 1.224085624518831,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.4449156626506024,
+            "topDistance": 0.06909642645929932,
+            "topDistanceRatio": 0.9177391406122137,
+            "bridgeDistance": 0.06909642645929942,
+            "topBridgeRatio": 0.9999999999999986,
+            "darkBridgeDistance": 0.084579942334451,
+            "darkEdgeDistance": 0.084579942334451,
+            "darkTailRatio": 1.1233912890816784,
+            "endpointDarkLightness": 0.24932501869547152,
+            "endpointDarkChroma": 0.10848550451807228,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F1F0F7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#DED8F4",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#CAC0EF",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#B8A8EA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#A690E5",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#9577DE",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#855DD7",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#6C48B3",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#543490",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#3D216E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#270F4E",
+              "textHex": "#f8f8f8"
+            }
+          ]
         }
       ]
     },
@@ -1740,6 +3680,7 @@
               "h": 115
             }
           },
+          "engine": "v6",
           "group": "Perturbations",
           "metrics": {
             "anchor": "200",
@@ -1750,7 +3691,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.49986617100371744,
             "topDistance": 0.056137506707745914,
+            "topDistanceRatio": 0.7143176599209285,
             "bridgeDistance": 0.05522233294474892,
+            "topBridgeRatio": 1.0165725298841077,
+            "darkBridgeDistance": 0.07637363316312559,
+            "darkEdgeDistance": 0.07425640786946155,
+            "darkTailRatio": 0.9583405528174682,
             "endpointDarkLightness": 0.2755739776951672,
             "endpointDarkChroma": 0.0524609375,
             "monotone": true,
@@ -1816,6 +3762,97 @@
         },
         {
           "seed": {
+            "id": "lime-h115",
+            "label": "Lime h115",
+            "note": "Warmer neighbor of the bright lime cusp.",
+            "color": {
+              "l": 0.93,
+              "c": 0.21,
+              "h": 115
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.14526152201797793,
+            "worstAdjacent": 1.5118613113395447,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.49986617100371744,
+            "topDistance": 0.05565334142715039,
+            "topDistanceRatio": 0.709476955964044,
+            "bridgeDistance": 0.055653341427150414,
+            "topBridgeRatio": 0.9999999999999997,
+            "darkBridgeDistance": 0.0841401337504791,
+            "darkEdgeDistance": 0.08414013375047905,
+            "darkTailRatio": 1.072630761008989,
+            "endpointDarkLightness": 0.2755739776951672,
+            "endpointDarkChroma": 0.052460937500000006,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#F0F9A9",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#EAF875",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#E5F707",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#CADA0E",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#B1BF11",
+              "textHex": "#111111"
+            },
+            {
+              "label": "500",
+              "hex": "#98A413",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#7F8912",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#687011",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#51580F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#3B410C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#272B08",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "lime-h130",
             "label": "Lime h130",
             "note": "Cooler neighbor of the bright lime cusp.",
@@ -1825,6 +3862,7 @@
               "h": 130
             }
           },
+          "engine": "v6",
           "group": "Perturbations",
           "metrics": {
             "anchor": "200",
@@ -1835,7 +3873,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.45378064516129035,
             "topDistance": 0.07336431429175742,
+            "topDistanceRatio": 0.901261504951604,
             "bridgeDistance": 0.07368444694862754,
+            "topBridgeRatio": 0.995655356454079,
+            "darkBridgeDistance": 0.0754442806219761,
+            "darkEdgeDistance": 0.07257643031834882,
+            "darkTailRatio": 0.9091979526691484,
             "endpointDarkLightness": 0.2660129032258064,
             "endpointDarkChroma": 0.06042968750000001,
             "monotone": true,
@@ -1901,6 +3944,97 @@
         },
         {
           "seed": {
+            "id": "lime-h130",
+            "label": "Lime h130",
+            "note": "Cooler neighbor of the bright lime cusp.",
+            "color": {
+              "l": 0.9,
+              "c": 0.18,
+              "h": 130
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "200",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.03629430765015219,
+            "worstAdjacent": 1.0978376701238801,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.45378064516129035,
+            "topDistance": 0.07345850211463373,
+            "topDistanceRatio": 0.9274113846996953,
+            "bridgeDistance": 0.07345850211463378,
+            "topBridgeRatio": 0.9999999999999992,
+            "darkBridgeDistance": 0.08064551081231973,
+            "darkEdgeDistance": 0.08064551081231967,
+            "darkTailRatio": 1.0181471538250761,
+            "endpointDarkLightness": 0.2660129032258064,
+            "endpointDarkChroma": 0.06042968750000001,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E8F8D8",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#CFF7A6",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#B6F56C",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#A0D95E",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#8BBE50",
+              "textHex": "#111111"
+            },
+            {
+              "label": "500",
+              "hex": "#77A343",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#638936",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#507029",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#3D581D",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#2C4112",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#1B2B07",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "cyan-h195",
             "label": "Cyan h195",
             "note": "Green-leaning cyan perturbation.",
@@ -1910,6 +4044,7 @@
               "h": 195
             }
           },
+          "engine": "v6",
           "group": "Perturbations",
           "metrics": {
             "anchor": "200",
@@ -1920,11 +4055,16 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.7642600619195047,
             "topDistance": 0.10054356864513532,
+            "topDistanceRatio": 1.408733519972777,
             "bridgeDistance": 0.09689760409273321,
+            "topBridgeRatio": 1.0376269835207983,
+            "darkBridgeDistance": 0.052703520747613225,
+            "darkEdgeDistance": 0.051066768663749526,
+            "darkTailRatio": 0.7269718344045262,
             "endpointDarkLightness": 0.2718588235294117,
             "endpointDarkChroma": 0.038718749999999996,
             "monotone": true,
-            "status": "ok"
+            "status": "watch"
           },
           "swatches": [
             {
@@ -1986,6 +4126,97 @@
         },
         {
           "seed": {
+            "id": "cyan-h195",
+            "label": "Cyan h195",
+            "note": "Green-leaning cyan perturbation.",
+            "color": {
+              "l": 0.78,
+              "c": 0.13,
+              "h": 195
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "300",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.05342923156127653,
+            "worstAdjacent": 1.1269533782879735,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.7642600619195047,
+            "topDistance": 0.06544507658516693,
+            "topDistanceRatio": 0.9183855006823762,
+            "bridgeDistance": 0.06544507658516682,
+            "topBridgeRatio": 1.0000000000000018,
+            "darkBridgeDistance": 0.07375355014996902,
+            "darkEdgeDistance": 0.0737535501499691,
+            "darkTailRatio": 1.0349776425646964,
+            "endpointDarkLightness": 0.2718588235294117,
+            "endpointDarkChroma": 0.038718749999999996,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#CEFCFA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#A2EEEC",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#70DFDF",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#1AD1D1",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#1AB7B7",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#199E9E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#178586",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#156E6E",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#125757",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0F4141",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2D2D",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "cyan-h220",
             "label": "Cyan h220",
             "note": "Blue-leaning cyan perturbation.",
@@ -1995,6 +4226,7 @@
               "h": 220
             }
           },
+          "engine": "v6",
           "group": "Perturbations",
           "metrics": {
             "anchor": "300",
@@ -2005,7 +4237,12 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.7136396074933096,
             "topDistance": 0.06412343191239861,
+            "topDistanceRatio": 0.8829467805640485,
             "bridgeDistance": 0.07894236788778299,
+            "topBridgeRatio": 0.8122815875443516,
+            "darkBridgeDistance": 0.05853332143075507,
+            "darkEdgeDistance": 0.056415209050760765,
+            "darkTailRatio": 0.7913911646048261,
             "endpointDarkLightness": 0.27010395480225985,
             "endpointDarkChroma": 0.0406875,
             "monotone": true,
@@ -2071,6 +4308,97 @@
         },
         {
           "seed": {
+            "id": "cyan-h220",
+            "label": "Cyan h220",
+            "note": "Blue-leaning cyan perturbation.",
+            "color": {
+              "l": 0.76,
+              "c": 0.13,
+              "h": 220
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "300",
+            "seedDelta": 0,
+            "lightEntrance": 1.0433507132304145,
+            "spacingCv": 0.026411393125865573,
+            "worstAdjacent": 1.0586484348000293,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.7136396074933097,
+            "topDistance": 0.07531084918984525,
+            "topDistanceRatio": 1.0403440694028379,
+            "bridgeDistance": 0.07531084918984526,
+            "topBridgeRatio": 0.9999999999999998,
+            "darkBridgeDistance": 0.07113867712284573,
+            "darkEdgeDistance": 0.07113867712284573,
+            "darkTailRatio": 0.9827096845416406,
+            "endpointDarkLightness": 0.27010395480225985,
+            "endpointDarkChroma": 0.0406875,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#E2F5FB",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#B2E5F6",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#7CD5F0",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#2BC4EA",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#27ACCD",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#2294B1",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#1E7E96",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#19687C",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#145263",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0F3E4B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2B34",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "phthalo-h155",
             "label": "Phthalo h155",
             "note": "Greener phthalo perturbation.",
@@ -2080,6 +4408,7 @@
               "h": 155
             }
           },
+          "engine": "v6",
           "group": "Perturbations",
           "metrics": {
             "anchor": "500",
@@ -2090,11 +4419,16 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.6411764705882352,
             "topDistance": 0.07455607748899802,
+            "topDistanceRatio": 1.0495323446399247,
             "bridgeDistance": 0.0861555428530048,
+            "topBridgeRatio": 0.8653659999125382,
+            "darkBridgeDistance": 0.04397414146614167,
+            "darkEdgeDistance": 0.04159366705802966,
+            "darkTailRatio": 0.6022727169312659,
             "endpointDarkLightness": 0.27,
             "endpointDarkChroma": 0.055781250000000004,
             "monotone": true,
-            "status": "ok"
+            "status": "watch"
           },
           "swatches": [
             {
@@ -2156,6 +4490,97 @@
         },
         {
           "seed": {
+            "id": "phthalo-h155",
+            "label": "Phthalo h155",
+            "note": "Greener phthalo perturbation.",
+            "color": {
+              "l": 0.52,
+              "c": 0.15,
+              "h": 155
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "600",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.06446618118743187,
+            "worstAdjacent": 1.1428713990145751,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.6411764705882352,
+            "topDistance": 0.07439307227776198,
+            "topDistanceRatio": 1.052636416525005,
+            "bridgeDistance": 0.07439307227776198,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.06509312626241795,
+            "darkEdgeDistance": 0.06509312626241795,
+            "darkTailRatio": 0.9210453752124921,
+            "endpointDarkLightness": 0.27,
+            "endpointDarkChroma": 0.055781250000000004,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#DCFAE4",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#BDE5C8",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#9ED0AD",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#7EBB93",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#5EA679",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#3B925F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#007E46",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#07693B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0B542F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0B4124",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2E1A",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
             "id": "phthalo-h175",
             "label": "Phthalo h175",
             "note": "Tealer phthalo perturbation.",
@@ -2165,6 +4590,7 @@
               "h": 175
             }
           },
+          "engine": "v6",
           "group": "Perturbations",
           "metrics": {
             "anchor": "500",
@@ -2175,11 +4601,16 @@
             "stop50Lightness": 0.958,
             "stop50Occupancy": 0.6411764705882352,
             "topDistance": 0.08215608062506315,
+            "topDistanceRatio": 1.172410462086813,
             "bridgeDistance": 0.08942881923376025,
+            "topBridgeRatio": 0.9186756722160592,
+            "darkBridgeDistance": 0.043245820349586774,
+            "darkEdgeDistance": 0.040904772516298996,
+            "darkTailRatio": 0.6004366001648985,
             "endpointDarkLightness": 0.27,
             "endpointDarkChroma": 0.04265625,
             "monotone": true,
-            "status": "ok"
+            "status": "watch"
           },
           "swatches": [
             {
@@ -2230,6 +4661,97 @@
             {
               "label": "900",
               "hex": "#0B392F",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "950",
+              "hex": "#0A2D25",
+              "textHex": "#f8f8f8"
+            }
+          ]
+        },
+        {
+          "seed": {
+            "id": "phthalo-h175",
+            "label": "Phthalo h175",
+            "note": "Tealer phthalo perturbation.",
+            "color": {
+              "l": 0.52,
+              "c": 0.15,
+              "h": 175
+            }
+          },
+          "engine": "brand-exact-fair",
+          "group": "Perturbations",
+          "metrics": {
+            "anchor": "600",
+            "seedDelta": 0,
+            "lightEntrance": 1,
+            "spacingCv": 0.06782906892672667,
+            "worstAdjacent": 1.1509995377107531,
+            "stop50Lightness": 0.958,
+            "stop50Occupancy": 0.6411764705882352,
+            "topDistance": 0.07368126101518874,
+            "topDistanceRatio": 1.0553822028661828,
+            "bridgeDistance": 0.07368126101518874,
+            "topBridgeRatio": 1,
+            "darkBridgeDistance": 0.06401502224904008,
+            "darkEdgeDistance": 0.0640150222490401,
+            "darkTailRatio": 0.9169266957007248,
+            "endpointDarkLightness": 0.27,
+            "endpointDarkChroma": 0.04265625,
+            "monotone": true,
+            "status": "ok"
+          },
+          "swatches": [
+            {
+              "label": "50",
+              "hex": "#D8FAEF",
+              "textHex": "#111111"
+            },
+            {
+              "label": "100",
+              "hex": "#B9E4D7",
+              "textHex": "#111111"
+            },
+            {
+              "label": "200",
+              "hex": "#9BCEBF",
+              "textHex": "#111111"
+            },
+            {
+              "label": "300",
+              "hex": "#7CB9A8",
+              "textHex": "#111111"
+            },
+            {
+              "label": "400",
+              "hex": "#5DA491",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "500",
+              "hex": "#3A8F7B",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "600",
+              "hex": "#007B66",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "700",
+              "hex": "#076655",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "800",
+              "hex": "#0B5244",
+              "textHex": "#f8f8f8"
+            },
+            {
+              "label": "900",
+              "hex": "#0B3F34",
               "textHex": "#f8f8f8"
             },
             {

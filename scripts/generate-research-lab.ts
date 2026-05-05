@@ -11,7 +11,14 @@ const OUTPUT_DIR = path.resolve("docs/generated");
 const HTML_PATH = path.join(OUTPUT_DIR, "research-lab.html");
 const JSON_PATH = path.join(OUTPUT_DIR, "research-lab.json");
 
-const FOCUS_SEED_IDS = ["bright-lime", "cyan", "phthalo-green"] as const;
+const FOCUS_SEED_IDS = [
+  "bright-lime",
+  "cadmium-yellow",
+  "cyan",
+  "phthalo-green",
+  "ultramarine",
+  "violet",
+] as const;
 const FOCUS_STOP_LABELS = [
   "50",
   "100",
@@ -25,13 +32,14 @@ const FOCUS_STOP_LABELS = [
   "900",
   "950",
 ] as const;
-const FOCUS_ENGINE = "v6";
+const FOCUS_ENGINES = ["v6", "brand-exact-fair"] as const;
 
 type FocusedEngine = ResearchLabData["seeds"][number]["engines"][number];
 
 function buildFocusedVisualData(): ResearchLabData {
   const seedIds = new Set<string>(FOCUS_SEED_IDS);
   const stopLabels = new Set<string>(FOCUS_STOP_LABELS);
+  const engines = new Set<string>(FOCUS_ENGINES);
   const seeds = RESEARCH_SEEDS.filter((seed) => seedIds.has(seed.id));
   const data = buildResearchLabData(seeds);
 
@@ -40,7 +48,7 @@ function buildFocusedVisualData(): ResearchLabData {
     seeds: data.seeds.map((section) => ({
       ...section,
       engines: section.engines
-        .filter((engine) => engine.engine === FOCUS_ENGINE)
+        .filter((engine) => engines.has(engine.engine))
         .map((engine) => ({
           ...engine,
           swatches: engine.swatches.filter((swatch) => stopLabels.has(swatch.label)),
@@ -104,11 +112,16 @@ function occupancyForStop(engine: FocusedEngine, label: string): number | null {
 
 function renderDiagnostics(engine: FocusedEngine): string {
   const stop50Occupancy = occupancyForStop(engine, "50");
-  const topDistance = distanceBetweenStops(engine, "50", "100");
-  const bridgeDistance = distanceBetweenStops(engine, "100", "200");
+  const topDistance = engine.focus.topCliffDistance ?? distanceBetweenStops(engine, "50", "100");
+  const bridgeDistance =
+    engine.focus.topBridgeDistance ?? distanceBetweenStops(engine, "100", "200");
+  const darkBridgeDistance =
+    engine.focus.darkBridgeDistance ?? distanceBetweenStops(engine, "800", "900");
+  const darkEdgeDistance =
+    engine.focus.darkEdgeDistance ?? distanceBetweenStops(engine, "900", "950");
 
   return `
-    <div class="diagnostics" aria-label="Top-edge diagnostics">
+    <div class="diagnostics" aria-label="Ramp diagnostics">
       <div class="diagnostic">
         <span class="diagnostic__label">50 occ</span>
         <span class="diagnostic__value mono">${formatPercent(stop50Occupancy)}</span>
@@ -120,6 +133,18 @@ function renderDiagnostics(engine: FocusedEngine): string {
       <div class="diagnostic">
         <span class="diagnostic__label">100->200</span>
         <span class="diagnostic__value mono">${formatDistance(bridgeDistance)}</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">800->900</span>
+        <span class="diagnostic__value mono">${formatDistance(darkBridgeDistance)}</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">900->950</span>
+        <span class="diagnostic__value mono">${formatDistance(darkEdgeDistance)}</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">dark edge</span>
+        <span class="diagnostic__value mono">${engine.focus.darkExitRatio === null ? "n/a" : formatRatio(engine.focus.darkExitRatio)}</span>
       </div>
       <div class="diagnostic">
         <span class="diagnostic__label">edge</span>
@@ -137,6 +162,8 @@ function engineLabel(engine: string): string {
   switch (engine) {
     case "v6":
       return "V6 Solver";
+    case "brand-exact-fair":
+      return "Brand-Exact Fair";
     default:
       return engine.toUpperCase();
   }
@@ -383,10 +410,10 @@ function renderHtml(data: ResearchLabData): string {
     <main>
       <section class="hero">
         <h1>Highlight Ramp Lab</h1>
-        <p>Visual-only pass for the full anchor-seeded solver path. This board is scoped to lime, cyan, and phthalo-green so the complete ramp can be judged without metric noise.</p>
+        <p>Visual-only pass for exact-seed ramp quality. This board compares raw v6 against the locked brand-exact fairing algorithm, with top-bridge and dark-tail diagnostics visible beside the full ramp.</p>
         <div class="hero__meta">
           <div class="pill mono">Stops: ${FOCUS_STOP_LABELS.join(" / ")}</div>
-          <div class="pill mono">Engine: ${engineLabel(FOCUS_ENGINE)}</div>
+          <div class="pill mono">Engines: ${FOCUS_ENGINES.map(engineLabel).join(" / ")}</div>
           <div class="pill mono">Generated ${new Date(data.generatedAt).toLocaleString()}</div>
         </div>
       </section>
@@ -424,12 +451,16 @@ function renderHtml(data: ResearchLabData): string {
 </html>`;
 }
 
+function stripTrailingWhitespace(value: string): string {
+  return value.replace(/[ \t]+$/gm, "");
+}
+
 async function main(): Promise<void> {
   const data = buildFocusedVisualData();
   await mkdir(OUTPUT_DIR, { recursive: true });
   await Promise.all([
     writeFile(JSON_PATH, JSON.stringify(data, null, 2), "utf8"),
-    writeFile(HTML_PATH, renderHtml(data), "utf8"),
+    writeFile(HTML_PATH, stripTrailingWhitespace(renderHtml(data)), "utf8"),
   ]);
   console.log(`Wrote ${HTML_PATH}`);
   console.log(`Wrote ${JSON_PATH}`);

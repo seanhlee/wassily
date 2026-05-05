@@ -6,7 +6,7 @@
 
 ## Overview
 
-A color moodboard that thinks in OKLCH. Collect colors from anywhere — paste hex values, drop photographs, right-click for serendipity. Every color is purified to its ideal expression. Promote colors into ramps when you're ready. Export production tokens. The canvas is the collection. The collection is the tool.
+A color moodboard that thinks in OKLCH. Collect colors from anywhere — paste hex values, drop photographs, right-click for serendipity. Every color is purified to its ideal expression. Promote colors into ramps when you're ready. Export production tokens through MCP tooling; browser export UI is still planned. The canvas is the collection. The collection is the tool.
 
 See [docs/PRD.md](docs/PRD.md) for full product spec.
 
@@ -17,7 +17,7 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 - `@fontsource/ibm-plex-mono` (400 weight, 11px)
 - CSS transforms for spatial canvas camera
 - DOM rendering for all objects
-- localStorage for persistence (reference images excluded — too large)
+- localStorage for board/canvas metadata + IndexedDB for reference image blobs
 - No backend — pure client-side static site
 
 ## Commands
@@ -35,7 +35,7 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 
 ## Architecture
 
-- `src/engine/` — color science (purification, v6 semantic ramp solver, harmonization, image extraction, gamut mapping)
+- `src/engine/` — color science (purification, brand-exact ramp fairing, v6 semantic base solver, harmonization, image extraction, gamut mapping)
 - `src/canvas/` — spatial canvas (camera, pan/zoom, coordinate system, object placement)
 - `src/components/` — React UI (swatches, ramp strips, reference images, context menus, harmonize feedback overlay, board bar)
 - `src/state/` — canvas state management (useReducer + undo history), board persistence, MCP bridge hook
@@ -48,25 +48,27 @@ See [docs/PRD.md](docs/PRD.md) for full product spec.
 
 1. **Swatch** — single purified color (the atomic unit)
 2. **Ramp** — linked strip of colors generated from a swatch (promoted via R key)
-3. **Reference Image** — dropped/pasted photograph for color extraction (session-only, not persisted)
+3. **Reference Image** — dropped/pasted photograph for color extraction. Metadata persists in localStorage; blob data persists in IndexedDB and is restored as object URLs.
 4. **Connection** — curved bezier line between swatches/ramps showing contrast ratio, hue distance, and deltaE on hover. L to create (chain-connects 2+ selected), L to toggle visibility, Delete to remove.
 
 ## Key Concepts
 
 - **Color as primitive** — right-click = swatch. R = promote to ramp. Ramp is derived, not default. Click on empty space ONLY deselects.
 - **Purification** — every color that enters is maximized to peak chroma at its hue. Neutrals (C < `NEUTRAL_CHROMA` = 0.05 from `gamut.ts`) bypass purification. Exception: image extraction uses normalize-to-peak instead of max purification (see below).
-- **Ramp engine v6** — seed-constrained OKLab path solver plus semantic tonal roles.
+- **Ramp engine** — app-facing `opinionated` ramps use `brand-exact-fair`, which starts from the v6 seed-constrained OKLab path solver and then math-fairs the final visible ramp around the exact seed.
   - Exact seed placement is a hard constraint. The nearest semantic stop is replaced with the exact seed color.
-  - The solver optimizes perceptual path density, curvature, hue stability, seed exit geometry, and corpus-conditioned soft priors before sampling stops.
-  - The 11-stop ladder is semantic: `50` is tinted paper, `100/200` bridge into high-color seeds, `500` is a body anchor when appropriate, and `950` is colored ink rather than black.
+  - v6 optimizes perceptual path density, curvature, hue stability, seed exit geometry, and corpus-conditioned soft priors before sampling stops.
+  - The fairing pass can shift the exact seed to a nearby better label, prioritizes adjacent OKLab evenness at `50 -> 100 -> 200`, and opens the `900 -> 950` tail when v6 collapses the darks.
+  - The 11-stop labels remain semantic names, but math wins over forcing a role: `50` may read as paper when the ramp geometry allows it, and `950` should be colored ink rather than black.
   - Chromatic endpoints are family-aware. Bright lime uses cusp handling, cyan/phthalo keep high tint occupancy, blue-violet gets a deeper but still chromatic ink tail, and neutrals use quiet paper/ink envelopes.
   - The broad visual stress board is `npm run research:gauntlet`; the focused side-by-side lab is `npm run research:lab`.
+  - Important: brand-exact fairing is the locked app-facing algorithm for this ship, but ramp quality should still be judged visually; v6 remains the base research scaffold.
 - **Always vivid display** — ramps show `stop.color` (vivid) in the tool. Dark variants (`stop.darkColor`) are for export only.
 - **Harmonization** — select 2+ objects, press H, hues snap to nearest harmonic geometry. Feedback overlay: "RELATIONSHIP · ANGLE" centered on screen for 1.2s (via `HarmonizeLabel.tsx`). Press H again to cycle: 2 objects cycle relationship types (analogous→triadic→complementary...), 3+ objects rotate the harmonic frame. Cycling replaces the previous strip (no accumulation). Already-harmonized colors show "ALREADY X" feedback. Uses optimal cyclic assignment with locked-hue pre-assignment for 3+ objects.
-- **Image extraction** — drop/paste an image, get 3-7 adaptive dominant colors in OKLCH space. K-means in OKLCH with three key refinements: gamut-relative scoring (eliminates yellow/cyan bias), boosted hue weight in distance (2.5x, separates distinct hues), peak-chroma representatives (most vivid pixel per cluster, not averaged centroid). Normalize-to-peak chroma scaling preserves the image's relative intensity relationships — the loudest color hits 95% of gamut max, quieter colors scale proportionally. Distinctiveness culling ensures palette spread (threshold 0.08 in OKLCH distance). Neutrals (C < 0.04) pass through unchanged. Single-color images still get full purification.
+- **Image extraction** — drop/paste an image to add a reference image, then right-click the image and choose `Extract colors`. Extraction returns adaptive dominant colors in OKLCH space and stores source markers on the image. Marker dragging samples source-exact pixels and updates linked swatches without purification. K-means in OKLCH uses gamut-relative scoring, boosted hue separation, peak-chroma representatives, normalize-to-peak chroma scaling, and distinctiveness culling. Neutrals pass through unchanged.
 - **Hover-only labels** — ramp names/values hidden until hover. Swatch hex is only visible in edit mode (context menu for quick copy).
 - **Light mode default** — canvas starts white (#fff). D toggles between light and dark (#000).
-- **Persistence** — localStorage (auto-save, debounced). Reference images are session-only (IndexedDB for blobs).
+- **Persistence** — localStorage for board/canvas metadata (auto-save, debounced) and IndexedDB for reference image blobs. `saveBoardState` strips `dataUrl`; `RESTORE_IMAGE_URLS` patches object URLs after blob load. Blob cleanup is cross-board-aware.
 - **Boards** — named, switchable documents. Each board has its own `CanvasState` stored at `localStorage('wassily-board-{id}')`. Board list at `wassily-boards`, active board at `wassily-active-board`. Legacy `wassily-canvas` key auto-migrated to an "Untitled" board on first load.
 - **MCP Bridge** — dev-only Vite middleware (`/__mcp__/*`) that enables the MCP tools to read/write the live canvas. The React hook (`useMcpBridge`) connects via SSE, receives dispatched actions, applies them via `applyExternalActions`, and posts results back. State is synced to the middleware cache on connect, after bridge operations (immediate), and on local changes (debounced 300ms).
 
@@ -171,3 +173,11 @@ Claude ←(stdio)→ MCP Server ──(HTTP fetch)──→ Vite Dev Server ←(
 - ~~**darkMode naming is backwards**~~: Fixed — renamed to `lightMode` (`true` = light canvas). Old persisted `darkMode` key auto-migrated on load.
 - ~~**Hue rotation removed**~~: Scroll-on-swatch hue rotation code removed. Will return with spectral ghost controls (JIT UI — faint arc during gesture).
 - ~~**genId counter resets on reload**~~: Fixed — `nextId` is now seeded from persisted objects in the `useReducer` initializer.
+
+## Current Verification Caveats
+
+As of 2026-05-05:
+
+- `npm run build` passes, with a Vite chunk-size warning.
+- `npm run test:run` passes.
+- `npm run lint` passes.

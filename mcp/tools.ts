@@ -21,6 +21,7 @@ import {
   WHITE,
   BLACK,
 } from "../src/engine/index.js";
+import { RAMP_STOP_PRESETS } from "../src/constants.js";
 import type {
   OklchColor,
   Swatch,
@@ -35,6 +36,35 @@ import type {
 // ---- Helpers ----
 
 const NEUTRAL_CHROMA = 0.05;
+
+function isStopPreset(n: number): n is StopPreset {
+  return (RAMP_STOP_PRESETS as readonly number[]).includes(n);
+}
+
+export function stopCountDeltaForTarget(current: number, target: StopPreset): number {
+  const targetIdx = RAMP_STOP_PRESETS.indexOf(target);
+  const currentIdx = RAMP_STOP_PRESETS.indexOf(current as StopPreset);
+  if (currentIdx !== -1) return targetIdx - currentIdx;
+
+  // CHANGE_STOP_COUNT snaps non-preset counts directionally. Mirror that
+  // virtual index so MCP lands on, and reports, the requested preset.
+  if (target > current) {
+    const firstAboveIdx = RAMP_STOP_PRESETS.findIndex((preset) => preset > current);
+    const reducerBaseIdx =
+      firstAboveIdx === -1 ? RAMP_STOP_PRESETS.length - 1 : firstAboveIdx - 1;
+    return targetIdx - reducerBaseIdx;
+  }
+
+  let lastBelowIdx = -1;
+  for (let i = RAMP_STOP_PRESETS.length - 1; i >= 0; i--) {
+    if (RAMP_STOP_PRESETS[i] < current) {
+      lastBelowIdx = i;
+      break;
+    }
+  }
+  const reducerBaseIdx = lastBelowIdx === -1 ? 0 : lastBelowIdx + 1;
+  return targetIdx - reducerBaseIdx;
+}
 
 function formatOklch(c: OklchColor): string {
   return `oklch(${c.l.toFixed(3)} ${c.c.toFixed(3)} ${c.h.toFixed(1)})`;
@@ -384,19 +414,19 @@ export function registerTools(server: McpServer): void {
   // 3. generate_ramp
   server.tool(
     "generate_ramp",
-    "Generate a color ramp from a seed hue. Returns labeled stops (50-950) with light and dark mode variants. Uses Wassily's easing-curve ramp engine with gamut-relative chroma.",
+    "Generate a color ramp from a seed hue. Returns labeled stops (50-950) with light and dark mode variants. Uses Wassily's math-first brand-exact fairing engine with gamut-safe OKLCH output.",
     {
       hue: z.number().min(0).max(360).describe("Seed hue angle (0-360)"),
       stop_count: z
         .number()
-        .refine((n): n is StopPreset => [3, 5, 7, 9, 11].includes(n), {
-          message: "Must be 3, 5, 7, 9, or 11",
+        .refine(isStopPreset, {
+          message: "Must be 3, 5, 7, 9, 11, or 13",
         })
-        .describe("Number of stops: 3, 5, 7, 9, or 11"),
+        .describe("Number of stops: 3, 5, 7, 9, 11, or 13"),
       mode: z
         .enum(["opinionated", "pure"])
         .default("opinionated")
-        .describe("'opinionated' adds hue drift toward warm darks; 'pure' keeps hue constant"),
+        .describe("'opinionated' uses math-first brand-exact fairing around the seed; 'pure' keeps hue constant"),
       seed_chroma: z
         .number()
         .min(0)
@@ -895,11 +925,11 @@ export function registerTools(server: McpServer): void {
       id: z.string().describe("Swatch ID to promote"),
       stop_count: z
         .number()
-        .refine((n): n is StopPreset => [3, 5, 7, 9, 11].includes(n), {
-          message: "Must be 3, 5, 7, 9, or 11",
+        .refine(isStopPreset, {
+          message: "Must be 3, 5, 7, 9, 11, or 13",
         })
         .default(11)
-        .describe("Number of stops (3, 5, 7, 9, or 11). Default 11."),
+        .describe("Number of stops (3, 5, 7, 9, 11, or 13). Default 11."),
     },
     async ({ id, stop_count }) => {
       const action: Action = { type: "PROMOTE_TO_RAMP", id, stopCount: stop_count };
@@ -917,10 +947,10 @@ export function registerTools(server: McpServer): void {
       id: z.string().describe("Ramp ID"),
       stop_count: z
         .number()
-        .refine((n) => [3, 5, 7, 9, 11].includes(n), {
-          message: "Must be 3, 5, 7, 9, or 11",
+        .refine(isStopPreset, {
+          message: "Must be 3, 5, 7, 9, 11, or 13",
         })
-        .describe("Target number of stops (3, 5, 7, 9, or 11)"),
+        .describe("Target number of stops (3, 5, 7, 9, 11, or 13)"),
     },
     async ({ id, stop_count }) => {
       const state = await fetchLiveState();
@@ -929,16 +959,20 @@ export function registerTools(server: McpServer): void {
       if (!obj || obj.type !== "ramp") return error(`Object "${id}" is not a ramp`);
       const current = (obj as Ramp).stopCount;
       if (current === stop_count) return json({ id, stopCount: current, message: "Already at requested stop count" });
-      // CHANGE_STOP_COUNT uses preset index delta, not count delta
-      const presets = [3, 5, 7, 9, 11];
-      const currentIdx = presets.indexOf(current);
-      const targetIdx = presets.indexOf(stop_count);
-      const delta = targetIdx - (currentIdx === -1 ? 2 : currentIdx);
+      const delta = stopCountDeltaForTarget(current, stop_count);
 
       const action: Action = { type: "CHANGE_STOP_COUNT", id, delta };
       const result = await dispatchActions([action]);
       if (!result.success) return error(result.error ?? "Failed to change stop count");
-      return json({ id, previous: current, stopCount: stop_count });
+
+      const nextState = await fetchLiveState();
+      const nextObj = nextState?.objects[id];
+      const appliedStopCount =
+        nextObj?.type === "ramp" ? (nextObj as Ramp).stopCount : stop_count;
+      if (appliedStopCount !== stop_count) {
+        return error(`Failed to change stop count to ${stop_count}; applied ${appliedStopCount}`);
+      }
+      return json({ id, previous: current, stopCount: appliedStopCount });
     },
   );
 

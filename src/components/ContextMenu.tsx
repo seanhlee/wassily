@@ -277,6 +277,12 @@ export function CanvasContextMenu({
                 <ContextMenu.Separator style={getSeparatorStyle(lightMode)} />
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
+                  onClick={() => onPromoteToRamp(ctx.objectId, 13)}
+                >
+                  Ramp · 13
+                </ContextMenu.Item>
+                <ContextMenu.Item
+                  style={(state) => getItemStyle(lightMode, state)}
                   onClick={() => onPromoteToRamp(ctx.objectId, 11)}
                 >
                   Ramp · 11

@@ -10,4 +10,4 @@ export const FONT = "'IBM Plex Mono', monospace";
 export const FONT_SIZE = 11;
 
 /** Available ramp stop count presets. */
-export const RAMP_STOP_PRESETS = [3, 5, 7, 9, 11] as const;
+export const RAMP_STOP_PRESETS = [3, 5, 7, 9, 11, 13] as const;

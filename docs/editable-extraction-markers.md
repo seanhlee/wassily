@@ -1,20 +1,21 @@
 # Editable Extraction Markers
 
-> Status: research/spec proposal
+> Status: shipped
 > Goal: make image extraction steerable by linking extracted swatches back to sample points on the source image.
+> Implemented in `src/engine/extract.ts`, `src/state/canvas.ts`, `src/components/RefImageNode.tsx`, `src/components/ExtractionMarkerDot.tsx`, `src/components/ExtractionLoupe.tsx`, and `src/hooks/useEyedropper.ts`.
 
 ## Why This Matters
 
-Wassily already has a strong image extraction engine: dropped or pasted images can produce 3-7 adaptive OKLCH colors, using k-means, peak-chroma representatives, chroma normalization, and distinctiveness culling.
+Wassily already has a strong image extraction engine: dropped or pasted reference images can be explicitly extracted into 3-7 adaptive OKLCH colors, using k-means, peak-chroma representatives, chroma normalization, and distinctiveness culling.
 
-The missing product loop is correction. Today, extraction is a one-shot command:
+The product loop this feature adds is correction. Before editable markers, extraction was a one-shot command:
 
 1. User right-clicks a reference image.
 2. `extractColors(imageData)` returns colors.
 3. Wassily creates swatches to the right of the image.
 4. The relationship between image, sampled pixels, and swatches is lost.
 
-Editable extraction markers add the missing loop:
+Editable extraction markers now add the missing loop:
 
 1. Wassily extracts colors and creates swatches.
 2. The reference image shows markers at the sampled source points.
@@ -112,7 +113,7 @@ Avoid:
 - Generic component-library controls where a diagrammatic control can carry the interaction.
 - Explanatory UI copy when the control shape can reveal the interaction.
 
-## Proposed UX
+## Current UX And Future Affordances
 
 ### Entry Points
 
@@ -121,10 +122,10 @@ Primary:
 - Right-click reference image -> `Extract colors`
 - Wassily creates swatches beside the image. Markers appear while the image remains selected.
 
-Secondary:
+Future/secondary:
 
-- When an image with an extraction exists, right-click -> `Edit extraction`
-- When an extracted swatch is selected, context menu can include `Show source marker`.
+- A dedicated `Edit extraction` item could be added later, but is not needed because markers appear when the image is selected or a linked swatch is selected/hovered.
+- When an extracted swatch is selected, a future context menu could include `Show source marker`.
 
 Later:
 
@@ -264,24 +265,24 @@ Recommendation: choose Option A for v1. Store markers on `ReferenceImage`.
 
 ## Code Validation Notes
 
-Validated against the current codebase on 2026-04-24.
+Original validation was done against the codebase on 2026-04-24. The feature has since shipped; notes below are kept as implementation history plus current contracts.
 
 ### What Already Fits
 
 - `Canvas.tsx` already has the right entry point: `handleExtractColors(imageId)` loads image data, calls `extractColors`, and creates a vertical strip of swatches beside the image.
 - `RefImageNode` is already a positioned wrapper around the image, so rendering markers inside it will naturally make markers move with the image.
 - The existing eyedropper code already proves the offscreen-canvas sampling path: `Canvas.tsx` primes reference-image canvases and `useEyedropper.ts` converts pointer coordinates into image-local sampling.
-- Board persistence should accept `ReferenceImage.extraction` without a migration. `saveBoardState` preserves all reference-image fields except `dataUrl`, and blob persistence is keyed separately by image id.
+- Board persistence accepts `ReferenceImage.extraction` without a migration. `saveBoardState` preserves all reference-image fields except `dataUrl`, and blob persistence is keyed separately by image id.
 - `CREATE_SWATCHES` already supports caller-provided swatch ids at the reducer/action level, and reducer tests cover that behavior.
 
-### Spec Adjustments From The Code
+### Implemented Adjustments From The Code
 
-- The `createSwatches` hook wrapper currently narrows its input type to swatches without `id`, even though the action type and reducer support `id`. If we do not add `CREATE_EXTRACTION` immediately, widen this wrapper before generating marker-linked swatches from `Canvas.tsx`.
-- The extraction engine currently loses source coordinates very early because `samplePixels` returns `OklchColor[]`. Phase 1 should introduce `SampledPixel` and keep the existing `colors` result for compatibility with current UI and tests.
-- Current image sampling is partly display-size based. `primeImageCanvas` draws to `image.size`, while `dataUrlToImageData` downscales to max 200px. Marker positions should therefore be normalized, and drag sampling should use a clearly chosen coordinate space. Preferred: a dedicated sampling helper that draws the source image to its natural dimensions when possible, falling back to the displayed canvas.
-- The reducer's history model skips granular swatch color updates. Any live drag action such as `UPDATE_EXTRACTION_MARKER_AND_SWATCH` must also be included in `SKIP_HISTORY`, with `snapshot()` called once at drag start.
-- Current deletion cleanup only removes connections. Marker cleanup needs to be added anywhere linked swatches can disappear or stop being swatches: `DELETE_SELECTED`, `DELETE_OBJECTS`, and `PROMOTE_TO_RAMP`.
-- Current duplication is shallow. If `ReferenceImage.extraction` is added, `DUPLICATE_SELECTED` would copy markers that still point to the original swatches unless we explicitly clear or remap extraction metadata.
+- Initial extraction now uses a single `CREATE_EXTRACTION` action. It creates linked swatches and image markers atomically, so `Canvas.tsx` does not need to pre-generate marker-linked swatch IDs.
+- `extractColors()` keeps source coordinates through `SampledPixel` and returns both `samples` and `colors` for compatibility.
+- Marker positions are normalized image-relative coordinates. Initial extraction uses the downsampled image data; marker dragging uses the display-size offscreen context primed for eyedropper sampling. This keeps the interaction self-consistent.
+- `MOVE_EXTRACTION_MARKER` is in `SKIP_HISTORY`; drag start calls `snapshot()` once and live updates are free.
+- Marker cleanup is implemented for `DELETE_SELECTED`, `DELETE_OBJECTS`, `PROMOTE_TO_RAMP`, and `LOAD_BOARD` orphan filtering.
+- `DUPLICATE_SELECTED` intentionally duplicates reference images without extraction markers, avoiding links back to original swatches.
 
 ### Validated Implementation Preference
 
@@ -289,7 +290,7 @@ Use a single `CREATE_EXTRACTION` action for initial extraction rather than two s
 
 ## Engine Changes
 
-The current `extractColors(imageData)` returns only `{ colors, isSingleColor }`. Editable markers need per-color source positions. Extend the shape:
+`extractColors(imageData)` now returns per-color source positions as well as the legacy `colors` array:
 
 ```ts
 export interface ExtractionSample {
@@ -308,7 +309,7 @@ Keeping `colors` alongside `samples` preserves every current callsite.
 
 ### How To Get Source Positions
 
-Current clusters already track a `peak` color, but not the pixel coordinate. Update sampling and clustering to keep source coordinates:
+Clusters keep the `peak` color and its pixel coordinate:
 
 ```ts
 interface SampledPixel {
@@ -385,25 +386,30 @@ Notes:
 
 ### `RefImageNode`
 
-Add props:
+Important props now include:
 
 ```ts
-extractionEditable?: boolean;
-objects: Record<string, CanvasObject>; // or linked swatch lookup
+objects: CanvasState["objects"];
+selectedIds: string[];
+sampleCache: Map<string, CanvasRenderingContext2D>;
+camera: Camera;
+containerRef: React.RefObject<HTMLDivElement | null>;
 onMoveExtractionMarker: (
   imageId: string,
   markerId: string,
   position: Point,
   color: OklchColor,
 ) => void;
-onExtractionDragStart?: () => void;
+onLoupeUpdate: (state: LoupeState | null) => void;
+hoveredSwatchId: string | null;
+onHoverMarker: (swatchId: string | null) => void;
 ```
 
 Responsibilities:
 
-- Render markers if `image.extraction?.markers` exists and visibility rules pass.
-- Convert pointer position to normalized image position.
-- Sample from an offscreen canvas or callback sampler.
+- Render markers when the image is selected or a linked swatch is selected/hovered.
+- Convert viewport pointer position through camera and image-local coordinates.
+- Sample from the primed display-size offscreen canvas.
 - Render loupe during drag.
 - Stop event propagation so marker dragging does not move the image.
 
@@ -411,24 +417,28 @@ Responsibilities:
 
 Canvas already primes offscreen canvases for eyedropper sampling. Reuse that pattern.
 
-Needed helper:
+Current helper:
 
 ```ts
-sampleReferenceImageAt(
+sampleImagePixelAt(
+  clientX: number,
+  clientY: number,
   image: ReferenceImage,
-  normalized: Point,
-): OklchColor | null
+  containerRect: DOMRect,
+  camera: Camera,
+  cache: Map<string, CanvasRenderingContext2D>,
+): { color: OklchColor; local: { x: number; y: number } } | null
 ```
 
 Implementation detail:
 
-- Sample against the natural image canvas, not the displayed 200px image.
-- Convert normalized position to imageData pixel coordinates.
+- Sample against the primed display-size image canvas.
+- Convert viewport pointer coordinates through camera and image-local space.
 - Use existing `culori` RGB -> OKLCH conversion path.
 
 ### `Canvas.tsx`
 
-Update `handleExtractColors`:
+Current `handleExtractColors` flow:
 
 1. Load `ImageData`.
 2. Call updated `extractColors`.
@@ -440,12 +450,12 @@ Because a single reducer action writes both swatches and markers, there is no tr
 
 ## Persistence
 
-Reference images are persisted by board state, with image blobs handled separately. Storing marker metadata on `ReferenceImage` should persist naturally.
+Reference images are persisted by board state, with image blobs handled separately. Marker metadata lives on `ReferenceImage` and persists with the image metadata.
 
-Need migration behavior:
+Migration behavior:
 
 - Existing images without `extraction` continue to work.
-- If a board loads with markers whose swatches no longer exist, filter those markers during render or cleanup.
+- If a board loads with markers whose swatches no longer exist, `LOAD_BOARD` filters the orphaned markers.
 
 ## Accessibility And Usability
 
@@ -458,30 +468,32 @@ Need migration behavior:
 ## Edge Cases
 
 - Image fails to load: no markers rendered.
-- Transparent pixels: ignore during auto-extraction; dragged marker on transparent pixel should either no-op or sample the composited RGB. Prefer no-op for v1.
+- Transparent pixels: ignore during initial extraction; dragged marker on transparent pixel should either no-op or sample the composited RGB. Prefer no-op for v1.
 - Image object uses `objectFit: cover`: current reference image displays the whole image at proportional size, so normalized sampling is straightforward. If cropping is added later, sampling math must account for crop.
 - Re-extracting an image: replace previous extraction markers, create a new swatch strip, or update existing linked swatches? Prefer prompt-free v1 behavior: replace markers and create a new strip. Later we can support `Re-extract into existing swatches`.
 - Swatch manually edited after extraction: the link is preserved. The marker stays pinned to its source pixel and its fill tracks the swatch's current color, so the two never visually disagree. Marker drag still re-samples and overwrites the swatch; manual swatch edits do not move the marker. Deleting the marker is the explicit way to break the link.
 
-## Implementation Plan
+## Shipped Implementation Outline
+
+All five phases have shipped, with one exception: there is no separate `Edit extraction` context-menu item because marker visibility is driven by selection and hover.
 
 ### Phase 1: Engine Metadata
 
-- Change `extractColors` internals to retain sampled pixel coordinates.
-- Return `samples` with normalized source positions.
-- Keep `colors` for compatibility.
-- Add tests in a new `src/engine/__tests__/extract.test.ts`. (`research.test.ts` is reserved for ramp solver research per CLAUDE.md.)
+- `extractColors` retains sampled pixel coordinates internally.
+- The result returns `samples` with normalized source positions.
+- The result keeps `colors` for compatibility.
+- Tests live in `src/engine/__tests__/extract.test.ts`. (`research.test.ts` is reserved for ramp solver research per CLAUDE.md.)
 
 ### Phase 2: Atomic Extraction State
 
-- Add `ExtractionMarker` and `ReferenceImage.extraction` to `src/types/index.ts`.
-- Add `CREATE_EXTRACTION` action to reducer.
-- Update `handleExtractColors` to use `CREATE_EXTRACTION`.
-- Add reducer tests for marker/swatch linkage and cleanup.
+- `ExtractionMarker` and `ReferenceImage.extraction` are defined in `src/types/index.ts`.
+- `CREATE_EXTRACTION` creates linked swatches and markers atomically in the reducer.
+- `handleExtractColors` uses `CREATE_EXTRACTION`.
+- Reducer tests cover marker/swatch linkage and cleanup.
 
 ### Phase 3: Marker Rendering
 
-- Update `RefImageNode` to render markers over selected/extraction-active images.
+- `RefImageNode` renders markers over selected images and when linked swatches are selected/hovered.
 - Marker style:
   - filled dot,
   - adaptive ring,
@@ -490,20 +502,20 @@ Need migration behavior:
 
 ### Phase 4: Marker Dragging
 
-- Add pointer capture drag behavior.
-- Reuse/reference offscreen image sampling.
-- Dispatch combined marker+swatch update.
-- Add loupe preview.
-- Ensure drag does not move the image.
+- Pointer capture drives marker dragging.
+- Drag sampling reuses the offscreen image sampling cache.
+- Drag dispatches a combined marker+swatch update.
+- The loupe previews the sampled source pixel.
+- Marker drag does not move the image.
 
 ### Phase 5: Polish
 
-- Link marker hover to linked swatch hover/selection.
-- Add `Edit extraction` context menu item.
-- Add Escape cancel.
-- Add stale marker cleanup.
+- Marker hover links to linked swatch hover/selection.
+- No separate `Edit extraction` item exists; selection and hover are the edit affordance.
+- Escape cancels an active marker drag.
+- Stale marker cleanup is implemented.
 
-## Testing Plan
+## Verification Coverage
 
 Unit:
 
@@ -527,15 +539,15 @@ Visual:
 - Loupe is crisp and does not flicker.
 - Text/markers do not overlap selected brackets badly.
 
-## Recommended V1 Decisions
+## Current Product Decisions
 
 - Store extraction metadata on `ReferenceImage`.
 - Keep swatches ordinary, but linked through marker metadata.
-- Show markers when image is selected.
+- Show markers when the image is selected or linked swatches are selected/hovered.
 - Marker dragging samples source-exact color and bypasses purification.
 - Re-extraction creates a new linked swatch strip and replaces image markers.
 - Use a combined reducer action for marker and swatch updates.
-- Add loupe if time allows; markers alone are still a coherent first cut.
+- Show the loupe during marker drag.
 - No persistent grouping between image and extracted swatches. Rely on spatial adjacency plus the hover ghost-link.
 - Manual swatch edits never break the marker link. Marker fill tracks the linked swatch's current color so the two cannot visually disagree. `ExtractionMarker.color` preserves the originally sampled pixel for future provenance affordances (loupe divergence display, etc.); it is not used for rendering.
 - On swatch delete, the linked marker is removed silently. Undo restores both.

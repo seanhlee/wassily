@@ -39,6 +39,21 @@ const STOP_PRESETS: Record<StopPreset, string[]> = {
     "900",
     "950",
   ],
+  13: [
+    "50",
+    "75",
+    "100",
+    "200",
+    "300",
+    "400",
+    "500",
+    "600",
+    "700",
+    "800",
+    "900",
+    "925",
+    "950",
+  ],
 };
 const SEMANTIC_TONAL_LABELS = STOP_PRESETS[11];
 
@@ -129,7 +144,7 @@ export interface V6EnergyBreakdown {
 }
 
 export interface V6SolveMetadata {
-  solver: "v6" | "v6-archetype";
+  solver: "v6" | "v6-archetype" | "brand-exact-fair";
   score: number;
   lightBudget: number;
   darkBudget: number;

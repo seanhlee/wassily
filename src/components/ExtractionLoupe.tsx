@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { OklchColor } from "../types";
-import { adaptiveRingStroke } from "./ExtractionMarkerDot";
+import { adaptiveRingStroke } from "./extractionMarkerStyle";
 import {
   LOUPE_CROP_SIZE,
   LOUPE_DISPLAY_SIZE,

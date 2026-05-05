@@ -43,6 +43,11 @@ export interface ResearchLabFocusMetrics {
   worstAdjacentRatio: number;
   worstThreeStepRatio: number;
   lightEntranceRatio: number;
+  topCliffDistance: number | null;
+  topBridgeDistance: number | null;
+  darkBridgeDistance: number | null;
+  darkEdgeDistance: number | null;
+  darkExitRatio: number | null;
   spacingCv: number;
   monotone: boolean;
   seedSplitLabel: string | null;
@@ -73,6 +78,26 @@ function isHighLightnessCuspSeed(run: SeedEvaluationRun): boolean {
     occupancy >= 0.9 &&
     yellowGreenWeight > 0
   );
+}
+
+function distanceBetweenLabels(
+  run: SeedEvaluationRun,
+  fromLabel: string,
+  toLabel: string,
+): number | null {
+  const labels = run.analysis.labels;
+  const fromIndex = labels.indexOf(fromLabel);
+  const toIndex = labels.indexOf(toLabel);
+  if (fromIndex < 0 || toIndex !== fromIndex + 1) return null;
+  return run.analysis.lightRamp.adjacentDistance.values[fromIndex] ?? null;
+}
+
+function darkExitRatio(run: SeedEvaluationRun): number | null {
+  const values = run.analysis.lightRamp.adjacentDistance.values;
+  if (values.length < 2) return null;
+  const penultimate = values[values.length - 2];
+  const last = values[values.length - 1];
+  return Math.max(penultimate, last) / Math.max(Math.min(penultimate, last), 1e-9);
 }
 
 function evaluateFocusGate(run: SeedEvaluationRun): ResearchLabFocusMetrics {
@@ -164,6 +189,11 @@ function evaluateFocusGate(run: SeedEvaluationRun): ResearchLabFocusMetrics {
     worstAdjacentRatio: analysis.lightRamp.adjacentDistance.worstAdjacentRatio,
     worstThreeStepRatio: analysis.lightRamp.adjacentDistance.worstThreeStepRatio,
     lightEntranceRatio: analysis.lightRamp.adjacentDistance.lightEntranceRatio,
+    topCliffDistance: distanceBetweenLabels(run, "50", "100"),
+    topBridgeDistance: distanceBetweenLabels(run, "100", "200"),
+    darkBridgeDistance: distanceBetweenLabels(run, "800", "900"),
+    darkEdgeDistance: distanceBetweenLabels(run, "900", "950"),
+    darkExitRatio: darkExitRatio(run),
     spacingCv: analysis.lightRamp.adjacentDistance.coefficientOfVariation,
     monotone: analysis.lightRamp.lightness.nonIncreasing,
     seedSplitLabel:
@@ -177,7 +207,7 @@ export function buildResearchLabData(
   seeds: readonly ResearchSeed[] = RESEARCH_SEEDS,
   options: Omit<EvaluateSeedOptions, "engine"> = {},
 ): ResearchLabData {
-  const engines: ResearchEngine[] = ["v6-archetype", "v6"];
+  const engines: ResearchEngine[] = ["v6-archetype", "v6", "brand-exact-fair"];
   return {
     generatedAt: new Date().toISOString(),
     seeds: seeds.map((seed) => ({

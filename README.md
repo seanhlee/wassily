@@ -1,16 +1,17 @@
 # Wassily
 
-Wassily is a color exploration studio built around OKLCH. It combines moodboarding, palette extraction, ramp generation, harmonization, and export-ready color output inside a spatial canvas.
+Wassily is a color exploration studio built around OKLCH. It combines moodboarding, steerable palette extraction, ramp research, harmonization, contrast inspection, boards, and export-oriented color output inside a spatial canvas.
 
 ## What It Does
 
 - Create purified swatches directly on the canvas.
-- Drop or paste images and extract dominant colors.
-- Promote swatches into ramps in `opinionated` or `pure` mode. Opinionated ramps use the v6 semantic solver: exact seed placement, perceptual OKLab cadence, family-aware tint/ink roles, and gamut-safe OKLCH output.
+- Drop or paste reference images, then extract dominant colors on demand.
+- Edit extracted palettes with image-relative source markers and a pixel loupe.
+- Promote swatches into ramps in `opinionated` or `pure` mode. Opinionated ramps now use a math-first brand-exact fairing pass on top of the v6 semantic solver: exact seed placement, even OKLab cadence, opened dark tails, and gamut-safe OKLCH output.
 - Harmonize selected colors into useful geometric relationships.
 - Compare contrast and relationships visually.
-- Organize work into named boards.
-- Export palette structure for implementation workflows.
+- Organize work into named boards with local persistence.
+- Export ramp tokens through MCP tooling; browser export UI is still planned.
 
 ## Stack
 
@@ -31,12 +32,15 @@ npm run lint
 npm run deadcode
 npm run research:lab
 npm run research:gauntlet
+npm run research:family-board
+npm run research:extraction
 ```
 
 ## Project Shape
 
 - `src/engine` — gamut math, purification, ramps, harmonization, extraction, contrast
 - `src/engine/v6ResearchSolver.ts` — seed-constrained semantic ramp solver and tonal role envelope
+- `src/engine/brandExactFairingSolver.ts` — app-facing opinionated ramp fairing pass on top of v6
 - `src/canvas` — camera and spatial canvas behavior
 - `src/components` — swatches, ramps, overlays, menus, board UI
 - `src/state` — reducer-driven canvas state, persistence, and bridge hooks
@@ -46,14 +50,18 @@ npm run research:gauntlet
 
 ## Ramp Research
 
-The current ramp direction is documented in `docs/ramp-research-v5.md`. The working solver is v6: it solves a seed-constrained OKLab path, then applies semantic tonal roles for the Tailwind-style 50/100/200/.../950 ladder.
+The current ramp research direction is documented in `docs/ramp-research-v5.md`. The app-facing opinionated solver is `brand-exact-fair`: it starts from v6's seed-constrained semantic path, then fairs the final visible ramp around the exact seed with adjacent OKLab distance as the primary truth.
+
+Important: the fairing pass is the locked app-facing algorithm for this ship, not a declaration that ramp research is over. Treat v6 as the base research scaffold and keep judging output quality visually.
 
 - `npm run research:lab` builds the focused side-by-side lab at `docs/generated/research-lab.html`.
 - `npm run research:gauntlet` builds the broader stress matrix at `docs/generated/research-gauntlet.html`.
+- `npm run research:family-board` builds the corpus/profile inspection board.
+- `npm run research:extraction` builds the extraction fixture board.
 - The current gauntlet covers neutrals, warm hues, greens, cool hues, and perturbations around hard cases such as bright lime, cyan, phthalo green, and ultramarine.
 
 ## Notes
 
-Some files in this repo are intentionally development-oriented, especially around the MCP bridge. `npm run deadcode` is useful for pruning obvious leftovers, but a couple of low-frequency entrypoints may still be intentional even if static analysis cannot trace them from the main browser app.
+Some files in this repo are intentionally development-oriented, especially around the MCP bridge and research generators. `npm run deadcode` is useful for pruning obvious leftovers, but several low-frequency entrypoints are intentional even if static analysis cannot trace them from the main browser app.
 
 For deeper product context, start with `CLAUDE.md` and the documents in `docs/`.

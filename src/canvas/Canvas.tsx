@@ -105,7 +105,9 @@ export function Canvas() {
   const eyedropperOriginalColor = useRef<OklchColor | null>(null);
   const eyedropperCommitted = useRef(false);
   const eyedropperTargetId = useRef<string | null>(null);
-  const eyedropperCanvasCache = useRef<Map<string, CanvasRenderingContext2D>>(new Map());
+  const [eyedropperCanvasCache] = useState(
+    () => new Map<string, CanvasRenderingContext2D>(),
+  );
   const [eyedropperTargetIdState, setEyedropperTargetIdState] = useState<string | null>(null);
   const eyedropperActive = iKeyHeld && eyedropperTargetIdState !== null;
 
@@ -159,7 +161,7 @@ export function Canvas() {
 
   // ---- Eyedropper: prime offscreen canvases for ref images ----
   useEffect(() => {
-    const cache = eyedropperCanvasCache.current;
+    const cache = eyedropperCanvasCache;
     const imageIds = new Set<string>();
     for (const obj of Object.values(state.objects)) {
       if (obj.type === "reference-image") {
@@ -171,7 +173,7 @@ export function Canvas() {
     for (const id of cache.keys()) {
       if (!imageIds.has(id)) cache.delete(id);
     }
-  }, [state.objects]);
+  }, [eyedropperCanvasCache, state.objects]);
 
   // ---- Canvas click → deselect only (+ eyedropper commit) ----
   const handleCanvasClick = useCallback(
@@ -183,7 +185,7 @@ export function Canvas() {
         if (rect) {
           const color = samplePixelAt(
             e.clientX, e.clientY, rect, cameraRef.current,
-            state.objects, eyedropperCanvasCache.current,
+            state.objects, eyedropperCanvasCache,
           );
           if (color) {
             snapshot();
@@ -203,7 +205,15 @@ export function Canvas() {
         deselectAll();
       }
     },
-    [state.selectedIds, state.objects, deselectAll, iKeyHeld, snapshot, updateSwatchColor],
+    [
+      state.selectedIds,
+      state.objects,
+      deselectAll,
+      eyedropperCanvasCache,
+      iKeyHeld,
+      snapshot,
+      updateSwatchColor,
+    ],
   );
 
   // ---- Wheel: pinch-to-zoom + two-finger-pan + hue rotation ----
@@ -322,7 +332,7 @@ export function Canvas() {
         if (rect) {
           const color = samplePixelAt(
             e.clientX, e.clientY, rect, cameraRef.current,
-            state.objects, eyedropperCanvasCache.current,
+            state.objects, eyedropperCanvasCache,
           );
           if (color) {
             updateSwatchColor(targetId, color);
@@ -344,7 +354,13 @@ export function Canvas() {
         });
       }
     },
-    [setCamera, iKeyHeld, state.objects, updateSwatchColor],
+    [
+      setCamera,
+      eyedropperCanvasCache,
+      iKeyHeld,
+      state.objects,
+      updateSwatchColor,
+    ],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -930,7 +946,7 @@ export function Canvas() {
                 onDuplicateDrag={duplicateSelected}
                 objects={state.objects}
                 selectedIds={state.selectedIds}
-                sampleCache={eyedropperCanvasCache.current}
+                sampleCache={eyedropperCanvasCache}
                 camera={state.camera}
                 containerRef={containerRef}
                 onMoveExtractionMarker={moveExtractionMarker}
@@ -971,7 +987,7 @@ export function Canvas() {
           clientX={loupeState.clientX}
           clientY={loupeState.clientY}
           sampleCanvasCtx={
-            eyedropperCanvasCache.current.get(loupeState.imageId) ?? null
+            eyedropperCanvasCache.get(loupeState.imageId) ?? null
           }
           samplePixel={loupeState.samplePixel}
           color={loupeState.color}
