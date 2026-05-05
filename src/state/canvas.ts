@@ -490,7 +490,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       if (!obj || obj.type !== "ramp") return state;
       const ramp = obj as Ramp;
 
-      // Step through presets: 3 → 5 → 7 → 9 → 11
+      // Step through presets: 3 → 5 → 7 → 9 → 11 → 13
       // If current count is non-preset (e.g. after stop deletion), snap to
       // the nearest preset in the requested direction.
       const presets: readonly number[] = RAMP_STOP_PRESETS;

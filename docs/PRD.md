@@ -98,11 +98,11 @@ Works on selected swatches:
 
 Select a swatch. Press **R**. The swatch transforms into a ramp — expanding from a single color into a continuous strip of stops. The ramp builds around the seed color's hue.
 
-**Default: 11 stops** (Tailwind: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950).
+**Default: 11 stops** (Tailwind: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950). An expanded 13-stop preset adds `75` and `925` as extra bridge stops near the light entrance and ink tail.
 
-**+/- keys** add or remove stops by cycling through presets: **3 - 5 - 7 - 9 - 11**.
+**+/- keys** add or remove stops by cycling through presets: **3 - 5 - 7 - 9 - 11 - 13**.
 
-Right-click a swatch offers direct ramp creation at specific stop counts (11, 7, 5).
+Right-click a swatch offers direct ramp creation at specific stop counts (13, 11, 7, 5).
 
 ### Connections
 
@@ -124,7 +124,7 @@ Connections render as thin curved lines between objects. On hover they show cont
 | Key | Effect | Status |
 |-----|--------|--------|
 | **R** | Promote selected swatch to ramp (11 stops) | Built |
-| **+/-** | Cycle stop count on selected ramp (3/5/7/9/11) | Built |
+| **+/-** | Cycle stop count on selected ramp (3/5/7/9/11/13) | Built |
 | **D** | Toggle light/dark canvas | Built |
 | **M** (hold) | Peek at pure math mode (release to return) | Built |
 | **E** (hold) | Enable swatch lightness/chroma drag edit | Built |
@@ -152,7 +152,7 @@ Every right-click target gets a context-appropriate menu. 11px IBM Plex Mono, up
 **Right-click a swatch:**
 - Hex value (copies to clipboard on click)
 - oklch value (copies to clipboard on click)
-- Ramp - 11 / Ramp - 7 / Ramp - 5
+- Ramp - 13 / Ramp - 11 / Ramp - 7 / Ramp - 5
 - Delete
 
 **Right-click a ramp:**
@@ -322,7 +322,7 @@ Every color is in-gamut for sRGB. When desired chroma exceeds the boundary, chro
 
 ### Variable Stop Counts
 
-The full semantic role envelope applies to the 11-stop Tailwind-style ladder. Other stop counts still use the same seed-constrained path machinery and labels, but with fewer semantic positions available:
+The full semantic role envelope applies to the 11-stop Tailwind-style ladder. Other stop counts still use the same seed-constrained path machinery and labels, with the locked fairing pass solving the final visible spacing for that stop set:
 
 | Count | Stops | Use Case |
 |-------|-------|----------|
@@ -331,6 +331,7 @@ The full semantic role envelope applies to the 11-stop Tailwind-style ladder. Ot
 | **7** | 100, 200, 400, 500, 600, 800, 900 | Mid-range system |
 | **9** | 50, 100, 300, 400, 500, 600, 700, 900, 950 | Material-like |
 | **11** | 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 | Tailwind |
+| **13** | 50, 75, 100, 200, 300, 400, 500, 600, 700, 800, 900, 925, 950 | Expanded bridge |
 
 ### Display: Always Vivid
 

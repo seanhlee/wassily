@@ -147,14 +147,38 @@ describe("ramp generation", () => {
   });
 
   it("generates correct stop counts for all presets", () => {
-    for (const count of [3, 5, 7, 9, 11] as const) {
+    for (const count of [3, 5, 7, 9, 11, 13] as const) {
       const stops = generateRamp({
         hue: 180,
         stopCount: count,
-        mode: "opinionated",
+        mode: "pure",
       });
       expect(stops).toHaveLength(count);
     }
+  });
+
+  it("uses expanded bridge labels for the 13-stop preset", () => {
+    const stops = generateRamp({
+      hue: 210,
+      stopCount: 13,
+      mode: "opinionated",
+    });
+
+    expect(stops.map((stop) => stop.label)).toEqual([
+      "50",
+      "75",
+      "100",
+      "200",
+      "300",
+      "400",
+      "500",
+      "600",
+      "700",
+      "800",
+      "900",
+      "925",
+      "950",
+    ]);
   });
 
   it("preserves legacy custom labels for one- and two-stop ramps in both modes", () => {

@@ -39,6 +39,21 @@ const STOP_PRESETS: Record<StopPreset, string[]> = {
     "900",
     "950",
   ],
+  13: [
+    "50",
+    "75",
+    "100",
+    "200",
+    "300",
+    "400",
+    "500",
+    "600",
+    "700",
+    "800",
+    "900",
+    "925",
+    "950",
+  ],
 };
 const SEMANTIC_TONAL_LABELS = STOP_PRESETS[11];
 

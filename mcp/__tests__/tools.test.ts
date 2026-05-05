@@ -104,6 +104,26 @@ describe("generate_ramp", () => {
       expect(stops[i].color.l).toBeLessThanOrEqual(stops[i - 1].color.l + 0.001);
     }
   });
+
+  it("supports the expanded 13-stop preset", () => {
+    const stops = generateRamp({ hue: 210, stopCount: 13, mode: "opinionated" });
+    expect(stops).toHaveLength(13);
+    expect(stops.map((stop) => stop.label)).toEqual([
+      "50",
+      "75",
+      "100",
+      "200",
+      "300",
+      "400",
+      "500",
+      "600",
+      "700",
+      "800",
+      "900",
+      "925",
+      "950",
+    ]);
+  });
 });
 
 describe("check_contrast", () => {

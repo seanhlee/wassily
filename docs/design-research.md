@@ -61,7 +61,7 @@ Morpho is to sound what Wassily is to color.
 | Model browser = collection of aesthetics | Currently: one fixed opinion set |
 | Custom model training = your sounds become your instrument | **No equivalent yet** |
 | Serendipity macro = controlled randomness | Random click = binary serendipity |
-| Resolution macro = fidelity control | Stop count (3/5/7/9/11) = resolution |
+| Resolution macro = fidelity control | Stop count (3/5/7/9/11/13) = resolution |
 
 ### The Deep Insights
 

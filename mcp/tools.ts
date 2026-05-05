@@ -389,10 +389,10 @@ export function registerTools(server: McpServer): void {
       hue: z.number().min(0).max(360).describe("Seed hue angle (0-360)"),
       stop_count: z
         .number()
-        .refine((n): n is StopPreset => [3, 5, 7, 9, 11].includes(n), {
-          message: "Must be 3, 5, 7, 9, or 11",
+        .refine((n): n is StopPreset => [3, 5, 7, 9, 11, 13].includes(n), {
+          message: "Must be 3, 5, 7, 9, 11, or 13",
         })
-        .describe("Number of stops: 3, 5, 7, 9, or 11"),
+        .describe("Number of stops: 3, 5, 7, 9, 11, or 13"),
       mode: z
         .enum(["opinionated", "pure"])
         .default("opinionated")
@@ -895,11 +895,11 @@ export function registerTools(server: McpServer): void {
       id: z.string().describe("Swatch ID to promote"),
       stop_count: z
         .number()
-        .refine((n): n is StopPreset => [3, 5, 7, 9, 11].includes(n), {
-          message: "Must be 3, 5, 7, 9, or 11",
+        .refine((n): n is StopPreset => [3, 5, 7, 9, 11, 13].includes(n), {
+          message: "Must be 3, 5, 7, 9, 11, or 13",
         })
         .default(11)
-        .describe("Number of stops (3, 5, 7, 9, or 11). Default 11."),
+        .describe("Number of stops (3, 5, 7, 9, 11, or 13). Default 11."),
     },
     async ({ id, stop_count }) => {
       const action: Action = { type: "PROMOTE_TO_RAMP", id, stopCount: stop_count };
@@ -917,10 +917,10 @@ export function registerTools(server: McpServer): void {
       id: z.string().describe("Ramp ID"),
       stop_count: z
         .number()
-        .refine((n) => [3, 5, 7, 9, 11].includes(n), {
-          message: "Must be 3, 5, 7, 9, or 11",
+        .refine((n) => [3, 5, 7, 9, 11, 13].includes(n), {
+          message: "Must be 3, 5, 7, 9, 11, or 13",
         })
-        .describe("Target number of stops (3, 5, 7, 9, or 11)"),
+        .describe("Target number of stops (3, 5, 7, 9, 11, or 13)"),
     },
     async ({ id, stop_count }) => {
       const state = await fetchLiveState();
@@ -930,7 +930,7 @@ export function registerTools(server: McpServer): void {
       const current = (obj as Ramp).stopCount;
       if (current === stop_count) return json({ id, stopCount: current, message: "Already at requested stop count" });
       // CHANGE_STOP_COUNT uses preset index delta, not count delta
-      const presets = [3, 5, 7, 9, 11];
+      const presets = [3, 5, 7, 9, 11, 13];
       const currentIdx = presets.indexOf(current);
       const targetIdx = presets.indexOf(stop_count);
       const delta = targetIdx - (currentIdx === -1 ? 2 : currentIdx);

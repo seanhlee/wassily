@@ -28,7 +28,7 @@ export interface Ramp {
   type: "ramp";
   seedHue: number;
   stops: RampStop[];
-  stopCount: number; // 3, 5, 7, 9, 11, or custom
+  stopCount: number; // 3, 5, 7, 9, 11, 13, or custom
   position: Point;
   name: string; // auto-generated or custom
   customName?: boolean; // true if user renamed
@@ -101,7 +101,7 @@ export interface CanvasState {
 
 // ---- Ramp Generation Config ----
 
-export type StopPreset = 3 | 5 | 7 | 9 | 11;
+export type StopPreset = 3 | 5 | 7 | 9 | 11 | 13;
 
 export interface RampConfig {
   hue: number;
