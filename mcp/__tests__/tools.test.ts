@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { stopCountDeltaForTarget } from "../tools.js";
 
 // Boot safety: importing tools.ts triggers all engine imports.
 // If gamut.ts or any DOM-dependent module fails to load, this blows up.
@@ -123,6 +124,15 @@ describe("generate_ramp", () => {
       "925",
       "950",
     ]);
+  });
+});
+
+describe("set_stop_count", () => {
+  it("computes reducer-compatible deltas from non-preset counts", () => {
+    expect(stopCountDeltaForTarget(12, 11)).toBe(-1);
+    expect(stopCountDeltaForTarget(12, 13)).toBe(1);
+    expect(stopCountDeltaForTarget(10, 9)).toBe(-1);
+    expect(stopCountDeltaForTarget(10, 11)).toBe(1);
   });
 });
 

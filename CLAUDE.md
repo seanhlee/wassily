@@ -179,5 +179,5 @@ Claude ←(stdio)→ MCP Server ──(HTTP fetch)──→ Vite Dev Server ←(
 As of 2026-05-05:
 
 - `npm run build` passes, with a Vite chunk-size warning.
-- `npm run test:run` mostly passes but has timeout failures in ramp/research-heavy tests (`engine.test.ts` stop-count generation and `familyBoard.test.ts`). These look like performance/timeout issues rather than assertion failures, but they still mean the baseline is not green.
-- `npm run lint` fails on existing React 19 lint rules around ref access in `Canvas.tsx`, a Fast Refresh export warning in `ExtractionMarkerDot.tsx`, and unused destructured omit bindings in `src/state/canvas.ts`.
+- `npm run test:run` passes.
+- `npm run lint` passes.
