@@ -119,6 +119,21 @@ describe("research harness", () => {
     expect(analysis.endpointDark.relativeChroma).toBeLessThanOrEqual(1.001);
   });
 
+  it("defaults research evaluation to the app-facing brand-exact fairing engine", () => {
+    const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === "ultramarine")!;
+    const defaultRun = evaluateSeedRun(seed);
+    const appFacingRun = evaluateSeedRun(seed, { engine: "brand-exact-fair" });
+    const v6Run = evaluateSeedRun(seed, { engine: "v6" });
+
+    expect(defaultRun.engine).toBe("brand-exact-fair");
+    expect(defaultRun.stops.map((stop) => stop.color)).toEqual(
+      appFacingRun.stops.map((stop) => stop.color),
+    );
+    expect(defaultRun.stops.map((stop) => stop.color)).not.toEqual(
+      v6Run.stops.map((stop) => stop.color),
+    );
+  });
+
   it("evaluates the whole seed suite", { timeout: 20000 }, () => {
     const results = evaluateSeedSuite();
 

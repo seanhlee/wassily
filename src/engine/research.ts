@@ -213,7 +213,7 @@ export function evaluateSeedRun(
   options: EvaluateSeedOptions = {},
 ): SeedEvaluationRun {
   const config = researchSeedToRampConfig(seed, options);
-  const engine = options.engine ?? "v6";
+  const engine = options.engine ?? "brand-exact-fair";
   const solved =
     engine === "v6"
       ? solveV6ResearchRamp(config)
