@@ -1,6 +1,6 @@
 # Wassily Ramp Research Working Doc
 
-Living design memo and research log for Wassily's ramp-generation work. This started as the `v5` investigation and now also tracks the `v6` semantic solver direction.
+Living design memo and research log for Wassily's ramp-generation work. This started as the `v5` investigation and now tracks both the `v6` semantic solver scaffold and the locked brand-exact fairing algorithm.
 
 This document should be updated as the work evolves. It is meant to capture:
 
@@ -14,6 +14,27 @@ This document should be updated as the work evolves. It is meant to capture:
 Wassily's `v3` ramp engine in `src/engine/ramp.ts` moved in the right direction by sampling an OKLab path at equal arc-length intervals. That gave the system something `v4` lost: perceptual evenness by construction.
 
 The current `v6` research solver in `src/engine/v6ResearchSolver.ts` keeps that perceptual backbone and adds a seed-constrained path solver plus semantic tonal roles for the 11-stop ladder. The focus has shifted from "smooth ramps" to "beautiful, coherent, design-system ramps from an exact anchor seed."
+
+Current product reading: raw v6 is not good enough, but it is a useful research scaffold. The app-facing solver now uses `brand-exact-fair` in `src/engine/brandExactFairingSolver.ts`, which starts from v6 and math-fairs the final visible ladder around the exact seed. Do not treat passing tests, gauntlet statuses, or semantic-role machinery as proof that the ramp problem is solved; the final bar is still visual taste.
+
+## Locked Brand-Exact Fairing
+
+As of 2026-05-05, `brand-exact-fair` is the locked app-facing opinionated ramp generator. It came out of a sharper hypothesis: the exact seed should constrain the final visible ramp, not interrupt it after semantic roles have already reshaped the stops.
+
+The v6 solver remains the base generator. Brand-exact fairing evaluates nearby seed stops, preserves the exact seed, follows adjacent OKLab distance through `50 -> 100 -> 200`, and opens the `900 -> 950` dark tail.
+
+Important revision: `50` is no longer treated as a hard paper role. Paper can be an outcome when the math supports it, but the ramp should not sacrifice local perceptual evenness to make the first stop feel like paper.
+
+Early metric read from the focused lab:
+
+- Bright lime and cadmium yellow keep the exact seed at `200` while reducing spacing unevenness substantially.
+- Cyan improves when the exact seed moves from `200` to `300`.
+- Violet improves when the exact seed moves from `400` to `500`.
+- Ultramarine improves when the exact seed moves from `500` to `700`.
+- Phthalo green improves when the exact seed moves from `500` to `600`.
+- The focused top-edge and dark-tail diagnostics show equalized 50/100/200 bridge spacing and less 900/950 collapse in the hard cool-color cases.
+
+The broadened gauntlet is now comparing `v6` and `brand-exact-fair` directly. In the current generated suite, raw v6 lands at 17 ok / 9 watch / 0 fail across the 26 hard-case seeds, while brand-exact fairing lands at 26 ok / 0 watch / 0 fail. The more important metric shift is spacing: brand-exact fairing has average adjacent-distance CV near `0.054`, average top-bridge ratio near `1.00`, and average dark-tail ratio near `1.01`. This is strong evidence that seed-stop choice, endpoint selection, and visible-stop fairing need to be solved together, and that semantic labels should behave more like soft roles than hard post-processing.
 
 The failed `v4` experiment is still useful. It showed that "beauty-first" cannot mean replacing perceptual geometry with hand-shaped stop-index curves. Beauty has to enter as path design, endpoint selection, and family-specific behavior while preserving the perceptual backbone.
 
@@ -668,9 +689,12 @@ A prototype should be treated as failed if any of the following occur:
   - ultramarine's generated ramp now stays on a much more convincing blue spine, with highlight-side drift reduced from the earlier violet hump to a tight `~263-265°` band through the seed and dark tail
   - the research board is now showing the right object: not just shoulder coefficients, but an actual transferable family path archetype
 
-## V6 Status
+## V6 and Brand-Exact Fairing Status
 
+- `brand-exact-fair` is the app-facing opinionated ramp implementation.
+- `v6` is the base scaffold, not the accepted ramp-quality solution by itself. The architecture has become more expressive, but raw v6 visual outputs still do not satisfy the product taste bar.
 - `v6` is now a seed-constrained path solver with corpus-conditioned regularization, not just a family-profile variant of `v5`.
+- Brand-exact fairing wraps v6 by choosing a better exact-seed stop neighborhood and rebalancing the final visible ladder by adjacent OKLab distance.
 - The important architectural pieces now in play are:
   - solve a continuous OKLab path first
   - keep the exact seed as a hard constraint
@@ -695,11 +719,14 @@ A prototype should be treated as failed if any of the following occur:
 
 ### What improved
 
+- These are architectural, diagnostic, and visual improvements, not a claim that ramp generation is permanently solved.
 - The path now wants perceptually smoother density before the ladder is sampled, so cadence comes more from the solved geometry and less from after-the-fact spacing checks.
 - Light-end cadence is now explicitly controlled, so the top of the ramp is less likely to bleach the `50` and then take a conspicuously large first step.
+- Brand-exact fairing now follows a math-first top bridge: `50 -> 100` and `100 -> 200` should be locally even unless gamut constraints make that impossible.
 - Highlight and shadow behavior are less entangled:
   - the path can leave the seed differently toward light and dark
   - shadow depth and chroma no longer have to inherit the same local geometry as the light side
+- The dark tail now has explicit spacing pressure, which keeps `900 -> 950` from collapsing in the hard cool-color cases.
 - The soft prior is now seed-position-aware:
   - each curated reference is aligned to the stop that best matches the live seed
   - family affinity is then applied on top of that aligned stop so the solver does not regularize cyan toward blue or a neutral toward a chromatic family just because a single stop is locally close
@@ -707,47 +734,55 @@ A prototype should be treated as failed if any of the following occur:
 
 ### Current reading of the remaining failures
 
-- The remaining misses no longer feel like bad thresholds or missing guardrails.
-- They mostly look like missing continuous priors:
+- The remaining misses should still be treated as core output-quality failures, even though the current fairing pass is locked for this ship.
+- Some misses may be caused by missing continuous priors:
   - some top-end seeds still want a more beautiful highlight envelope, not merely a safer `50`
   - some neutrals still feel too scalar or too linear in their chroma progression even when they are technically stable
   - some chromatic families still need a stronger idea of where color should live along the path, not only how much color the endpoints may keep
-- That is a healthy state for the project. The next gains should come from better family-conditioned path models, not from more isolated patches.
+- But the research should stay open to a bigger conclusion: if the v6 framing keeps producing unsatisfying ramps, the next answer may require a different representation or objective, not just more weights inside the current solver.
 
-## Next Pushes for V6
+## Next Research Pushes
 
-1. Add a continuous family-shape prior over the whole path.
+The next phase should be judged by output taste first. Numerical invariants still matter, but they are guardrails, not the goal.
+
+1. Build a sharper visual judgment board.
+   The current gauntlet catches some cliffs, tails, and hard-case regressions, but it can still pass ramps that are not good enough. Add side-by-side comparisons against references that Wassily actually admires, plus short human-readable notes on why each ramp fails.
+
+2. Add a continuous family-shape prior over the whole path.
    We already compare endpoint reserve, endpoint intensity, and tangent behavior. The next elegant move is to compare the full solved path, expressed in the same seed-centered frame as the corpus, against a weighted family envelope.
 
-2. Learn chroma distribution along normalized path progress.
+3. Learn chroma distribution along normalized path progress.
    Right now the solver knows a lot about endpoint chroma but much less about where chroma should accumulate or thin out along the path. A family-conditioned chroma-density prior should help neutrals stay quiet, cyan keep energy in the upper mids, and ultramarine avoid washing out too early.
 
-3. Give the light and dark halves distinct family-conditioned progress priors.
+4. Give the light and dark halves distinct family-conditioned progress priors.
    The current split handles are a good first move, but the next step is to model highlight and shadow progress as related rather than symmetric subproblems so bright seeds can keep a believable highlight envelope without compromising shadow cadence.
 
-4. Move from single-stop prior alignment to soft stop neighborhoods.
+5. Move from single-stop prior alignment to soft stop neighborhoods.
    The current aligned prior picks the best matching stop per reference ramp. That is already much better than assuming every seed is a reference `500`, but the more continuous version is to softly blend nearby aligned stops so the prior varies smoothly as the seed moves through the ladder.
 
-5. Build a path-beauty board, not just a ramp board.
+6. Build a path-beauty board, not just a ramp board.
    The current research lab shows the solved ramps and metrics. The next useful board should overlay:
    - the seed-centered family archetype path
    - the live solved path
    - local deviation along the path
    That would let us judge whether a miss comes from the family model, the solver objective, or the sampling stage.
 
-## Current Direction After the Semantic Role Pass
+7. Be willing to falsify v6.
+   If richer priors and better visual boards still produce ramps that feel wrong, document that result plainly and branch toward a new model rather than continuing to tune the same objective.
 
-The v6 work has shifted the goal from "generate a smooth set of colors" to "generate a semantic design-system ramp from an anchor seed." This is a meaningful distinction.
+## Superseded Direction After the Semantic Role Pass
 
-The 11-stop ladder now carries role meaning:
+The v6 work shifted the goal from "generate a smooth set of colors" to "generate a semantic design-system ramp from an anchor seed." That was useful, but the latest fairing pass corrected the hierarchy: semantic labels are names and hints, while adjacent OKLab cadence is the thing the user actually sees. This section is historical context for the semantic-role pass, not the active ship algorithm by itself.
 
-- `50` should be tinted paper, not white.
-- `100/200` should bridge into high-chroma seeds without a perceptual cliff.
+The 11-stop ladder still carries role meaning, but the roles are soft:
+
+- `50` is the lightest ramp color. It may read as tinted paper when the math allows it, but it should not be forced into paper.
+- `100/200` should bridge into high-chroma seeds with local OKLab evenness.
 - The seed should remain exact and should land where its color actually belongs.
 - `700/800/900/950` should read as a deliberate descent into colored ink.
 - `950` should not collapse into generic black.
 
-This role layer does not replace perceptual spacing. It sits on top of the solved OKLab path and gives the tonal labels product meaning. The best ramp should be both perceptually coherent and semantically useful.
+This role layer does not replace perceptual spacing. It sits below the final fairing pass and gives the tonal labels product meaning. The best ramp should be perceptually coherent first and semantically useful as a consequence.
 
 Current hard-case reading:
 
@@ -795,6 +830,7 @@ The next algorithmic gains should come from better continuous family priors rath
   - chromatic `950` is lifted/deepened into colored ink by family, generally around `L 0.24-0.28`
   - neutral `950` targets quiet ink around `L 0.22`
   - exact seed placement remains a hard constraint after role shaping
+- Superseded by the locked fairing pass: `50` is no longer forced to behave as paper if that breaks adjacent OKLab cadence.
 - Added high-lightness cusp handling for bright lime:
   - extreme yellow-green seeds can anchor at `200`
   - `50/100/200` are shaped as a deliberate tint-to-flash bridge
@@ -822,7 +858,7 @@ The next algorithmic gains should come from better continuous family priors rath
   - greens
   - cool hues
   - perturbations around lime, cyan, and phthalo
-- Current gauntlet status after this pass:
+- Historical gauntlet status after this pass:
   - `ok 26`
   - `watch 0`
   - `fail 0`
@@ -836,7 +872,7 @@ The next algorithmic gains should come from better continuous family priors rath
   - neutral endpoint cadence
   - hard chromatic dark-tail liveliness
   - blue-violet ink cadence
-- Verification at commit `245725c`:
+- Historical verification at commit `245725c`:
   - `npm run test:run`: 173 passed
   - `npm run lint`: passed
   - `npm run build`: passed

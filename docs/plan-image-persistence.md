@@ -1,10 +1,10 @@
-# Plan: Reference Image Persistence
+# Reference Image Persistence
 
 > **Status:** Shipped. Implemented in `src/state/imageStore.ts`. Blobs stored in IndexedDB, metadata in localStorage. Orphan cleanup via `cleanOrphanedBlobs` is now cross-board-aware via `collectAllImageIds()`.
 
-## Problem
+## Original Problem
 
-Reference images dropped/pasted onto the canvas are session-only. Reload the page and they're gone — only the extracted color swatches survive. The `dataUrl` (base64) is too large for localStorage's 5MB cap, so `saveToStorage` explicitly filters them out.
+Reference images dropped/pasted onto the canvas were originally session-only. Reload the page and they were gone — only extracted color swatches survived. The `dataUrl` (base64) is too large for localStorage's 5MB cap, so `saveBoardState` now strips image data while preserving image metadata.
 
 ## Approach
 
@@ -18,20 +18,14 @@ No new dependencies. No backend. No external services. IndexedDB is browser-nati
 
 ### New: `src/state/imageStore.ts`
 
-Thin IndexedDB wrapper (~50 lines). One database (`wassily`), one object store (`images`).
+Thin IndexedDB wrapper. One database (`wassily`), one object store (`images`).
 
 ```
-initImageStore() → Promise<void>
-  Opens/creates the database. Called once on app mount.
-
 storeImageBlob(id: string, blob: Blob) → Promise<void>
   Stores a blob keyed by the canvas object ID.
 
 loadAllImageBlobs() → Promise<Array<{ id: string, blob: Blob }>>
   Returns all stored blobs. Used on page load.
-
-deleteImageBlob(id: string) → Promise<void>
-  Deletes a single blob by ID.
 
 cleanOrphanedBlobs(activeIds: Set<string>) → Promise<void>
   Deletes all blobs whose IDs are NOT in the active set.
@@ -67,7 +61,7 @@ Also calls `navigator.storage.persist()` on first blob store to protect against 
   }
 ```
 
-**`saveToStorage` change (line 477-483):**
+**`saveBoardState` behavior:**
 
 Instead of filtering out reference images entirely, include them with `dataUrl` stripped:
 
@@ -86,7 +80,7 @@ Position and size now persist in localStorage. Image data lives only in IndexedD
 
 **Debounced save — orphan cleanup:**
 
-After writing to localStorage, call `cleanOrphanedBlobs()` with the set of reference image IDs currently in state. This garbage-collects blobs for deleted images.
+After writing to localStorage, call `cleanOrphanedBlobs()` with image IDs collected across all boards via `collectAllImageIds()`. This prevents deleting a blob still referenced by another board.
 
 Because cleanup is debounced (300ms after last state change), undo within that window preserves the blob. Even after cleanup, the undo state contains `dataUrl: ""` for the restored object — the image just won't render. This is an acceptable edge case (undo a delete after the blob is cleaned up = image placeholder without content). If this matters, the cleanup delay can be increased to e.g. 2 seconds.
 
@@ -95,7 +89,6 @@ Because cleanup is debounced (300ms after last state change), undo within that w
 ```ts
 useEffect(() => {
   (async () => {
-    await initImageStore();
     const blobs = await loadAllImageBlobs();
     const urls: Record<string, string> = {};
     for (const { id, blob } of blobs) {
@@ -110,27 +103,27 @@ useEffect(() => {
 
 On mount: open IndexedDB, load all blobs, create object URLs, patch state. Reference images appear once the blobs load (typically <50ms — imperceptible).
 
-**`addReferenceImage` callback change:**
+**`addReferenceImage` callback behavior:**
 
-Becomes async. Generates a stable ID, stores the blob, then dispatches:
+Generates a stable ID, stores the blob fire-and-forget, then dispatches:
 
 ```ts
 const addReferenceImage = useCallback(
-  async (
+  (
     blob: Blob,
     dataUrl: string,
     position: Point,
     size: { width: number; height: number },
   ) => {
     const id = `img_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    await storeImageBlob(id, blob);
+    storeImageBlob(id, blob);
     dispatch({ type: "ADD_REFERENCE_IMAGE", id, dataUrl, position, size });
   },
   [],
 );
 ```
 
-The `img_` prefix is cosmetic — IDs are opaque strings. The blob is stored before the state update so it's always available for persistence.
+The `img_` prefix is cosmetic — IDs are opaque strings. If IndexedDB write fails, the image still works in-session and degrades gracefully.
 
 ### Changed: `src/canvas/Canvas.tsx`
 
@@ -146,7 +139,7 @@ addReferenceImage(file, dataUrl, { x: dropX, y: dropY }, { width, height });
 
 Same change in the paste handler (~line 460).
 
-**No other changes to Canvas.tsx.** The `<RefImageNode>` component already renders `<img src={image.dataUrl}>` — both data URLs and object URLs work as `src` values.
+No other persistence-specific rendering behavior is required from `Canvas.tsx`: `<RefImageNode>` renders `<img src={image.dataUrl}>`, and both data URLs and object URLs work as `src` values.
 
 ### Unchanged
 
@@ -162,7 +155,7 @@ Same change in the paste handler (~line 460).
 User drops file
   → Canvas gets File object
   → Generate stable ID
-  → Store blob in IndexedDB (async, ~5ms)
+  → Store blob in IndexedDB (fire-and-forget)
   → Dispatch ADD_REFERENCE_IMAGE with dataUrl + pre-generated ID
   → State has reference image with full dataUrl
   → Renders immediately
@@ -177,8 +170,7 @@ loadFromStorage() runs synchronously
   → They exist in state but can't render (no image source)
 
 useEffect runs on mount
-  → initImageStore() opens IndexedDB
-  → loadAllImageBlobs() reads all stored blobs
+  → loadAllImageBlobs() opens IndexedDB and reads stored blobs
   → Create objectUrl for each via URL.createObjectURL()
   → Dispatch RESTORE_IMAGE_URLS to patch dataUrl fields
   → Images render (<50ms after mount — imperceptible)
@@ -207,7 +199,7 @@ If user undoes after cleanup:
 ## Edge Cases
 
 ### Safari 7-day eviction
-Safari's ITP deletes all script-writable storage (including IndexedDB) after 7 days without a visit. Mitigated by calling `navigator.storage.persist()` on first blob store. Safari 17+ respects this for engaged sites. Older Safari: images may be lost after 7 days of inactivity, which matches the session-only behavior users already experience.
+Safari's ITP can delete script-writable storage (including IndexedDB) after enough inactivity. Mitigated by calling `navigator.storage.persist()` on first blob store. Safari 17+ respects this for engaged sites. Older Safari may still lose images after inactivity; in that case the app falls back toward the original session-only behavior.
 
 ### Private/incognito mode
 IndexedDB is severely limited or disabled. The app gracefully degrades — `storeImageBlob` catches and silently ignores errors, images work in-session but don't persist. Same as current behavior.
@@ -216,21 +208,22 @@ IndexedDB is severely limited or disabled. The app gracefully degrades — `stor
 A 10MP photo as JPEG is ~3-5MB as a blob (much less than the ~6MB base64 data URL). IndexedDB can handle hundreds of these within browser quotas. No special handling needed.
 
 ### Blob/objectUrl lifecycle
-Object URLs created via `URL.createObjectURL()` hold a reference to the blob in memory. They must be revoked when no longer needed. Cleanup happens during `cleanOrphanedBlobs()` — before deleting a blob, the corresponding objectUrl is revoked. Tab close/reload automatically cleans up all object URLs.
+Object URLs created via `URL.createObjectURL()` hold a reference to the blob in memory. The current implementation does not explicitly revoke restored object URLs; tab close/reload cleans them up. If image-heavy sessions become common, explicit revocation should be added when image URLs are replaced or removed.
 
 ### IndexedDB unavailable
-If IndexedDB fails to open (rare — browser bug, permissions), all image operations fall back to session-only behavior. `initImageStore` catches errors and sets a flag; `storeImageBlob` becomes a no-op. No user-visible error.
+If IndexedDB fails to open (rare — browser bug, permissions), all image operations fall back to session-only behavior. `storeImageBlob`, `loadAllImageBlobs`, and `cleanOrphanedBlobs` catch errors and degrade silently. No user-visible error.
 
 ## Verification
 
 1. `npm run dev` — start dev server
-2. Drop an image onto canvas — verify it appears with extracted swatches
-3. Reload the page — **image persists** with correct position and size
-4. Move the image, reload — position is preserved
-5. Delete the image, reload — image is gone (cleaned up from IndexedDB)
-6. Drop image, Cmd+Z (undo) — image disappears. Cmd+Shift+Z (redo) — image reappears
-7. Private/incognito window — images work in-session but don't persist on reload
-8. `npm run build` — no type errors
+2. Drop an image onto canvas — verify it appears as a reference image
+3. Right-click the image -> `Extract colors` — verify swatches and source markers appear
+4. Reload the page — **image persists** with correct position and size
+5. Move the image, reload — position is preserved
+6. Delete the image, reload — image is gone (cleaned up from IndexedDB)
+7. Drop image, Cmd+Z (undo) — image disappears. Cmd+Shift+Z (redo) — image reappears
+8. Private/incognito window — images work in-session but may not persist on reload
+9. `npm run build` — no type errors
 
 ## Not In Scope
 

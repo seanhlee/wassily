@@ -7,6 +7,7 @@ import {
   solveV6ResearchRamp,
   type V6SolveMetadata,
 } from "./v6ResearchSolver";
+import { solveBrandExactFairRamp } from "./brandExactFairingSolver";
 
 export interface ResearchSeed {
   id: string;
@@ -134,7 +135,7 @@ export interface EvaluateSeedOptions {
   engine?: ResearchEngine;
 }
 
-export type ResearchEngine = "v6-archetype" | "v6";
+export type ResearchEngine = "v6-archetype" | "v6" | "brand-exact-fair";
 
 export interface SeedEvaluationRun {
   engine: ResearchEngine;
@@ -216,7 +217,9 @@ export function evaluateSeedRun(
   const solved =
     engine === "v6"
       ? solveV6ResearchRamp(config)
-      : solveV6ArchetypeRamp(config);
+      : engine === "brand-exact-fair"
+        ? solveBrandExactFairRamp(config)
+        : solveV6ArchetypeRamp(config);
 
   return {
     engine,

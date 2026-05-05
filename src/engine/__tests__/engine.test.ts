@@ -194,7 +194,7 @@ describe("ramp generation", () => {
     }
   });
 
-  it("opinionated mode routes through the seeded v6 path", () => {
+  it("opinionated mode routes through the brand-exact fairing path", () => {
     for (const seedId of ["bright-lime", "cyan", "very-light-seed"] as const) {
       const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
       const stops = generateRamp(researchSeedToRampConfig(seed));

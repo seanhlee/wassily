@@ -9,9 +9,26 @@ import {
   RESEARCH_SEEDS,
   analyzeRamp,
   evaluateSeed,
+  evaluateSeedRun,
   evaluateSeedSuite,
   researchSeedToRampConfig,
+  type RampAnalysis,
+  type ResearchSeed,
 } from "../research";
+
+function distanceBetweenLabels(
+  analysis: RampAnalysis,
+  fromLabel: string,
+  toLabel: string,
+): number {
+  const fromIndex = analysis.labels.indexOf(fromLabel);
+  const toIndex = analysis.labels.indexOf(toLabel);
+  expect(fromIndex).toBeGreaterThanOrEqual(0);
+  expect(toIndex).toBe(fromIndex + 1);
+  const distance = analysis.lightRamp.adjacentDistance.values[fromIndex];
+  expect(distance).toBeDefined();
+  return distance;
+}
 
 describe("research harness", () => {
   it("derives the target family profiles from a curated reference corpus", () => {
@@ -112,6 +129,72 @@ describe("research harness", () => {
     }
   });
 
+  it("brand-exact fairing improves hard-case spacing while preserving the seed", { timeout: 20000 }, () => {
+    const hardSeedIds = [
+      "bright-lime",
+      "cadmium-yellow",
+      "cyan",
+      "violet",
+      "ultramarine",
+      "phthalo-green",
+    ] as const;
+
+    for (const seedId of hardSeedIds) {
+      const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
+      const v6 = evaluateSeedRun(seed, { engine: "v6" }).analysis;
+      const fair = evaluateSeedRun(seed, { engine: "brand-exact-fair" }).analysis;
+
+      expect(fair.seedDelta).toBeLessThan(1e-6);
+      expect(fair.lightRamp.lightness.nonIncreasing).toBe(true);
+      expect(fair.lightRamp.adjacentDistance.coefficientOfVariation).toBeLessThan(
+        v6.lightRamp.adjacentDistance.coefficientOfVariation,
+      );
+      expect(fair.lightRamp.adjacentDistance.worstAdjacentRatio).toBeLessThan(
+        v6.lightRamp.adjacentDistance.worstAdjacentRatio,
+      );
+      expect(fair.lightRamp.adjacentDistance.worstThreeStepRatio).toBeLessThan(
+        v6.lightRamp.adjacentDistance.worstThreeStepRatio,
+      );
+    }
+  });
+
+  it("keeps the top bridge math-first instead of forcing 50 into paper", { timeout: 30000 }, () => {
+    const hardBridgeSeeds: ResearchSeed[] = [
+      ...[
+        "bright-lime",
+        "cadmium-yellow",
+        "cyan",
+        "ultramarine",
+        "phthalo-green",
+      ].map((seedId) => RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!),
+      {
+        id: "lime-h115-regression",
+        label: "Lime h115 Regression",
+        note: "Warmer neighbor of the bright lime cusp; catches top-edge paper bias.",
+        color: { l: 0.93, c: 0.21, h: 115 },
+      },
+      {
+        id: "cyan-h220-regression",
+        label: "Cyan h220 Regression",
+        note: "Blue-leaning cyan perturbation; catches top bridge cliffs.",
+        color: { l: 0.76, c: 0.13, h: 220 },
+      },
+    ];
+
+    for (const seed of hardBridgeSeeds) {
+      const fair = evaluateSeedRun(seed, { engine: "brand-exact-fair" }).analysis;
+      const topDistance = distanceBetweenLabels(fair, "50", "100");
+      const bridgeDistance = distanceBetweenLabels(fair, "100", "200");
+      const topBridgeRatio = topDistance / bridgeDistance;
+
+      expect(fair.seedDelta).toBeLessThan(1e-6);
+      expect(fair.lightRamp.lightness.nonIncreasing).toBe(true);
+      expect(fair.lightRamp.adjacentDistance.coefficientOfVariation).toBeLessThan(0.18);
+      expect(topBridgeRatio).toBeGreaterThanOrEqual(0.92);
+      expect(topBridgeRatio).toBeLessThanOrEqual(1.08);
+    }
+  });
+
   it("detects non-descending lightness on a contrived ramp fixture", () => {
     const stops: RampStop[] = [
       {
@@ -152,7 +235,7 @@ describe("research harness", () => {
     expect(analysis.lightRamp.adjacentDistance.lightEntranceRatio).toBeLessThan(1.2);
   });
 
-  it("uses semantic top endpoints so narrow-near-white hues carry a quiet family signal", () => {
+  it("keeps light endpoints chromatic without making paper override top cadence", () => {
     const ultramarine = evaluateSeed(
       RESEARCH_SEEDS.find((candidate) => candidate.id === "ultramarine")!,
     );

@@ -5,6 +5,7 @@ import { maxChroma, toHex } from "../src/engine/gamut";
 import {
   RESEARCH_SEEDS,
   evaluateSeedRun,
+  type ResearchEngine,
   type ResearchSeed,
 } from "../src/engine/research";
 
@@ -25,6 +26,8 @@ const STOP_LABELS = [
   "900",
   "950",
 ] as const;
+
+const GAUNTLET_ENGINES: ResearchEngine[] = ["v6", "brand-exact-fair"];
 
 interface GauntletGroup {
   label: string;
@@ -47,7 +50,12 @@ interface GauntletMetrics {
   stop50Lightness: number | null;
   stop50Occupancy: number | null;
   topDistance: number | null;
+  topDistanceRatio: number | null;
   bridgeDistance: number | null;
+  topBridgeRatio: number | null;
+  darkBridgeDistance: number | null;
+  darkEdgeDistance: number | null;
+  darkTailRatio: number | null;
   endpointDarkLightness: number;
   endpointDarkChroma: number;
   monotone: boolean;
@@ -56,6 +64,7 @@ interface GauntletMetrics {
 
 interface GauntletRow {
   seed: ResearchSeed;
+  engine: ResearchEngine;
   group: string;
   metrics: GauntletMetrics;
   swatches: GauntletSwatch[];
@@ -244,12 +253,45 @@ function occupancy(color: OklchColor): number | null {
   return available > 0 ? color.c / available : null;
 }
 
+function average(values: readonly number[]): number {
+  return values.length === 0
+    ? 0
+    : values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function distanceRatio(
+  values: readonly number[],
+  value: number | null,
+): number | null {
+  if (value === null) return null;
+  const mean = average(values);
+  return mean > 0 ? value / mean : null;
+}
+
+function darkTailRatio(values: readonly number[]): number | null {
+  if (values.length < 2) return null;
+  const mean = average(values);
+  if (mean <= 0) return null;
+  return average(values.slice(-2)) / mean;
+}
+
+function ratioBetween(
+  numerator: number | null,
+  denominator: number | null,
+): number | null {
+  if (numerator === null || denominator === null || denominator <= 0) return null;
+  return numerator / denominator;
+}
+
 function statusForMetrics(metrics: Omit<GauntletMetrics, "status">): GauntletMetrics["status"] {
   if (
     !metrics.monotone ||
     (metrics.seedDelta !== null && metrics.seedDelta > 1e-4) ||
     metrics.worstAdjacent > 3 ||
-    metrics.lightEntrance > 3
+    metrics.lightEntrance > 3 ||
+    (metrics.topBridgeRatio !== null && metrics.topBridgeRatio > 1.45) ||
+    (metrics.topDistanceRatio !== null && metrics.topDistanceRatio > 1.65) ||
+    (metrics.darkTailRatio !== null && metrics.darkTailRatio < 0.42)
   ) {
     return "fail";
   }
@@ -257,7 +299,10 @@ function statusForMetrics(metrics: Omit<GauntletMetrics, "status">): GauntletMet
   if (
     metrics.lightEntrance > 1.65 ||
     metrics.worstAdjacent > 2.35 ||
-    metrics.spacingCv > 0.55
+    metrics.spacingCv > 0.55 ||
+    (metrics.topBridgeRatio !== null && metrics.topBridgeRatio > 1.2) ||
+    (metrics.topDistanceRatio !== null && metrics.topDistanceRatio > 1.35) ||
+    (metrics.darkTailRatio !== null && metrics.darkTailRatio < 0.62)
   ) {
     return "watch";
   }
@@ -265,11 +310,15 @@ function statusForMetrics(metrics: Omit<GauntletMetrics, "status">): GauntletMet
   return "ok";
 }
 
-function buildRow(group: string, seed: ResearchSeed): GauntletRow {
-  const run = evaluateSeedRun(seed, { engine: "v6" });
+function buildRow(group: string, seed: ResearchSeed, engine: ResearchEngine): GauntletRow {
+  const run = evaluateSeedRun(seed, { engine });
   const labels = run.analysis.labels;
   const distances = run.analysis.lightRamp.adjacentDistance.values;
   const stop50 = run.stops.find((stop) => stop.label === "50");
+  const topDistance = distanceBetween(distances, labels, "50", "100");
+  const bridgeDistance = distanceBetween(distances, labels, "100", "200");
+  const darkBridgeDistance = distanceBetween(distances, labels, "800", "900");
+  const darkEdgeDistance = distanceBetween(distances, labels, "900", "950");
   const metricsBase: Omit<GauntletMetrics, "status"> = {
     anchor:
       run.analysis.seedStopIndex === null
@@ -281,8 +330,13 @@ function buildRow(group: string, seed: ResearchSeed): GauntletRow {
     worstAdjacent: run.analysis.lightRamp.adjacentDistance.worstAdjacentRatio,
     stop50Lightness: stop50?.color.l ?? null,
     stop50Occupancy: stop50 ? occupancy(stop50.color) : null,
-    topDistance: distanceBetween(distances, labels, "50", "100"),
-    bridgeDistance: distanceBetween(distances, labels, "100", "200"),
+    topDistance,
+    topDistanceRatio: distanceRatio(distances, topDistance),
+    bridgeDistance,
+    topBridgeRatio: ratioBetween(topDistance, bridgeDistance),
+    darkBridgeDistance,
+    darkEdgeDistance,
+    darkTailRatio: darkTailRatio(distances),
     endpointDarkLightness: run.analysis.endpointDark.lightness,
     endpointDarkChroma: run.analysis.endpointDark.chroma,
     monotone: run.analysis.lightRamp.lightness.nonIncreasing,
@@ -290,6 +344,7 @@ function buildRow(group: string, seed: ResearchSeed): GauntletRow {
 
   return {
     seed,
+    engine,
     group,
     metrics: {
       ...metricsBase,
@@ -309,7 +364,9 @@ function buildGauntletData(): GauntletData {
     groups: GAUNTLET_GROUPS.map((group) => ({
       label: group.label,
       note: group.note,
-      rows: group.seeds.map((candidate) => buildRow(group.label, candidate)),
+      rows: group.seeds.flatMap((candidate) =>
+        GAUNTLET_ENGINES.map((engine) => buildRow(group.label, candidate, engine)),
+      ),
     })),
   };
 }
@@ -343,12 +400,24 @@ function renderMetricPill(label: string, value: string): string {
   `;
 }
 
+function engineLabel(engine: ResearchEngine): string {
+  switch (engine) {
+    case "brand-exact-fair":
+      return "fair";
+    case "v6-archetype":
+      return "archetype";
+    default:
+      return engine;
+  }
+}
+
 function renderRow(row: GauntletRow): string {
   return `
     <article class="row row--${row.metrics.status}">
       <div class="row__meta">
         <div class="row__title">
           <h3>${row.seed.label}</h3>
+          <span class="engine mono">${engineLabel(row.engine)}</span>
           ${renderStatus(row.metrics.status)}
         </div>
         <div class="mono seed-value">${formatOklch(row.seed.color)}</div>
@@ -359,7 +428,11 @@ function renderRow(row: GauntletRow): string {
         ${renderMetricPill("50 L", formatMetric(row.metrics.stop50Lightness, 3))}
         ${renderMetricPill("50 occ", formatPercent(row.metrics.stop50Occupancy))}
         ${renderMetricPill("50->100", formatMetric(row.metrics.topDistance, 3))}
+        ${renderMetricPill("50 ratio", formatMetric(row.metrics.topDistanceRatio, 2))}
         ${renderMetricPill("100->200", formatMetric(row.metrics.bridgeDistance, 3))}
+        ${renderMetricPill("top bridge", formatMetric(row.metrics.topBridgeRatio, 2))}
+        ${renderMetricPill("900->950", formatMetric(row.metrics.darkEdgeDistance, 3))}
+        ${renderMetricPill("tail ratio", formatMetric(row.metrics.darkTailRatio, 2))}
         ${renderMetricPill("edge", `${formatMetric(row.metrics.lightEntrance)}x`)}
         ${renderMetricPill("cv", formatMetric(row.metrics.spacingCv))}
         ${renderMetricPill("950 L", formatMetric(row.metrics.endpointDarkLightness, 3))}
@@ -461,6 +534,7 @@ function renderHtml(data: GauntletData): string {
 
       .pill,
       .status,
+      .engine,
       .metric {
         border: 1px solid var(--line);
         border-radius: 999px;
@@ -522,6 +596,13 @@ function renderHtml(data: GauntletData): string {
 
       .status {
         padding: 3px 7px;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+      }
+
+      .engine {
+        padding: 3px 7px;
+        color: var(--muted);
         font-size: 0.66rem;
         text-transform: uppercase;
       }
@@ -609,9 +690,10 @@ function renderHtml(data: GauntletData): string {
     <main>
       <section class="hero">
         <h1>Ramp Gauntlet</h1>
-        <p>Compact stress matrix for the v6 anchor-seeded solver. The focused lab is for beauty; this board is for catching cliffs, dead tails, neutral chroma leaks, and hue-family overfitting.</p>
+        <p>Compact stress matrix for anchor-seeded solver comparisons. The focused lab is for beauty; this board is for catching cliffs, dead tails, neutral chroma leaks, and hue-family overfitting.</p>
         <div class="summary">
-          <div class="pill mono">${totalRows} seeds</div>
+          <div class="pill mono">${totalRows} rows</div>
+          <div class="pill mono">engines ${GAUNTLET_ENGINES.map(engineLabel).join("/")}</div>
           <div class="pill mono">ok ${statusCounts.ok}</div>
           <div class="pill mono">watch ${statusCounts.watch}</div>
           <div class="pill mono">fail ${statusCounts.fail}</div>
@@ -639,12 +721,16 @@ function renderHtml(data: GauntletData): string {
 </html>`;
 }
 
+function stripTrailingWhitespace(value: string): string {
+  return value.replace(/[ \t]+$/gm, "");
+}
+
 async function main(): Promise<void> {
   const data = buildGauntletData();
   await mkdir(OUTPUT_DIR, { recursive: true });
   await Promise.all([
     writeFile(JSON_PATH, JSON.stringify(data, null, 2), "utf8"),
-    writeFile(HTML_PATH, renderHtml(data), "utf8"),
+    writeFile(HTML_PATH, stripTrailingWhitespace(renderHtml(data)), "utf8"),
   ]);
   console.log(`Wrote ${HTML_PATH}`);
   console.log(`Wrote ${JSON_PATH}`);

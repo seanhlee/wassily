@@ -1,13 +1,14 @@
 /**
  * App-facing ramp generation surface.
  *
- * `opinionated` delegates to the v6 solver.
+ * `opinionated` delegates to the brand-exact fairing solver, which uses v6
+ * as its base path and then smooths the final visible ramp around the exact seed.
  * `pure` remains a simple hue-constant baseline used for comparison.
  */
 
 import type { RampConfig, RampStop, StopPreset } from "../types";
 import { clampToGamut, maxChroma } from "./gamut";
-import { solveV6ResearchRamp } from "./v6ResearchSolver";
+import { solveBrandExactFairRamp } from "./brandExactFairingSolver";
 
 const STOP_PRESETS: Record<StopPreset, string[]> = {
   3: ["200", "500", "800"],
@@ -35,7 +36,7 @@ const L_MIN = 0.25;
 export function generateRamp(config: RampConfig): RampStop[] {
   const { hue, stopCount, mode } = config;
   if (mode === "opinionated") {
-    return solveV6ResearchRamp(config).stops;
+    return solveBrandExactFairRamp(config).stops;
   }
 
   const labels =

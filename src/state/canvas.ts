@@ -77,10 +77,7 @@ function clearMarkersBySwatchIds(
     changed = true;
     const nextImg: ReferenceImage =
       remaining.length === 0
-        ? (() => {
-            const { extraction: _omit, ...rest } = img;
-            return rest as ReferenceImage;
-          })()
+        ? withoutExtraction(img)
         : {
             ...img,
             extraction: {
@@ -92,6 +89,12 @@ function clearMarkersBySwatchIds(
     next[id] = nextImg;
   }
   return changed ? next : objects;
+}
+
+function withoutExtraction(image: ReferenceImage): ReferenceImage {
+  const rest = { ...image };
+  delete rest.extraction;
+  return rest;
 }
 
 function reducer(state: CanvasState, action: Action): CanvasState {
@@ -223,12 +226,11 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       if (!img || img.type !== "reference-image") return state;
       const refImg = img as ReferenceImage;
       if (!refImg.extraction) return state;
-      const { extraction: _omit, ...rest } = refImg;
       return {
         ...state,
         objects: {
           ...state.objects,
-          [action.imageId]: rest as ReferenceImage,
+          [action.imageId]: withoutExtraction(refImg),
         },
       };
     }
@@ -785,8 +787,10 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         if (obj.type === "reference-image") {
           // Duplicated images do not carry markers — those still point at
           // the original swatches. Fresh image, fresh extraction on re-extract.
-          const { extraction: _omit, ...rest } = obj as ReferenceImage;
-          objects[newId] = { ...rest, id: newId } as ReferenceImage;
+          objects[newId] = {
+            ...withoutExtraction(obj as ReferenceImage),
+            id: newId,
+          };
         } else {
           objects[newId] = { ...obj, id: newId } as typeof obj;
         }
@@ -823,10 +827,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         if (!changedObjects) changedObjects = { ...action.state.objects };
         changedObjects[id] =
           kept.length === 0
-            ? (() => {
-                const { extraction: _o, ...rest } = img;
-                return rest as ReferenceImage;
-              })()
+            ? withoutExtraction(img)
             : ({
                 ...img,
                 extraction: { ...img.extraction, markers: kept },

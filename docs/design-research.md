@@ -16,9 +16,9 @@ Three reference points analyzed for interaction design and color system inspirat
 
 1. **Programmatic generation over hand-picking** — Lyft's core thesis: designer-picked colors create an expiration date. Math doesn't drift. Wassily embodies this already with purification + opinionated ramp generation.
 
-2. **The yellow-blue problem** — Same algorithm applied uniformly to different hues produces inconsistent results. Wassily now handles this through the v6 semantic solver: seed-constrained OKLab path geometry, family-aware tint/ink roles, and special pressure for hard cases like bright lime, cyan, phthalo green, and blue-violet.
+2. **The yellow-blue problem** — Same algorithm applied uniformly to different hues produces inconsistent results. Wassily's locked brand-exact fairing algorithm addresses this by starting from the v6 seed-constrained OKLab solver, then rebalancing the visible stops around the exact seed with special pressure for hard cases like bright lime, cyan, phthalo green, and blue-violet. This is the app-facing answer for this ship, but it should still be judged visually rather than treated as a solved design principle.
 
-3. **Non-uniform tonal distribution** — Lyft needed "pockets of concentration in light and dark shades with only a few middle shades." Wassily's 11-stop ladder now treats `50`, `100/200`, body stops, and `900/950` as semantic roles, then uses perceptual cadence checks to avoid cliffs and dead tails.
+3. **Non-uniform tonal distribution** — Lyft needed "pockets of concentration in light and dark shades with only a few middle shades." Wassily's 11-stop ladder now treats `50`, `100/200`, body stops, and `900/950` as semantic names, then lets brand-exact fairing make the visible stops perceptually even. The role model is finally producing promising ramps because paper and ink are soft outcomes, not hard overrides.
 
 4. **Color naming with numeric scale** — Lyft: hue name + 0-100. Wassily: hue name + Tailwind stops (50-950). Both work.
 
@@ -26,7 +26,7 @@ Three reference points analyzed for interaction design and color system inspirat
 
 **Accessibility encoded in the naming convention.** Every Lyft color 0-50 passes AA on black, 60-100 passes AA on white. Just hearing "Red 60" tells you it's accessible. Wassily has WCAG dots and connection contrast ratios, but stop numbers don't inherently communicate accessibility. A visible threshold marker on ramps could bridge this.
 
-**Easing curves for tonal distribution.** ColorBox uses configurable easing (easeOutQuad, easeInQuart) per dimension. Wassily's v6 solver now owns this internally through path scoring and semantic role shaping. A future "tonal bias" gesture could expose that control without turning the tool into a settings panel.
+**Easing curves for tonal distribution.** ColorBox uses configurable easing (easeOutQuad, easeInQuart) per dimension. Wassily's v6 solver currently owns the analogous decisions internally through path scoring and semantic role shaping, but the resulting taste is not yet there. A future "tonal bias" gesture could expose that control without turning the tool into a settings panel.
 
 **Hue rotation across the ramp.** ColorBox sweeps hue across a range (e.g., 220-240 degrees). Wassily already uses family-aware hue and chroma behavior, but an optional expressive "hue sweep" style could still be useful when the goal is atmosphere rather than neutral design-system output.
 
@@ -78,7 +78,7 @@ Applied to Wassily: What if there were **ramp styles** — named aesthetic direc
 - **"Deep Sea"** — cool drift in both directions, chroma suppressed in lights
 - **"Neon"** — near-constant high chroma, minimal contouring
 
-Each style would be a set of solver priors and semantic role preferences: tonal envelope, chroma density, hue drift, seed-exit geometry, and ink behavior. The current v6 default is one opinionated style; future styles should feel like different instruments, not exposed math parameters.
+Each style would be a set of solver priors and semantic role preferences: tonal envelope, chroma density, hue drift, seed-exit geometry, and ink behavior. The current brand-exact default is the locked opinionated algorithm; future styles should feel like different instruments, not exposed math parameters.
 
 **2. Custom Model Training → "Learn From Palette"**
 
@@ -142,9 +142,9 @@ TE products switch between distinct modes rather than nesting features in menus.
 
 Each mode is a *lens* on the same data, not a different screen.
 
-**3. Dark UI where content is the color**
+**3. Colorless UI where content is the color**
 
-OP-XY: all-black, grayscale display, ONE accent color (bright red for recording/locks). Wassily parallel: dark canvas, IBM Plex Mono in `oklch(0.45 0 0)` — the color is ONLY the swatches and ramps. The UI itself is colorless. **Validate this aggressively.** One exception: a single system accent for active/locked states.
+OP-XY: all-black, grayscale display, ONE accent color (bright red for recording/locks). Wassily's shipped canvas currently starts light and can toggle dark, but the deeper rule is the same in both modes: the color is ONLY the swatches, ramps, images, and sampled pixels. The UI itself stays colorless. **Validate this aggressively.** One exception: a single system accent for active/locked states.
 
 **4. Playful visual metaphors that teach**
 

@@ -28,6 +28,7 @@ export {
 export { buildResearchLabData } from "./researchLab";
 export { solveV6ResearchRamp } from "./v6ResearchSolver";
 export { solveV6ArchetypeRamp } from "./v6ResearchSolver";
+export { solveBrandExactFairRamp } from "./brandExactFairingSolver";
 export { compareToV6SoftPrior } from "./v6SoftPriors";
 export {
   checkContrast,

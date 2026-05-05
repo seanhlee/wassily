@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildResearchLabData } from "../researchLab";
 
 describe("research lab board data", () => {
-  it("builds side-by-side v6-archetype and v6 sections for the fixed seed suite", { timeout: 20000 }, () => {
+  it("builds side-by-side v6-archetype, v6, and brand-exact fairing sections for the fixed seed suite", { timeout: 20000 }, () => {
     const data = buildResearchLabData();
 
     expect(data.seeds).toHaveLength(10);
@@ -10,6 +10,7 @@ describe("research lab board data", () => {
       expect(section.engines.map((engine) => engine.engine)).toEqual([
         "v6-archetype",
         "v6",
+        "brand-exact-fair",
       ]);
       for (const engine of section.engines) {
         expect(engine.swatches).toHaveLength(11);
@@ -65,6 +66,18 @@ describe("research lab board data", () => {
         expect(Number.isFinite(engine.focus.worstAdjacentRatio)).toBe(true);
         expect(Number.isFinite(engine.focus.worstThreeStepRatio)).toBe(true);
         expect(Number.isFinite(engine.focus.lightEntranceRatio)).toBe(true);
+        expect(
+          engine.focus.topCliffDistance === null ||
+            Number.isFinite(engine.focus.topCliffDistance),
+        ).toBe(true);
+        expect(
+          engine.focus.darkEdgeDistance === null ||
+            Number.isFinite(engine.focus.darkEdgeDistance),
+        ).toBe(true);
+        expect(
+          engine.focus.darkExitRatio === null ||
+            Number.isFinite(engine.focus.darkExitRatio),
+        ).toBe(true);
         expect(Number.isFinite(engine.focus.spacingCv)).toBe(true);
         expect(["pass", "tighten", "fail"]).toContain(engine.focus.gate);
       }

@@ -1,6 +1,6 @@
 # Wassily Product Arc
 
-> **Status:** Boards + MCP write bridge shipped (Phase 1). The agent can create/switch boards and mutate canvas state via 25 MCP tools through a Vite dev server middleware bridge. Rooms, branches, and multiplayer are deferred.
+> **Status:** Boards, reference image persistence, editable extraction markers, connections, and the MCP write bridge are shipped. The agent can create/switch boards and mutate canvas state via 25 MCP tools through a Vite dev server middleware bridge. Rooms, branches, and multiplayer are deferred. Brand-exact fairing on top of v6 is now the locked app-facing ramp algorithm for this ship.
 
 ## Core Idea
 
@@ -26,7 +26,7 @@ Goal: capture taste.
 
 Turn taste into structure.
 
-Users purify colors, harmonize selections, promote swatches into ramps, compare branches, connect related colors, and test contrast. This is the heart of Wassily: a canvas for thinking through color as a system, not just picking values.
+Users purify colors, steer image extraction markers, harmonize selections, promote swatches into ramps, compare branches, connect related colors, and test contrast. This is the heart of Wassily: a canvas for thinking through color as a system, not just picking values.
 
 Goal: evolve a palette into a coherent, expressive, accessible system.
 
@@ -34,7 +34,7 @@ Goal: evolve a palette into a coherent, expressive, accessible system.
 
 Turn structure into production output.
 
-Users export ramps and semantic aliases as CSS variables, Tailwind tokens, design tokens, or Figma-ready variables. The output is not just "nice colors" but implementation-ready color roles for real interfaces.
+Current export logic lives in MCP tooling: ramps and semantic aliases can be exported as CSS variables, Tailwind tokens, design tokens, or Figma-ready variables. The browser export UI and direct Figma plugin remain future work. The output is not just "nice colors" but implementation-ready color roles for real interfaces.
 
 Goal: ship the palette.
 

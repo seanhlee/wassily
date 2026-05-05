@@ -9,10 +9,8 @@
 
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import {
-  ExtractionMarkerDot,
-  adaptiveRingStroke,
-} from "../ExtractionMarkerDot";
+import { ExtractionMarkerDot } from "../ExtractionMarkerDot";
+import { adaptiveRingStroke } from "../extractionMarkerStyle";
 
 describe("adaptiveRingStroke", () => {
   it("returns black for bright fills (l > 0.6)", () => {

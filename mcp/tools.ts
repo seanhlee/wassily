@@ -384,7 +384,7 @@ export function registerTools(server: McpServer): void {
   // 3. generate_ramp
   server.tool(
     "generate_ramp",
-    "Generate a color ramp from a seed hue. Returns labeled stops (50-950) with light and dark mode variants. Uses Wassily's easing-curve ramp engine with gamut-relative chroma.",
+    "Generate a color ramp from a seed hue. Returns labeled stops (50-950) with light and dark mode variants. Uses Wassily's math-first brand-exact fairing engine with gamut-safe OKLCH output.",
     {
       hue: z.number().min(0).max(360).describe("Seed hue angle (0-360)"),
       stop_count: z
@@ -396,7 +396,7 @@ export function registerTools(server: McpServer): void {
       mode: z
         .enum(["opinionated", "pure"])
         .default("opinionated")
-        .describe("'opinionated' adds hue drift toward warm darks; 'pure' keeps hue constant"),
+        .describe("'opinionated' uses math-first brand-exact fairing around the seed; 'pure' keeps hue constant"),
       seed_chroma: z
         .number()
         .min(0)
