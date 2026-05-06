@@ -99,6 +99,7 @@ export interface ArenaImportResult {
 export interface ArenaImportImagesResult {
   images: ArenaImportedImage[];
   failed: number;
+  failedIds: number[];
 }
 
 interface ImportArenaImagesOptions {
@@ -202,7 +203,10 @@ export async function importArenaImages(
   const images = attempts.filter(
     (image): image is ArenaImportedImage => image !== null,
   );
-  return { images, failed: previews.length - images.length };
+  const failedIds = attempts.flatMap((image, index) =>
+    image ? [] : [previews[index].id],
+  );
+  return { images, failed: failedIds.length, failedIds };
 }
 
 export async function importArenaChannel(

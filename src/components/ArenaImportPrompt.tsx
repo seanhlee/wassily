@@ -67,11 +67,11 @@ export function ArenaImportPrompt({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onDismiss();
+      if (event.key === "Escape" && !busy) onDismiss();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onDismiss]);
+  }, [busy, onDismiss]);
 
   return createPortal(
     <form

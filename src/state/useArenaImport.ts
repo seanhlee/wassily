@@ -69,9 +69,11 @@ export function useArenaImport({
 }: UseArenaImportOptions): UseArenaImportResult {
   const [state, setState] = useState<ArenaImportState | null>(null);
   const stateRef = useRef(state);
+  const operationIdRef = useRef(0);
   stateRef.current = state;
 
   const open = useCallback((canvasPosition: Point) => {
+    operationIdRef.current++;
     setState({
       canvasPosition,
       value: "",
@@ -85,6 +87,7 @@ export function useArenaImport({
   const submit = useCallback(async () => {
     const current = stateRef.current;
     if (!current) return;
+    const operationId = ++operationIdRef.current;
     const input = current.value.trim();
     if (!input) {
       setState((prev) =>
@@ -102,6 +105,7 @@ export function useArenaImport({
         if (preview.images.length === 0) {
           throw new Error("No image blocks found.");
         }
+        if (!isCurrentOperation(operationId, operationIdRef, stateRef)) return;
         setState((prev) =>
           prev
             ? {
@@ -129,14 +133,18 @@ export function useArenaImport({
       if (result.images.length === 0) {
         throw new Error("No images could be imported.");
       }
+      if (!isCurrentOperation(operationId, operationIdRef, stateRef)) return;
       addReferenceImages(layoutImported(result.images, current.canvasPosition));
       if (result.failed > 0) {
         const noun = result.failed === 1 ? "image" : "images";
+        const failedIds = new Set(result.failedIds);
         setState((prev) =>
           prev
             ? {
                 ...prev,
                 loading: null,
+                preview: filterPreviewImages(prev.preview, failedIds),
+                selectedIds: prev.selectedIds.filter((id) => failedIds.has(id)),
                 error: `Imported ${result.images.length}. ${result.failed} ${noun} failed to load.`,
               }
             : prev,
@@ -145,6 +153,7 @@ export function useArenaImport({
         setState(null);
       }
     } catch (error) {
+      if (!isCurrentOperation(operationId, operationIdRef, stateRef)) return;
       setState((prev) =>
         prev ? { ...prev, loading: null, error: errorMessage(error) } : prev,
       );
@@ -156,6 +165,7 @@ export function useArenaImport({
     const preview = current?.preview;
     const nextPage = preview?.pagination.nextPage;
     if (!current || !preview || !nextPage) return;
+    const operationId = ++operationIdRef.current;
 
     setState((prev) =>
       prev ? { ...prev, loading: "more", error: null } : prev,
@@ -166,6 +176,7 @@ export function useArenaImport({
         page: nextPage,
         per: preview.pagination.perPage,
       });
+      if (!isCurrentOperation(operationId, operationIdRef, stateRef)) return;
       setState((prev) => {
         if (!prev?.preview) return prev;
         const merged = mergePreviews(prev.preview, next);
@@ -179,6 +190,7 @@ export function useArenaImport({
         };
       });
     } catch (error) {
+      if (!isCurrentOperation(operationId, operationIdRef, stateRef)) return;
       setState((prev) =>
         prev ? { ...prev, loading: null, error: errorMessage(error) } : prev,
       );
@@ -228,6 +240,7 @@ export function useArenaImport({
   }, []);
 
   const onDismiss = useCallback(() => {
+    operationIdRef.current++;
     setState(null);
   }, []);
 
@@ -312,6 +325,25 @@ function mergePreviews(
     pagination: next.pagination,
     skipped: existing.skipped + next.skipped,
   };
+}
+
+function filterPreviewImages(
+  preview: ArenaPreviewResult | null,
+  ids: Set<number>,
+): ArenaPreviewResult | null {
+  if (!preview) return null;
+  return {
+    ...preview,
+    images: preview.images.filter((image) => ids.has(image.id)),
+  };
+}
+
+function isCurrentOperation(
+  operationId: number,
+  operationIdRef: React.RefObject<number>,
+  stateRef: React.RefObject<ArenaImportState | null>,
+): boolean {
+  return operationIdRef.current === operationId && stateRef.current !== null;
 }
 
 function errorMessage(error: unknown): string {

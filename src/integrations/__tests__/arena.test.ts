@@ -189,6 +189,7 @@ describe("importArenaImages", () => {
     expect(result.images[0].dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(result.images[0].source.importedAt).toBeGreaterThan(0);
     expect(result.failed).toBe(1);
+    expect(result.failedIds).toEqual([2]);
   });
 
   it("caps in-flight downloads at the requested concurrency", async () => {
@@ -208,8 +209,9 @@ describe("importArenaImages", () => {
     const previews = Array.from({ length: 12 }, (_, i) =>
       makePreview(i + 1, `asset-${i}.jpg`),
     );
-    await importArenaImages(previews, { concurrency: 3 });
+    const result = await importArenaImages(previews, { concurrency: 3 });
 
     expect(peak).toBeLessThanOrEqual(3);
+    expect(result.failedIds).toEqual([]);
   });
 });
