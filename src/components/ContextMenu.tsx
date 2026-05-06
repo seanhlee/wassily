@@ -101,6 +101,7 @@ interface CanvasContextMenuProps {
   onPromoteToRamp: (id: string, stopCount: number) => void;
   onHarmonize: () => void;
   onToggleLock: () => void;
+  onImportArenaChannel?: (position: Point) => void;
   onExtractColors?: (imageId: string) => void;
   onRemoveRampStop?: (rampId: string, stopIndex: number) => void;
   children: React.ReactNode;
@@ -120,6 +121,7 @@ export function CanvasContextMenu({
   onPromoteToRamp,
   onHarmonize,
   onToggleLock,
+  onImportArenaChannel,
   onExtractColors,
   onRemoveRampStop,
   children,
@@ -237,6 +239,17 @@ export function CanvasContextMenu({
                 >
                   Pure neutral
                 </ContextMenu.Item>
+                {onImportArenaChannel && (
+                  <>
+                    <ContextMenu.Separator style={getSeparatorStyle(lightMode)} />
+                    <ContextMenu.Item
+                      style={(state) => getItemStyle(lightMode, state)}
+                      onClick={() => onImportArenaChannel(ctx.canvasPos)}
+                    >
+                      Import Are.na channel
+                    </ContextMenu.Item>
+                  </>
+                )}
               </>
             )}
 

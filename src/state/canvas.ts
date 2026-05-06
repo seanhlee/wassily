@@ -17,7 +17,7 @@ import type {
 import { randomPurifiedColor, purifyColor } from "../engine/purify";
 import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "../engine/gamut";
 import { generateRamp, uniqueRampName } from "../engine/ramp";
-import type { OklchColor, ReferenceImage } from "../types";
+import type { OklchColor, ReferenceImage, ReferenceImageSource } from "../types";
 import { RAMP_STOP_PRESETS } from "../constants";
 import {
   storeImageBlob,
@@ -243,11 +243,29 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         dataUrl: action.dataUrl,
         position: action.position,
         size: action.size,
+        source: action.source,
       };
       return {
         ...state,
         objects: { ...state.objects, [id]: img },
       };
+    }
+
+    case "ADD_REFERENCE_IMAGES": {
+      if (action.images.length === 0) return state;
+      const objects = { ...state.objects };
+      for (const image of action.images) {
+        const id = image.id ?? genId();
+        objects[id] = {
+          id,
+          type: "reference-image",
+          dataUrl: image.dataUrl,
+          position: image.position,
+          size: image.size,
+          source: image.source,
+        } as ReferenceImage;
+      }
+      return { ...state, objects };
     }
 
     case "RESTORE_IMAGE_URLS": {
@@ -1145,11 +1163,44 @@ export function useCanvasState(activeBoardId: string) {
       dataUrl: string,
       position: Point,
       size: { width: number; height: number },
+      source?: ReferenceImageSource,
     ) => {
       const id = `img_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       // Store blob in IndexedDB (fire and forget — non-blocking)
       storeImageBlob(id, blob);
-      dispatch({ type: "ADD_REFERENCE_IMAGE", id, dataUrl, position, size });
+      dispatch({ type: "ADD_REFERENCE_IMAGE", id, dataUrl, position, size, source });
+    },
+    [dispatch],
+  );
+
+  const addReferenceImages = useCallback(
+    (
+      images: {
+        blob: Blob;
+        dataUrl: string;
+        position: Point;
+        size: { width: number; height: number };
+        source?: ReferenceImageSource;
+      }[],
+    ) => {
+      const stamped = images.map((image, index) => ({
+        ...image,
+        id: `img_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}`,
+      }));
+      for (const image of stamped) {
+        storeImageBlob(image.id, image.blob);
+      }
+      dispatch({
+        type: "ADD_REFERENCE_IMAGES",
+        images: stamped.map(({ id, dataUrl, position, size, source }) => ({
+          id,
+          dataUrl,
+          position,
+          size,
+          source,
+        })),
+      });
+      return stamped.map((image) => image.id);
     },
     [dispatch],
   );
@@ -1264,6 +1315,7 @@ export function useCanvasState(activeBoardId: string) {
     moveExtractionMarker,
     clearImageExtraction,
     addReferenceImage,
+    addReferenceImages,
     promoteToRamp,
     changeStopCount,
     harmonizeSelected,

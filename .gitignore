@@ -25,3 +25,6 @@ output/
 *.sw?
 .playwright-mcp/
 .vercel
+
+# Claude Code worktree session state
+.claude/worktrees/

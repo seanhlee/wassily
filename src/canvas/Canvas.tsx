@@ -20,11 +20,13 @@ import { ConnectionLine } from "../components/ConnectionLine";
 import { HelpOverlay } from "../components/HelpOverlay";
 import { HarmonizeOverlay } from "../components/HarmonizeLabel";
 import { BoardBar } from "../components/BoardBar";
+import { ArenaImportPrompt } from "../components/ArenaImportPrompt";
 import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, ReferenceImage } from "../types";
 import { getObjectBounds, findStripPlacement, extractHues, objectsInRect } from "./canvasHelpers";
 import { samplePixelAt } from "../hooks/useEyedropper";
 import { usePasteAndDrop } from "../hooks/usePasteAndDrop";
 import { extractColors, dataUrlToImageData } from "../engine/extract";
+import { useArenaImport } from "../state/useArenaImport";
 
 /** Prime an offscreen canvas for pixel sampling from a reference image */
 function primeImageCanvas(
@@ -68,6 +70,7 @@ export function Canvas() {
     clearImageExtraction,
     moveExtractionMarker,
     addReferenceImage,
+    addReferenceImages,
     promoteToRamp,
     changeStopCount,
     harmonizeSelected,
@@ -756,6 +759,13 @@ export function Canvas() {
     addReferenceImage,
   });
 
+  // ---- Are.na import ----
+  const arenaImport = useArenaImport({
+    addReferenceImages,
+    containerRef,
+    camera: state.camera,
+  });
+
   // ---- Context menu extract colors handler ----
   const handleExtractColors = useCallback(
     async (imageId: string) => {
@@ -803,6 +813,9 @@ export function Canvas() {
   return (
     <>
     <BoardBar boardManager={boardManager} lightMode={state.lightMode} />
+    {arenaImport.props && (
+      <ArenaImportPrompt {...arenaImport.props} lightMode={state.lightMode} />
+    )}
     <CanvasContextMenu
       objects={state.objects}
       selectedIds={state.selectedIds}
@@ -815,6 +828,7 @@ export function Canvas() {
       onPromoteToRamp={promoteToRamp}
       onHarmonize={handleHarmonize}
       onToggleLock={toggleLockSelected}
+      onImportArenaChannel={arenaImport.open}
       onExtractColors={handleExtractColors}
       onRemoveRampStop={(id, stopIndex) => {
         snapshot();
