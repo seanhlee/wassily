@@ -3,6 +3,11 @@ import path from "node:path";
 import type { OklchColor } from "../src/types";
 import { extractFromPixels } from "../src/engine/extract";
 import { maxChroma, toHex } from "../src/engine/gamut";
+import {
+  GENERATED_FONT_FACE_CSS,
+  GENERATED_TEXT_FONT,
+  copyGeneratedFonts,
+} from "./researchTypography";
 
 const OUTPUT_DIR = path.resolve("docs/generated");
 const HTML_PATH = path.join(OUTPUT_DIR, "extraction-gauntlet.html");
@@ -607,6 +612,7 @@ function renderHtml(data: GauntletData): string {
     <link rel="icon" href="data:," />
     <title>Wassily Extraction Gauntlet</title>
     <style>
+${GENERATED_FONT_FACE_CSS}
       :root {
         --bg: #f6f7f4;
         --ink: #111816;
@@ -626,7 +632,8 @@ function renderHtml(data: GauntletData): string {
           linear-gradient(90deg, rgba(11, 107, 97, 0.08), rgba(154, 101, 0, 0.08)),
           var(--bg);
         color: var(--ink);
-        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: ${GENERATED_TEXT_FONT};
+        font-variant-numeric: tabular-nums;
       }
 
       main {
@@ -654,7 +661,8 @@ function renderHtml(data: GauntletData): string {
       }
 
       .mono {
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-family: ${GENERATED_TEXT_FONT};
+        font-variant-numeric: tabular-nums;
       }
 
       .hero {
@@ -852,6 +860,7 @@ function renderHtml(data: GauntletData): string {
 
 async function main() {
   await mkdir(OUTPUT_DIR, { recursive: true });
+  await copyGeneratedFonts(OUTPUT_DIR);
   const data: GauntletData = {
     generatedAt: new Date().toISOString(),
     rows: FIXTURES.map(buildRow),

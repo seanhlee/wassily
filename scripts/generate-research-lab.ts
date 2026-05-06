@@ -10,6 +10,11 @@ import {
 } from "../src/engine/research";
 import { maxChroma } from "../src/engine/gamut";
 import type { OklchColor } from "../src/types";
+import {
+  GENERATED_FONT_FACE_CSS,
+  GENERATED_TEXT_FONT,
+  copyGeneratedFonts,
+} from "./researchTypography";
 
 const OUTPUT_DIR = path.resolve("docs/generated");
 const HTML_PATH = path.join(OUTPUT_DIR, "research-lab.html");
@@ -291,6 +296,7 @@ function renderHtml(data: ResearchLabData): string {
     <link rel="icon" href="data:," />
     <title>Wassily Highlight Ramp Lab</title>
     <style>
+${GENERATED_FONT_FACE_CSS}
       :root {
         --bg: #f7f8f5;
         --ink: #111816;
@@ -306,7 +312,8 @@ function renderHtml(data: ResearchLabData): string {
       body {
         margin: 0;
         color: var(--ink);
-        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: ${GENERATED_TEXT_FONT};
+        font-variant-numeric: tabular-nums;
         background:
           linear-gradient(90deg, rgba(11, 107, 97, 0.08), rgba(54, 86, 163, 0.08)),
           var(--bg);
@@ -351,7 +358,8 @@ function renderHtml(data: ResearchLabData): string {
 
       code,
       .mono {
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-family: ${GENERATED_TEXT_FONT};
+        font-variant-numeric: tabular-nums;
       }
 
       .hero {
@@ -477,7 +485,8 @@ function renderHtml(data: ResearchLabData): string {
 
       .swatch__label,
       .swatch__details {
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-family: ${GENERATED_TEXT_FONT};
+        font-variant-numeric: tabular-nums;
       }
 
       .swatch__label {
@@ -571,6 +580,7 @@ function stripTrailingWhitespace(value: string): string {
 async function main(): Promise<void> {
   const data = buildFocusedVisualData();
   await mkdir(OUTPUT_DIR, { recursive: true });
+  await copyGeneratedFonts(OUTPUT_DIR);
   await Promise.all([
     writeFile(JSON_PATH, JSON.stringify(data, null, 2), "utf8"),
     writeFile(HTML_PATH, stripTrailingWhitespace(renderHtml(data)), "utf8"),

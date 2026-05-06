@@ -6,6 +6,34 @@
     <link rel="icon" href="data:," />
     <title>Wassily Highlight Ramp Lab</title>
     <style>
+      @font-face {
+        font-family: "PP Neue Montreal Text";
+        src: url("fonts/PPNeueMontrealText-Light.woff2") format("woff2");
+        font-weight: 300;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "PP Neue Montreal Text";
+        src: url("fonts/PPNeueMontrealText-Book.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "PP Neue Montreal Text";
+        src: url("fonts/PPNeueMontrealText-Bold.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "PP Neue Montreal";
+        src: url("fonts/PPNeueMontreal-Extrabold.woff2") format("woff2");
+        font-weight: 800;
+        font-style: normal;
+        font-display: swap;
+      }
       :root {
         --bg: #f7f8f5;
         --ink: #111816;
@@ -21,7 +49,8 @@
       body {
         margin: 0;
         color: var(--ink);
-        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: "PP Neue Montreal Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-variant-numeric: tabular-nums;
         background:
           linear-gradient(90deg, rgba(11, 107, 97, 0.08), rgba(54, 86, 163, 0.08)),
           var(--bg);
@@ -66,7 +95,8 @@
 
       code,
       .mono {
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-family: "PP Neue Montreal Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-variant-numeric: tabular-nums;
       }
 
       .hero {
@@ -192,7 +222,8 @@
 
       .swatch__label,
       .swatch__details {
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-family: "PP Neue Montreal Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-variant-numeric: tabular-nums;
       }
 
       .swatch__label {
@@ -242,7 +273,7 @@
         <div class="hero__meta">
           <div class="pill mono">Stops: 50 / 100 / 200 / 300 / 400 / 500 / 600 / 700 / 800 / 900 / 950</div>
           <div class="pill mono">Engines: Brand-Exact Fair / Continuous Curve / Continuous Compressed</div>
-          <div class="pill mono">Generated 5/6/2026, 10:40:36 AM</div>
+          <div class="pill mono">Generated 5/6/2026, 11:15:51 AM</div>
         </div>
       </section>
 

@@ -2,6 +2,12 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { buildFamilyProfileBoardData } from "../src/engine/familyBoard";
 import { toHex } from "../src/engine/gamut";
+import {
+  GENERATED_DISPLAY_FONT,
+  GENERATED_FONT_FACE_CSS,
+  GENERATED_TEXT_FONT,
+  copyGeneratedFonts,
+} from "./researchTypography";
 
 const OUTPUT_DIR = path.resolve("docs/generated");
 const HTML_PATH = path.join(OUTPUT_DIR, "family-profile-board.html");
@@ -49,6 +55,7 @@ function renderHtml(data: ReturnType<typeof buildFamilyProfileBoardData>): strin
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wassily Family Profile Board</title>
     <style>
+${GENERATED_FONT_FACE_CSS}
       :root {
         color-scheme: light;
         --bg: #f5f2eb;
@@ -57,14 +64,15 @@ function renderHtml(data: ReturnType<typeof buildFamilyProfileBoardData>): strin
         --text: #171411;
         --muted: #5d5650;
         --accent: #6d645b;
-        --code: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-        --display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+        --code: ${GENERATED_TEXT_FONT};
+        --display: ${GENERATED_DISPLAY_FONT};
       }
 
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-family: ${GENERATED_TEXT_FONT};
+        font-variant-numeric: tabular-nums;
         color: var(--text);
         background:
           radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 42%),
@@ -462,6 +470,7 @@ function renderHtml(data: ReturnType<typeof buildFamilyProfileBoardData>): strin
 async function main(): Promise<void> {
   const data = buildFamilyProfileBoardData();
   await mkdir(OUTPUT_DIR, { recursive: true });
+  await copyGeneratedFonts(OUTPUT_DIR);
   await writeFile(JSON_PATH, `${JSON.stringify(data, null, 2)}\n`, "utf8");
   await writeFile(HTML_PATH, renderHtml(data), "utf8");
   console.log(`Wrote ${HTML_PATH}`);

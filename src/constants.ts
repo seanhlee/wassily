@@ -4,7 +4,8 @@
 export const SWATCH_SIZE = 48;
 
 /** Base font used everywhere in the app. */
-export const FONT = "'IBM Plex Mono', monospace";
+export const FONT =
+  '"PP Neue Montreal Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 /** Base font size (px). */
 export const FONT_SIZE = 11;

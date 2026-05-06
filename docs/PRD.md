@@ -147,7 +147,7 @@ Connections render as thin curved lines between objects. On hover they show cont
 
 ### Context Menus (Right-Click)
 
-Every right-click target gets a context-appropriate menu. 11px IBM Plex Mono, uppercase, adaptive canvas-colored background, edge-aware positioning.
+Every right-click target gets a context-appropriate menu. 11px PP Neue Montreal Text, uppercase, adaptive canvas-colored background, edge-aware positioning.
 
 **Right-click a swatch:**
 - Hex value (copies to clipboard on click)
@@ -384,7 +384,7 @@ For 3+ hues: distributes targets around the circle from the centroid unless hue 
 
 ### Feedback
 
-When **H** is pressed, the relationship name and angle appear **centered on screen** for 1.2 seconds (e.g., "COMPLEMENTARY - 180"). 11px IBM Plex Mono, uppercase, adaptive to the canvas mode. Then it fades.
+When **H** is pressed, the relationship name and angle appear **centered on screen** for 1.2 seconds (e.g., "COMPLEMENTARY - 180"). 11px PP Neue Montreal Text, uppercase, adaptive to the canvas mode. Then it fades.
 
 ### Cycling
 
@@ -452,13 +452,13 @@ Labels and values are **only visible when needed**. When not hovered or editing,
 
 ### Typography
 
-**IBM Plex Mono** everywhere. One typeface, one weight (400), one size (**11px**). Pure black or pure white are used for the strongest chrome, with subtle alpha for labels:
+**PP Neue Montreal Text** everywhere. One family, one base size (**11px**), with Book as the default chrome weight. Pure black or pure white are used for the strongest chrome, with subtle alpha for labels:
 
 - **Labels** (ramp names, stop numbers): uppercase, `letter-spacing: -0.55px` or `0.5px`. Quiet authority.
 - **Values** (hex): uppercase (`#0059E9`). CSS functions lowercase (`oklch(0.550 0.229 261.3)`).
 - **Color:** `rgba(255,255,255,0.85)` on dark canvas, `rgba(0,0,0,0.85)` on light canvas.
 
-No bold. No italics. No size hierarchy. The color is the hierarchy.
+No gratuitous bold. No italics. No size hierarchy. The color is the hierarchy.
 
 ### Swatch
 
@@ -482,7 +482,7 @@ No bold. No italics. No size hierarchy. The color is the hierarchy.
 
 - Positioned by Base UI at the pointer.
 - Adaptive `#fff` / `#000` background with subtle border.
-- 11px IBM Plex Mono, uppercase, `letter-spacing: 0.5px`
+- 11px PP Neue Montreal Text, uppercase, `letter-spacing: 0.5px`
 - Items use low-alpha text by default and stronger contrast on hover.
 - Separator lines between logical groups
 - **Edge-aware positioning:** if menu would overflow viewport edge, it repositions to stay on screen
@@ -517,7 +517,7 @@ Full undo/redo history (up to 50 states). `Cmd+Z` / `Cmd+Shift+Z`. Granular acti
 
 - **Vite + React 19 + TypeScript**
 - **culori** — OKLCH conversions, gamut mapping (clampChroma, displayable), deltaE
-- **@fontsource/ibm-plex-mono** — typography
+- **Local PP Neue Montreal fonts** — typography
 - **CSS transforms** for canvas camera (translate + scale)
 - **DOM rendering** for all objects — element count stays low
 - **Zero backend** — static deployment

@@ -6,6 +6,34 @@
     <link rel="icon" href="data:," />
     <title>Wassily Ramp Gauntlet</title>
     <style>
+      @font-face {
+        font-family: "PP Neue Montreal Text";
+        src: url("fonts/PPNeueMontrealText-Light.woff2") format("woff2");
+        font-weight: 300;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "PP Neue Montreal Text";
+        src: url("fonts/PPNeueMontrealText-Book.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "PP Neue Montreal Text";
+        src: url("fonts/PPNeueMontrealText-Bold.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "PP Neue Montreal";
+        src: url("fonts/PPNeueMontreal-Extrabold.woff2") format("woff2");
+        font-weight: 800;
+        font-style: normal;
+        font-display: swap;
+      }
       :root {
         --bg: #f6f7f4;
         --ink: #111816;
@@ -23,7 +51,8 @@
         margin: 0;
         background: var(--bg);
         color: var(--ink);
-        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: "PP Neue Montreal Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-variant-numeric: tabular-nums;
       }
 
       main {
@@ -60,7 +89,8 @@
       }
 
       .mono {
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-family: "PP Neue Montreal Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-variant-numeric: tabular-nums;
       }
 
       .hero {
@@ -181,7 +211,8 @@
         position: absolute;
         left: 5px;
         top: 4px;
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-family: "PP Neue Montreal Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-variant-numeric: tabular-nums;
         font-size: 0.62rem;
       }
 
@@ -242,7 +273,7 @@
           <div class="pill mono">watch 0</div>
           <div class="pill mono">fail 4</div>
           <div class="pill mono">stops 50/100/200/300/400/500/600/700/800/900/950</div>
-          <div class="pill mono">Generated 5/6/2026, 10:43:48 AM</div>
+          <div class="pill mono">Generated 5/6/2026, 11:15:51 AM</div>
         </div>
       </section>
 

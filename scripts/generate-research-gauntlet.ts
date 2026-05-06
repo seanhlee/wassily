@@ -8,6 +8,11 @@ import {
   type ResearchEngine,
   type ResearchSeed,
 } from "../src/engine/research";
+import {
+  GENERATED_FONT_FACE_CSS,
+  GENERATED_TEXT_FONT,
+  copyGeneratedFonts,
+} from "./researchTypography";
 
 const OUTPUT_DIR = path.resolve("docs/generated");
 const HTML_PATH = path.join(OUTPUT_DIR, "research-gauntlet.html");
@@ -570,6 +575,7 @@ function renderHtml(data: GauntletData): string {
     <link rel="icon" href="data:," />
     <title>Wassily Ramp Gauntlet</title>
     <style>
+${GENERATED_FONT_FACE_CSS}
       :root {
         --bg: #f6f7f4;
         --ink: #111816;
@@ -587,7 +593,8 @@ function renderHtml(data: GauntletData): string {
         margin: 0;
         background: var(--bg);
         color: var(--ink);
-        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: ${GENERATED_TEXT_FONT};
+        font-variant-numeric: tabular-nums;
       }
 
       main {
@@ -624,7 +631,8 @@ function renderHtml(data: GauntletData): string {
       }
 
       .mono {
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-family: ${GENERATED_TEXT_FONT};
+        font-variant-numeric: tabular-nums;
       }
 
       .hero {
@@ -745,7 +753,8 @@ function renderHtml(data: GauntletData): string {
         position: absolute;
         left: 5px;
         top: 4px;
-        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-family: ${GENERATED_TEXT_FONT};
+        font-variant-numeric: tabular-nums;
         font-size: 0.62rem;
       }
 
@@ -836,6 +845,7 @@ function stripTrailingWhitespace(value: string): string {
 async function main(): Promise<void> {
   const data = buildGauntletData();
   await mkdir(OUTPUT_DIR, { recursive: true });
+  await copyGeneratedFonts(OUTPUT_DIR);
   await Promise.all([
     writeFile(JSON_PATH, JSON.stringify(data, null, 2), "utf8"),
     writeFile(HTML_PATH, stripTrailingWhitespace(renderHtml(data)), "utf8"),

@@ -160,9 +160,9 @@ The key TE lesson: **the visual metaphor should make the algorithm legible.**
 
 OP-XY's 14 step components are modular behaviors that can be stacked on any step. Applied to Wassily: the 6 opinions could be independently toggleable "components" per ramp. A style IS a specific combination of opinion components with specific intensities.
 
-**6. Monospace typography as brand identity**
+**6. Typographic austerity as brand identity**
 
-TE uses monospace everywhere. Uppercase labels. One size, one weight. Wassily already uses IBM Plex Mono 400, 11px, uppercase labels with -0.55px letter-spacing. **Don't break it.** No bold. No italics. No size changes. The color IS the visual hierarchy.
+TE uses disciplined typography everywhere. Uppercase labels. One size, one restrained chrome voice. Wassily uses PP Neue Montreal Text at 11px, uppercase labels with -0.55px letter-spacing. **Don't break it.** No decorative hierarchy. No italics. No size changes. The color IS the visual hierarchy.
 
 ### The Meta-Lesson: Instruments, Not Applications
 
@@ -216,7 +216,7 @@ A piano key doesn't have a "velocity settings" panel — you just press harder.
 ### Tier 1: Reinforce What's Already Right
 1. **The instrument mentality** — Every new feature = a gesture or a mode, never a menu item
 2. **Color is the only color** — Keep UI colorless, one possible system accent for active/locked states
-3. **Monospace austerity** — IBM Plex Mono 400/11px/uppercase, don't break it
+3. **Typographic austerity** — PP Neue Montreal Text/11px/uppercase, don't break it
 
 ### Tier 2: JIT Visual Feedback (Spectral Controls)
 4. **Ghost controls on gesture** — Faint hue arc, lightness scale, chroma bar that appear during gestures and fade on release
