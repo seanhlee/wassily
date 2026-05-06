@@ -67,9 +67,22 @@ export interface ReferenceImage {
   position: Point;
   size: Size;
   extraction?: ImageExtraction;
+  source?: ReferenceImageSource;
 }
 
 export type CanvasObject = Swatch | Ramp | Connection | ReferenceImage;
+
+export interface ReferenceImageSource {
+  provider: "arena";
+  blockId: number;
+  channelId?: number;
+  channelSlug?: string;
+  channelTitle?: string;
+  title?: string;
+  url?: string;
+  assetUrl?: string;
+  importedAt: number;
+}
 
 // ---- Geometry ----
 
@@ -154,6 +167,17 @@ export type Action =
       dataUrl: string;
       position: Point;
       size: { width: number; height: number };
+      source?: ReferenceImageSource;
+    }
+  | {
+      type: "ADD_REFERENCE_IMAGES";
+      images: {
+        id?: string;
+        dataUrl: string;
+        position: Point;
+        size: { width: number; height: number };
+        source?: ReferenceImageSource;
+      }[];
     }
 
   // Selection
