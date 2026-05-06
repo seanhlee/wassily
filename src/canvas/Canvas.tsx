@@ -763,7 +763,7 @@ export function Canvas() {
   const arenaImport = useArenaImport({
     addReferenceImages,
     containerRef,
-    cameraRef,
+    camera: state.camera,
   });
 
   // ---- Context menu extract colors handler ----

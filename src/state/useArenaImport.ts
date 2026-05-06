@@ -18,7 +18,6 @@ export type ArenaImportLoading = "preview" | "more" | "import" | null;
 
 interface ArenaImportState {
   canvasPosition: Point;
-  anchor: Point;
   value: string;
   loading: ArenaImportLoading;
   error: string | null;
@@ -39,7 +38,7 @@ type AddReferenceImages = (images: ArenaLayoutImage[]) => string[];
 interface UseArenaImportOptions {
   addReferenceImages: AddReferenceImages;
   containerRef: React.RefObject<HTMLDivElement | null>;
-  cameraRef: React.RefObject<Camera>;
+  camera: Camera;
 }
 
 export interface ArenaImportPromptBindings {
@@ -66,31 +65,22 @@ export interface UseArenaImportResult {
 export function useArenaImport({
   addReferenceImages,
   containerRef,
-  cameraRef,
+  camera,
 }: UseArenaImportOptions): UseArenaImportResult {
   const [state, setState] = useState<ArenaImportState | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const open = useCallback(
-    (canvasPosition: Point) => {
-      const rect = containerRef.current?.getBoundingClientRect();
-      const cam = cameraRef.current ?? { x: 0, y: 0, zoom: 1 };
-      setState({
-        canvasPosition,
-        anchor: {
-          x: (rect?.left ?? 0) + canvasPosition.x * cam.zoom + cam.x,
-          y: (rect?.top ?? 0) + canvasPosition.y * cam.zoom + cam.y,
-        },
-        value: "",
-        loading: null,
-        error: null,
-        preview: null,
-        selectedIds: [],
-      });
-    },
-    [cameraRef, containerRef],
-  );
+  const open = useCallback((canvasPosition: Point) => {
+    setState({
+      canvasPosition,
+      value: "",
+      loading: null,
+      error: null,
+      preview: null,
+      selectedIds: [],
+    });
+  }, []);
 
   const submit = useCallback(async () => {
     const current = stateRef.current;
@@ -243,7 +233,7 @@ export function useArenaImport({
 
   const props: ArenaImportPromptBindings | null = state
     ? {
-        anchor: state.anchor,
+        anchor: computeAnchor(state.canvasPosition, camera, containerRef),
         value: state.value,
         loading: state.loading,
         error: state.error,
@@ -260,6 +250,18 @@ export function useArenaImport({
     : null;
 
   return { open, props };
+}
+
+function computeAnchor(
+  canvasPosition: Point,
+  camera: Camera,
+  containerRef: React.RefObject<HTMLDivElement | null>,
+): Point {
+  const rect = containerRef.current?.getBoundingClientRect();
+  return {
+    x: (rect?.left ?? 0) + canvasPosition.x * camera.zoom + camera.x,
+    y: (rect?.top ?? 0) + canvasPosition.y * camera.zoom + camera.y,
+  };
 }
 
 function fitImportSize(naturalSize: Size): Size {
