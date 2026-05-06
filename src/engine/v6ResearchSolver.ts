@@ -144,7 +144,12 @@ export interface V6EnergyBreakdown {
 }
 
 export interface V6SolveMetadata {
-  solver: "v6" | "v6-archetype" | "brand-exact-fair";
+  solver:
+    | "v6"
+    | "v6-archetype"
+    | "brand-exact-fair"
+    | "continuous-curve"
+    | "continuous-compressed";
   score: number;
   lightBudget: number;
   darkBudget: number;
