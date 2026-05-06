@@ -20,11 +20,83 @@ import { ConnectionLine } from "../components/ConnectionLine";
 import { HelpOverlay } from "../components/HelpOverlay";
 import { HarmonizeOverlay } from "../components/HarmonizeLabel";
 import { BoardBar } from "../components/BoardBar";
-import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, ReferenceImage } from "../types";
+import { ArenaImportPrompt } from "../components/ArenaImportPrompt";
+import type { Swatch, Ramp, Connection, Point, Size, OklchColor, HarmonicRelationship, ReferenceImage } from "../types";
 import { getObjectBounds, findStripPlacement, extractHues, objectsInRect } from "./canvasHelpers";
 import { samplePixelAt } from "../hooks/useEyedropper";
 import { usePasteAndDrop } from "../hooks/usePasteAndDrop";
 import { extractColors, dataUrlToImageData } from "../engine/extract";
+import {
+  importArenaImages,
+  previewArenaChannel,
+  type ArenaImportedImage,
+  type ArenaPreviewResult,
+} from "../integrations/arena";
+
+const ARENA_IMPORT_COLUMNS = 4;
+const ARENA_IMPORT_CELL_WIDTH = 204;
+const ARENA_IMPORT_CELL_HEIGHT = 236;
+const ARENA_IMPORT_MAX_WIDTH = 180;
+const ARENA_IMPORT_MAX_HEIGHT = 212;
+
+interface ArenaImportState {
+  canvasPosition: Point;
+  anchor: Point;
+  value: string;
+  loading: "preview" | "more" | "import" | null;
+  error: string | null;
+  preview: ArenaPreviewResult | null;
+  selectedIds: number[];
+}
+
+function fitArenaImportSize(naturalSize: Size): Size {
+  const naturalWidth = Math.max(1, naturalSize.width);
+  const naturalHeight = Math.max(1, naturalSize.height);
+  const scale = Math.min(
+    ARENA_IMPORT_MAX_WIDTH / naturalWidth,
+    ARENA_IMPORT_MAX_HEIGHT / naturalHeight,
+  );
+  return {
+    width: Math.max(1, Math.round(naturalWidth * scale)),
+    height: Math.max(1, Math.round(naturalHeight * scale)),
+  };
+}
+
+function layoutArenaImport(images: ArenaImportedImage[], origin: Point) {
+  return images.map((image, index) => {
+    const size = fitArenaImportSize(image.naturalSize);
+    const col = index % ARENA_IMPORT_COLUMNS;
+    const row = Math.floor(index / ARENA_IMPORT_COLUMNS);
+    return {
+      blob: image.blob,
+      dataUrl: image.dataUrl,
+      source: image.source,
+      size,
+      position: {
+        x: origin.x + col * ARENA_IMPORT_CELL_WIDTH,
+        y: origin.y + row * ARENA_IMPORT_CELL_HEIGHT,
+      },
+    };
+  });
+}
+
+function arenaImportError(error: unknown): string {
+  return error instanceof Error ? error.message : "Are.na import failed.";
+}
+
+function appendArenaPreview(
+  existing: ArenaPreviewResult,
+  next: ArenaPreviewResult,
+): ArenaPreviewResult {
+  const existingIds = new Set(existing.images.map((image) => image.id));
+  const newImages = next.images.filter((image) => !existingIds.has(image.id));
+  return {
+    channel: next.channel,
+    images: [...existing.images, ...newImages],
+    pagination: next.pagination,
+    skipped: existing.skipped + next.skipped,
+  };
+}
 
 /** Prime an offscreen canvas for pixel sampling from a reference image */
 function primeImageCanvas(
@@ -68,6 +140,7 @@ export function Canvas() {
     clearImageExtraction,
     moveExtractionMarker,
     addReferenceImage,
+    addReferenceImages,
     promoteToRamp,
     changeStopCount,
     harmonizeSelected,
@@ -100,6 +173,7 @@ export function Canvas() {
   const [eKeyHeld, setEKeyHeld] = useState(false);
   const [iKeyHeld, setIKeyHeld] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [arenaImport, setArenaImport] = useState<ArenaImportState | null>(null);
 
   // ---- Eyedropper state ----
   const eyedropperOriginalColor = useRef<OklchColor | null>(null);
@@ -756,6 +830,118 @@ export function Canvas() {
     addReferenceImage,
   });
 
+  // ---- Are.na import ----
+  const openArenaImport = useCallback((canvasPosition: Point) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    const cam = cameraRef.current;
+    setArenaImport({
+      canvasPosition,
+      anchor: {
+        x: (rect?.left ?? 0) + canvasPosition.x * cam.zoom + cam.x,
+        y: (rect?.top ?? 0) + canvasPosition.y * cam.zoom + cam.y,
+      },
+      value: "",
+      loading: null,
+      error: null,
+      preview: null,
+      selectedIds: [],
+    });
+  }, []);
+
+  const handleArenaImport = useCallback(async () => {
+    if (!arenaImport) return;
+    const input = arenaImport.value.trim();
+    if (!input) {
+      setArenaImport((prev) =>
+        prev ? { ...prev, error: "Enter an Are.na channel." } : prev,
+      );
+      return;
+    }
+
+    try {
+      if (!arenaImport.preview) {
+        setArenaImport((prev) =>
+          prev ? { ...prev, loading: "preview", error: null } : prev,
+        );
+        const preview = await previewArenaChannel(input);
+        if (preview.images.length === 0) {
+          throw new Error("No image blocks found.");
+        }
+        setArenaImport((prev) =>
+          prev
+            ? {
+                ...prev,
+                loading: null,
+                preview,
+                selectedIds: preview.images.map((image) => image.id),
+              }
+            : prev,
+        );
+        return;
+      }
+
+      const selected = new Set(arenaImport.selectedIds);
+      const previews = arenaImport.preview.images.filter((image) =>
+        selected.has(image.id),
+      );
+      if (previews.length === 0) {
+        throw new Error("Select at least one image.");
+      }
+      setArenaImport((prev) =>
+        prev ? { ...prev, loading: "import", error: null } : prev,
+      );
+      const images = await importArenaImages(previews);
+      if (images.length === 0) {
+        throw new Error("No image blocks found.");
+      }
+      addReferenceImages(
+        layoutArenaImport(images, arenaImport.canvasPosition),
+      );
+      setArenaImport(null);
+    } catch (error) {
+      setArenaImport((prev) =>
+        prev
+          ? { ...prev, loading: null, error: arenaImportError(error) }
+          : prev,
+      );
+    }
+  }, [addReferenceImages, arenaImport]);
+
+  const handleArenaLoadMore = useCallback(async () => {
+    const preview = arenaImport?.preview;
+    const nextPage = preview?.pagination.nextPage;
+    if (!preview || !nextPage) return;
+
+    setArenaImport((prev) =>
+      prev ? { ...prev, loading: "more", error: null } : prev,
+    );
+
+    try {
+      const next = await previewArenaChannel(arenaImport.value, {
+        page: nextPage,
+        per: preview.pagination.perPage,
+      });
+      setArenaImport((prev) => {
+        if (!prev?.preview) return prev;
+        const merged = appendArenaPreview(prev.preview, next);
+        const selected = new Set(prev.selectedIds);
+        for (const image of next.images) selected.add(image.id);
+        return {
+          ...prev,
+          loading: null,
+          preview: merged,
+          selectedIds: [...selected],
+        };
+      });
+    } catch (error) {
+      setArenaImport((prev) =>
+        prev
+          ? { ...prev, loading: null, error: arenaImportError(error) }
+          : prev,
+      );
+    }
+  }, [arenaImport]);
+
   // ---- Context menu extract colors handler ----
   const handleExtractColors = useCallback(
     async (imageId: string) => {
@@ -803,6 +989,58 @@ export function Canvas() {
   return (
     <>
     <BoardBar boardManager={boardManager} lightMode={state.lightMode} />
+    {arenaImport && (
+      <ArenaImportPrompt
+        anchor={arenaImport.anchor}
+        value={arenaImport.value}
+        loading={arenaImport.loading}
+        error={arenaImport.error}
+        preview={arenaImport.preview}
+        selectedIds={arenaImport.selectedIds}
+        lightMode={state.lightMode}
+        onChange={(value) =>
+          setArenaImport((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  value,
+                  error: null,
+                  preview: null,
+                  selectedIds: [],
+                }
+              : prev,
+          )
+        }
+        onSubmit={handleArenaImport}
+        onLoadMore={handleArenaLoadMore}
+        onToggleImage={(id) =>
+          setArenaImport((prev) => {
+            if (!prev) return prev;
+            const selected = new Set(prev.selectedIds);
+            if (selected.has(id)) selected.delete(id);
+            else selected.add(id);
+            return { ...prev, selectedIds: [...selected], error: null };
+          })
+        }
+        onSelectAll={() =>
+          setArenaImport((prev) =>
+            prev?.preview
+              ? {
+                  ...prev,
+                  selectedIds: prev.preview.images.map((image) => image.id),
+                  error: null,
+                }
+              : prev,
+          )
+        }
+        onSelectNone={() =>
+          setArenaImport((prev) =>
+            prev ? { ...prev, selectedIds: [], error: null } : prev,
+          )
+        }
+        onDismiss={() => setArenaImport(null)}
+      />
+    )}
     <CanvasContextMenu
       objects={state.objects}
       selectedIds={state.selectedIds}
@@ -815,6 +1053,7 @@ export function Canvas() {
       onPromoteToRamp={promoteToRamp}
       onHarmonize={handleHarmonize}
       onToggleLock={toggleLockSelected}
+      onImportArenaChannel={openArenaImport}
       onExtractColors={handleExtractColors}
       onRemoveRampStop={(id, stopIndex) => {
         snapshot();
