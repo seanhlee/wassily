@@ -13,6 +13,7 @@ import type {
   Point,
   ExtractionMarker,
   ImageExtraction,
+  Note,
 } from "../types";
 import { randomPurifiedColor, purifyColor } from "../engine/purify";
 import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "../engine/gamut";
@@ -251,6 +252,33 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       };
     }
 
+    case "CREATE_NOTE": {
+      const id = action.id ?? genId();
+      const note: Note = {
+        id,
+        type: "note",
+        text: action.text ?? "",
+        position: action.position,
+      };
+      return {
+        ...state,
+        objects: { ...state.objects, [id]: note },
+        selectedIds: [id],
+      };
+    }
+
+    case "UPDATE_NOTE_TEXT": {
+      const obj = state.objects[action.id];
+      if (!obj || obj.type !== "note") return state;
+      return {
+        ...state,
+        objects: {
+          ...state.objects,
+          [action.id]: { ...obj, text: action.text } as Note,
+        },
+      };
+    }
+
     case "ADD_REFERENCE_IMAGES": {
       if (action.images.length === 0) return state;
       const objects = { ...state.objects };
@@ -347,7 +375,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       for (const id of state.selectedIds) {
         const obj = objects[id];
         if (obj && obj.type !== "connection") {
-          const positioned = obj as Swatch | Ramp;
+          const positioned = obj as Swatch | Ramp | ReferenceImage | Note;
           objects[id] = {
             ...positioned,
             position: {
@@ -1205,6 +1233,26 @@ export function useCanvasState(activeBoardId: string) {
     [dispatch],
   );
 
+  const createNote = useCallback(
+    (position: Point, text?: string): string => {
+      const id = `note_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      dispatch({ type: "CREATE_NOTE", id, position, text });
+      return id;
+    },
+    [dispatch],
+  );
+
+  const updateNoteText = useCallback(
+    (id: string, text: string) =>
+      dispatch({ type: "UPDATE_NOTE_TEXT", id, text }),
+    [dispatch],
+  );
+
+  const deleteObjects = useCallback(
+    (ids: string[]) => dispatch({ type: "DELETE_OBJECTS", ids }),
+    [dispatch],
+  );
+
   const promoteToRamp = useCallback(
     (id: string, stopCount: number = 11) =>
       dispatch({ type: "PROMOTE_TO_RAMP", id, stopCount }),
@@ -1316,6 +1364,9 @@ export function useCanvasState(activeBoardId: string) {
     clearImageExtraction,
     addReferenceImage,
     addReferenceImages,
+    createNote,
+    updateNoteText,
+    deleteObjects,
     promoteToRamp,
     changeStopCount,
     harmonizeSelected,

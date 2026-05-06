@@ -1,6 +1,14 @@
-import type { CanvasObject, Ramp, Swatch, Point } from "../types";
+import type { CanvasObject, Ramp, Swatch, Point, Note } from "../types";
 import { SWATCH_SIZE } from "../constants";
 import type { ReferenceImage } from "../types";
+
+// Approximate note metrics for marquee hit-testing. The real width/height come
+// from the rendered DOM; this just needs to be close enough that a marquee that
+// visually crosses a note picks it up.
+const NOTE_APPROX_CHAR_WIDTH = 8.5;
+const NOTE_APPROX_LINE_HEIGHT = 17.5;
+const NOTE_APPROX_PADDING_X = 16;
+const NOTE_APPROX_PADDING_Y = 8;
 
 /** Bounding box of a canvas object (canvas space) */
 export function getObjectBounds(obj: CanvasObject): { x: number; y: number; w: number; h: number } | null {
@@ -9,6 +17,17 @@ export function getObjectBounds(obj: CanvasObject): { x: number; y: number; w: n
   if (obj.type === "reference-image") {
     const img = obj as ReferenceImage;
     return { x: img.position.x, y: img.position.y, w: img.size.width, h: img.size.height };
+  }
+  if (obj.type === "note") {
+    const note = obj as Note;
+    const lines = note.text.length > 0 ? note.text.split("\n") : [""];
+    const longest = lines.reduce((max, l) => Math.max(max, l.length), 1);
+    return {
+      x: note.position.x,
+      y: note.position.y,
+      w: Math.max(60, longest * NOTE_APPROX_CHAR_WIDTH + NOTE_APPROX_PADDING_X * 2),
+      h: lines.length * NOTE_APPROX_LINE_HEIGHT + NOTE_APPROX_PADDING_Y * 2,
+    };
   }
   return null;
 }

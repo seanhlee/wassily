@@ -5,6 +5,7 @@ import type { BoardState } from "../state/useBoardManager";
 import { useMcpBridge } from "../state/mcpBridge";
 import { migrateFromLegacy } from "../state/boardStore";
 import { SwatchNode, RampNode, RefImageNode } from "../components/SwatchNode";
+import { NoteNode } from "../components/NoteNode";
 import { ExtractionLoupe } from "../components/ExtractionLoupe";
 import type { LoupeState } from "../components/RefImageNode";
 import { CanvasContextMenu } from "../components/ContextMenu";
@@ -21,7 +22,7 @@ import { HelpOverlay } from "../components/HelpOverlay";
 import { HarmonizeOverlay } from "../components/HarmonizeLabel";
 import { BoardBar } from "../components/BoardBar";
 import { ArenaImportPrompt } from "../components/ArenaImportPrompt";
-import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, ReferenceImage } from "../types";
+import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, ReferenceImage, Note } from "../types";
 import { getObjectBounds, findStripPlacement, extractHues, objectsInRect } from "./canvasHelpers";
 import { samplePixelAt } from "../hooks/useEyedropper";
 import { usePasteAndDrop } from "../hooks/usePasteAndDrop";
@@ -71,6 +72,9 @@ export function Canvas() {
     moveExtractionMarker,
     addReferenceImage,
     addReferenceImages,
+    createNote,
+    updateNoteText,
+    deleteObjects,
     promoteToRamp,
     changeStopCount,
     harmonizeSelected,
@@ -103,6 +107,8 @@ export function Canvas() {
   const [eKeyHeld, setEKeyHeld] = useState(false);
   const [iKeyHeld, setIKeyHeld] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const mouseClientPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // ---- Eyedropper state ----
   const eyedropperOriginalColor = useRef<OklchColor | null>(null);
@@ -202,7 +208,7 @@ export function Canvas() {
       if (isPanningRef.current) return;
       if (marqueeCompletedRef.current) return;
       const target = e.target as HTMLElement;
-      if (target.closest(".swatch-node, .ramp-node, .ref-image-node")) return;
+      if (target.closest(".swatch-node, .ramp-node, .ref-image-node, .note-node")) return;
 
       if (state.selectedIds.length > 0) {
         deselectAll();
@@ -328,6 +334,8 @@ export function Canvas() {
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
+      mouseClientPosRef.current = { x: e.clientX, y: e.clientY };
+
       // Eyedropper: live preview
       const targetId = eyedropperTargetId.current;
       if (iKeyHeld && targetId) {
@@ -371,6 +379,35 @@ export function Canvas() {
       setPanningState(false);
     }, 50);
   }, [setPanningState]);
+
+  // ---- Notes (defined before keyboard effect because T uses handleCreateNote) ----
+  const handleCreateNote = useCallback(
+    (canvasPosition: Point) => {
+      snapshot();
+      const id = createNote(canvasPosition);
+      setEditingNoteId(id);
+    },
+    [createNote, snapshot],
+  );
+
+  const handleNoteTextChange = useCallback(
+    (id: string, text: string) => updateNoteText(id, text),
+    [updateNoteText],
+  );
+
+  const handleNoteCommit = useCallback(
+    (id: string, text: string) => {
+      setEditingNoteId(null);
+      if (text.trim() === "") {
+        deleteObjects([id]);
+      }
+    },
+    [deleteObjects],
+  );
+
+  const handleNoteStartEdit = useCallback((id: string) => {
+    setEditingNoteId(id);
+  }, []);
 
   // ---- Keyboard shortcuts ----
   useEffect(() => {
@@ -580,6 +617,31 @@ export function Canvas() {
           }
           break;
 
+        case "t":
+          if (!e.metaKey && !e.ctrlKey && !e.repeat) {
+            const rect = containerRef.current?.getBoundingClientRect();
+            const cam = cameraRef.current;
+            const mouse = mouseClientPosRef.current;
+            const overCanvas =
+              !!rect &&
+              !!mouse &&
+              mouse.x >= rect.left &&
+              mouse.x <= rect.right &&
+              mouse.y >= rect.top &&
+              mouse.y <= rect.bottom;
+            const point: Point = overCanvas && rect && mouse
+              ? {
+                  x: (mouse.x - rect.left - cam.x) / cam.zoom,
+                  y: (mouse.y - rect.top - cam.y) / cam.zoom,
+                }
+              : {
+                  x: (window.innerWidth / 2 - (rect?.left ?? 0) - cam.x) / cam.zoom,
+                  y: (window.innerHeight / 2 - (rect?.top ?? 0) - cam.y) / cam.zoom,
+                };
+            handleCreateNote(point);
+          }
+          break;
+
         case "=":
         case "+":
           if (
@@ -730,6 +792,7 @@ export function Canvas() {
     state.camera,
     showHelp,
     setEyedropperTarget,
+    handleCreateNote,
   ]);
 
   // ---- Reset modifier keys on window blur (prevents stuck states) ----
@@ -829,6 +892,7 @@ export function Canvas() {
       onHarmonize={handleHarmonize}
       onToggleLock={toggleLockSelected}
       onImportArenaChannel={arenaImport.open}
+      onCreateNote={handleCreateNote}
       onExtractColors={handleExtractColors}
       onRemoveRampStop={(id, stopIndex) => {
         snapshot();
@@ -842,6 +906,9 @@ export function Canvas() {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onMouseLeave={() => {
+          mouseClientPosRef.current = null;
+        }}
         style={{
           width: "100vw",
           height: "100vh",
@@ -967,6 +1034,26 @@ export function Canvas() {
                 onLoupeUpdate={setLoupeState}
                 hoveredSwatchId={hoveredSwatchId}
                 onHoverMarker={setHoveredSwatchId}
+              />
+            );
+          }
+          if (obj.type === "note") {
+            return (
+              <NoteNode
+                key={obj.id}
+                note={obj as Note}
+                selected={state.selectedIds.includes(obj.id)}
+                editing={editingNoteId === obj.id}
+                zoom={state.camera.zoom}
+                lightMode={state.lightMode}
+                onSelect={select}
+                onMove={(id, x, y) => moveObject(id, { x, y })}
+                onMoveSelected={moveSelected}
+                onSnapshot={snapshot}
+                onDuplicateDrag={duplicateSelected}
+                onTextChange={handleNoteTextChange}
+                onCommit={handleNoteCommit}
+                onStartEdit={handleNoteStartEdit}
               />
             );
           }
