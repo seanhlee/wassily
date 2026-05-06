@@ -4,21 +4,17 @@ import {
   buildResearchLabData,
   type ResearchLabData,
 } from "../src/engine/researchLab";
-import { RESEARCH_SEEDS } from "../src/engine/research";
+import {
+  RESEARCH_SEEDS,
+  type ResearchSeed,
+} from "../src/engine/research";
 import { maxChroma } from "../src/engine/gamut";
+import type { OklchColor } from "../src/types";
 
 const OUTPUT_DIR = path.resolve("docs/generated");
 const HTML_PATH = path.join(OUTPUT_DIR, "research-lab.html");
 const JSON_PATH = path.join(OUTPUT_DIR, "research-lab.json");
 
-const FOCUS_SEED_IDS = [
-  "bright-lime",
-  "cadmium-yellow",
-  "cyan",
-  "phthalo-green",
-  "ultramarine",
-  "violet",
-] as const;
 const FOCUS_STOP_LABELS = [
   "50",
   "100",
@@ -32,16 +28,121 @@ const FOCUS_STOP_LABELS = [
   "900",
   "950",
 ] as const;
-const FOCUS_ENGINES = ["v6", "brand-exact-fair"] as const;
+const FOCUS_ENGINES = [
+  "brand-exact-fair",
+  "continuous-curve",
+  "continuous-compressed",
+] as const;
 
 type FocusedEngine = ResearchLabData["seeds"][number]["engines"][number];
 
+function researchSeed(id: string): ResearchSeed {
+  const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === id);
+  if (!seed) throw new Error(`Missing research seed: ${id}`);
+  return seed;
+}
+
+function seed(id: string, label: string, note: string, color: OklchColor): ResearchSeed {
+  return { id, label, note, color };
+}
+
+const FOCUS_SEEDS: readonly ResearchSeed[] = [
+  researchSeed("bright-lime"),
+  researchSeed("cadmium-yellow"),
+  seed("orange", "Orange", "Saturated orange body color; checks tan highlights and muddy shadows.", {
+    l: 0.68,
+    c: 0.18,
+    h: 48,
+  }),
+  seed("coral", "Coral", "Red-orange brand color where highlights can become peach paper.", {
+    l: 0.7,
+    c: 0.16,
+    h: 32,
+  }),
+  seed("red", "Red", "Vivid red with difficult pink highlights and dark heat retention.", {
+    l: 0.6,
+    c: 0.21,
+    h: 28,
+  }),
+  seed("hot-pink", "Hot Pink", "Magenta-pink that can become candy in highlights and purple sludge in darks.", {
+    l: 0.66,
+    c: 0.23,
+    h: 345,
+  }),
+  seed("ochre", "Ochre", "Earth yellow that can lose heat and turn beige through the highlights.", {
+    l: 0.7,
+    c: 0.115,
+    h: 82,
+  }),
+  seed("mustard", "Mustard", "Muted yellow-green earth color where mids can flatten into khaki.", {
+    l: 0.64,
+    c: 0.105,
+    h: 92,
+  }),
+  seed("terracotta", "Terracotta", "Muted clay-orange that tests peach highlights and brown shadows.", {
+    l: 0.58,
+    c: 0.125,
+    h: 42,
+  }),
+  seed("rust", "Rust", "Deep earthy orange-red that can collapse into brown-black.", {
+    l: 0.5,
+    c: 0.12,
+    h: 36,
+  }),
+  seed("olive", "Olive", "Muted yellow-green that can become khaki paper and dead mud.", {
+    l: 0.52,
+    c: 0.085,
+    h: 118,
+  }),
+  seed("moss", "Moss", "Earthy green that tests muted color retention across body and tail.", {
+    l: 0.48,
+    c: 0.075,
+    h: 135,
+  }),
+  seed("burgundy", "Burgundy", "Dark muted red where the tail can become black-purple or dried brown.", {
+    l: 0.42,
+    c: 0.125,
+    h: 18,
+  }),
+  seed("dusty-rose", "Dusty Rose", "Low-chroma pink that can become gray paper at the top.", {
+    l: 0.68,
+    c: 0.075,
+    h: 12,
+  }),
+  seed("clay-taupe", "Clay Taupe", "Warm muted color on the boundary between neutral and chromatic.", {
+    l: 0.6,
+    c: 0.045,
+    h: 55,
+  }),
+  seed("pine", "Pine", "Deep muted forest green that can lose color in the highlights or tail.", {
+    l: 0.38,
+    c: 0.095,
+    h: 155,
+  }),
+  researchSeed("cyan"),
+  seed("aqua", "Aqua", "Electric blue-green highlight family between cyan and teal.", {
+    l: 0.8,
+    c: 0.13,
+    h: 195,
+  }),
+  seed("teal", "Teal", "Bridge between phthalo and cyan behavior.", {
+    l: 0.58,
+    c: 0.14,
+    h: 185,
+  }),
+  researchSeed("phthalo-green"),
+  researchSeed("ultramarine"),
+  researchSeed("violet"),
+  researchSeed("very-light-seed"),
+  researchSeed("very-dark-seed"),
+  researchSeed("warm-neutral"),
+  researchSeed("cool-neutral"),
+];
+
 function buildFocusedVisualData(): ResearchLabData {
-  const seedIds = new Set<string>(FOCUS_SEED_IDS);
   const stopLabels = new Set<string>(FOCUS_STOP_LABELS);
   const engines = new Set<string>(FOCUS_ENGINES);
-  const seeds = RESEARCH_SEEDS.filter((seed) => seedIds.has(seed.id));
-  const data = buildResearchLabData(seeds);
+  const data = buildResearchLabData(FOCUS_SEEDS);
 
   return {
     ...data,
@@ -154,6 +255,14 @@ function renderDiagnostics(engine: FocusedEngine): string {
         <span class="diagnostic__label">cv</span>
         <span class="diagnostic__value mono">${engine.focus.spacingCv.toFixed(2)}</span>
       </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">max gp</span>
+        <span class="diagnostic__value mono">${formatPercent(engine.focus.maxGamutPressure)}</span>
+      </div>
+      <div class="diagnostic">
+        <span class="diagnostic__label">wall stops</span>
+        <span class="diagnostic__value mono">${engine.focus.nearBoundaryStops}</span>
+      </div>
     </div>
   `;
 }
@@ -164,6 +273,10 @@ function engineLabel(engine: string): string {
       return "V6 Solver";
     case "brand-exact-fair":
       return "Brand-Exact Fair";
+    case "continuous-curve":
+      return "Continuous Curve";
+    case "continuous-compressed":
+      return "Continuous Compressed";
     default:
       return engine.toUpperCase();
   }
@@ -410,7 +523,7 @@ function renderHtml(data: ResearchLabData): string {
     <main>
       <section class="hero">
         <h1>Highlight Ramp Lab</h1>
-        <p>Visual-only pass for exact-seed ramp quality. This board compares raw v6 against the locked brand-exact fairing algorithm, with top-bridge and dark-tail diagnostics visible beside the full ramp.</p>
+        <p>Visual-only pass for exact-seed ramp quality. This board compares the locked brand-exact fairing algorithm against the experimental continuous curve across known pressure colors, with top-bridge and dark-tail diagnostics visible beside the full ramp.</p>
         <div class="hero__meta">
           <div class="pill mono">Stops: ${FOCUS_STOP_LABELS.join(" / ")}</div>
           <div class="pill mono">Engines: ${FOCUS_ENGINES.map(engineLabel).join(" / ")}</div>

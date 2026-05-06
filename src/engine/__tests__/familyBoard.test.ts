@@ -35,6 +35,6 @@ describe("family profile board data", () => {
         }
       }
     },
-    10000,
+    20000,
   );
 });

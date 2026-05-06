@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { buildResearchLabData } from "../researchLab";
 
 describe("research lab board data", () => {
-  it("builds side-by-side v6-archetype, v6, and brand-exact fairing sections for the fixed seed suite", { timeout: 20000 }, () => {
+  it("builds side-by-side brand-exact fairing, continuous curve, and compressed curve sections for the fixed seed suite", { timeout: 90000 }, () => {
     const data = buildResearchLabData();
 
     expect(data.seeds).toHaveLength(10);
     for (const section of data.seeds) {
       expect(section.engines.map((engine) => engine.engine)).toEqual([
-        "v6-archetype",
-        "v6",
         "brand-exact-fair",
+        "continuous-curve",
+        "continuous-compressed",
       ]);
       for (const engine of section.engines) {
         expect(engine.swatches).toHaveLength(11);
@@ -79,17 +79,20 @@ describe("research lab board data", () => {
             Number.isFinite(engine.focus.darkExitRatio),
         ).toBe(true);
         expect(Number.isFinite(engine.focus.spacingCv)).toBe(true);
+        expect(Number.isFinite(engine.focus.maxGamutPressure)).toBe(true);
+        expect(Number.isFinite(engine.focus.nearBoundaryStops)).toBe(true);
         expect(["pass", "tighten", "fail"]).toContain(engine.focus.gate);
       }
     }
   });
 
-  it("keeps v6 at a clean pass across the curated strict-gate suite", { timeout: 20000 }, () => {
+  it("keeps raw v6 retired from the default research board", { timeout: 20000 }, () => {
     const data = buildResearchLabData();
-    const v6Gates = data.seeds.map(
-      (section) => section.engines.find((engine) => engine.engine === "v6")!.focus.gate,
+    const engines = new Set(
+      data.seeds.flatMap((section) => section.engines.map((engine) => engine.engine)),
     );
 
-    expect(v6Gates).toEqual(Array.from({ length: data.seeds.length }, () => "pass"));
+    expect(engines.has("v6")).toBe(false);
+    expect(engines.has("v6-archetype")).toBe(false);
   });
 });

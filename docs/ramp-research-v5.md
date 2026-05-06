@@ -1,6 +1,6 @@
 # Wassily Ramp Research Working Doc
 
-Living design memo and research log for Wassily's ramp-generation work. This started as the `v5` investigation and now tracks both the `v6` semantic solver scaffold and the locked brand-exact fairing algorithm.
+Living design memo and research log for Wassily's ramp-generation work. This started as the `v5` investigation and now tracks the `v6` semantic solver scaffold, the locked brand-exact fairing algorithm, and the experimental continuous-curve prototype.
 
 This document should be updated as the work evolves. It is meant to capture:
 
@@ -34,7 +34,42 @@ Early metric read from the focused lab:
 - Phthalo green improves when the exact seed moves from `500` to `600`.
 - The focused top-edge and dark-tail diagnostics show equalized 50/100/200 bridge spacing and less 900/950 collapse in the hard cool-color cases.
 
-The broadened gauntlet is now comparing `v6` and `brand-exact-fair` directly. In the current generated suite, raw v6 lands at 17 ok / 9 watch / 0 fail across the 26 hard-case seeds, while brand-exact fairing lands at 26 ok / 0 watch / 0 fail. The more important metric shift is spacing: brand-exact fairing has average adjacent-distance CV near `0.054`, average top-bridge ratio near `1.00`, and average dark-tail ratio near `1.01`. This is strong evidence that seed-stop choice, endpoint selection, and visible-stop fairing need to be solved together, and that semantic labels should behave more like soft roles than hard post-processing.
+The broadened gauntlet originally compared raw `v6` and `brand-exact-fair` directly. That read was useful historically: raw v6 landed at 17 ok / 9 watch / 0 fail across the 26 hard-case seeds, while brand-exact fairing landed at 26 ok / 0 watch / 0 fail. Raw v6 is now retired from the visible research reports because it no longer represents the quality bar. It remains in the codebase as an internal scaffold and baseline generator, but the current reports focus on locked brand-exact fairing and the continuous-curve research candidates.
+
+The more important metric shift is spacing: brand-exact fairing has average adjacent-distance CV near `0.054`, average top-bridge ratio near `1.00`, and average dark-tail ratio near `1.01`. This is strong evidence that seed-stop choice, endpoint selection, and visible-stop fairing need to be solved together, and that semantic labels should behave more like soft roles than hard post-processing.
+
+## Experimental Continuous Curve Prototype
+
+As of 2026-05-05, `continuous-curve` exists as a research-only engine in `src/engine/continuousCurveSolver.ts`. It is not app-facing yet. The goal is to test the cleaner architecture:
+
+```text
+canonical taste solve -> continuous OKLab curve through exact seed -> arc-length sampling
+```
+
+The important difference from `brand-exact-fair` is that stop count is treated as sampling resolution. The prototype derives its seed placement from the current locked 11-stop brand-exact fairing solve, searches controlled OKLCH endpoint and seed-tangent candidates, builds a cubic OKLab curve through the exact seed, then samples any requested stop count from that same canonical curve. Labels name samples; they do not define the curve. Warm high-lightness cusp seeds, bright blue-cyan seeds, deep blue-violet seeds, and saturated warm-red seeds get systematic highlight envelopes so the solver can avoid yellow highlighter glare, glassy cyan paper, blue paper collapse, and red-family highlights that read as expensive paper. Highlight-edge anchors get a placement policy: when the exact seed is already at the top edge and there is not enough perceptual budget above it for a real step, the seed becomes `50` instead of manufacturing a collapsed `50 -> 100` shelf.
+
+Important falsification: the first prototype looked much better numerically because it let the spacing score move the exact seed to endpoints. Bright lime, cadmium yellow, and cyan could place the seed at `50`; ultramarine could place it at `950`. That produced fake-perfect spacing by effectively discarding one side of the ramp. Seed placement is therefore part of the curve contract, not a free optimization variable.
+
+Current generated gauntlet read after locking curve sampling to the fairing solver's seed fraction, constraining direct endpoint search to same-family OKLCH endpoint candidates, retiring raw v6 from the visible report, adding edge-anchor pressure seeds, and adding the curve-level gamut-compression variant:
+
+- `brand-exact-fair`: 37 ok / 0 watch / 4 fail. The failures are the highlight-edge anchors where the inherited `50 -> 100` shelf has nearly zero distance.
+- `continuous-curve`: 41 ok / 0 watch / 0 fail, average spacing CV `0.012`, average worst adjacent ratio `1.03`.
+- `continuous-compressed`: 41 ok / 0 watch / 0 fail, average spacing CV `0.012`, average worst adjacent ratio `1.03`.
+- Both continuous variants keep top bridge and dark tail near even: average top-bridge ratio `1.00`, average dark-tail ratio `1.01`.
+
+This is more promising than the resampling-only version, but it needs visual judgment. The focused research lab now includes extra pressure colors beyond the original set: orange, coral, red, hot pink, aqua, teal, and an Earth / Muted block. The gauntlet now adds edge-anchor and earth/muted seeds as their own pressure groups. Those rows are meant to keep pressure on the places where a single global OKLCH rule usually breaks down: warm cusp highlights, red/pink highlight identity, aqua/cyan gamut edges, teal/green dark tails, muted chromatic identity, and seeds that are already living at the light or dark endpoint.
+
+The cool families are the clearest win so far: cyan, phthalo green, violet, and ultramarine keep the continuous smoothness while the highlights read as tinted color rather than paper. The first direct-endpoint version made cadmium yellow too cusp-saturated at the top (`50` had local chroma occupancy around `0.91`), so the current pass gives warm cusp seeds a systematic highlight envelope: target lightness, target local-gamut occupancy, bridge occupancy, and a warm hue shoulder are all derived from the seed. Cadmium yellow now keeps the seed at `200`, keeps top-bridge ratio around `1.02`, and moves `50` to `#F8F1DF` / `oklch(0.958 0.025 87.9)` before bending back to the exact `98.0` hue seed. Ultramarine now keeps the seed at `700`, keeps top-bridge ratio around `1.00`, and solves the lightest visible blue point from a chroma floor: `50` is `#E7EDFB` / `oklch(0.946 0.019 265.0)` instead of paper-blue.
+
+The visible edge-anchor pressure case now has a cleaner contract. If the exact seed is already near the top of the ramp and the available light-side OKLab budget is too small compared with the shadow-side step cadence, the continuous curve treats the seed as the light endpoint. For the very-light seed row, `continuous-curve` now anchors the exact seed at `50`, removes the flat lightness step, and turns the old `50 -> 100` cliff into an even first step. This is intentionally not applied to Cadmium or Bright Lime; those have enough perceptual room above the seed and still need a shaped tint-to-seed bridge.
+
+The red-family pressure case is about identity rather than spacing. Orange, coral, and red already had excellent top-bridge metrics, but the light endpoint could read too much like warm paper while `100` and `200` carried most of the family signal. The continuous curve now gives saturated warm-red seeds a restrained blush target at `50` while preserving exact seed placement, even `50 -> 100 -> 200` cadence, and hot dark tails. This deliberately does not pull rose or hot pink into the same rule; those already carry visible highlight color through the generic endpoint search.
+
+The blue-cyan pressure case is more constrained than red because high-lightness sRGB has very little chroma room. The current policy strengthens cyan and sky-blue highlights while keeping the light-side cadence intact. It deliberately does not pull aqua and teal into the same rule: aqua looked more colorful when forced through the blue-cyan envelope, but the light-side arc shortened enough to make the curve less even. Aqua/teal should remain a separate green-cyan edge problem if they need another pass.
+
+The Earth / Muted pressure block is currently an evidence set, not a tuned solver class. Ochre, mustard, terracotta, rust, olive, moss, burgundy, dusty rose, clay taupe, and pine all pass the generated continuous-curve metrics. The visual read is more nuanced: pine, moss, olive, terracotta, and burgundy look useful; ochre and mustard are the likely taste-pressure cases because their `50`s sit close to the high-lightness gamut edge and may read either beautifully warm or too much like buttery paper.
+
+The `continuous-compressed` variant is a direct response to the gamut-mapping question from Dan Hollick's Making Software color-space chapter. The article's relevant warning is that OKLCH can describe colors outside the display gamut, and pointwise clipping can collapse distinct colors onto the same boundary. Our current solver already clips in OKLCH chroma instead of RGB channels, but it still maps each sampled curve point independently. The compressed variant splits raw curve construction from gamut mapping, measures boundary pressure along the segment, and applies a smooth segment-level fit before sampling. For the first pass, the useful evidence row is Ochre: the normal curve rides the wall at `50 occ 102%` / `max gp 102%`; compressed pulls that to `50 occ 88%` / `max gp 91%` while preserving exact seed placement and even `50 -> 100 -> 200` distances. Aqua exposed the main caution: if compression spends chroma before lightness, `50` gets milky. The current guardrail keeps very light blue-green highlights chroma-preserving, so Aqua moves from `#E4FFFE` to `#E3FEFD` instead of the weaker `#E5FEFD`, while still dropping `50 occ` to `90%`. This is intentionally research-only until the visual read beats the current curve across more cases.
 
 The failed `v4` experiment is still useful. It showed that "beauty-first" cannot mean replacing perceptual geometry with hand-shaped stop-index curves. Beauty has to enter as path design, endpoint selection, and family-specific behavior while preserving the perceptual backbone.
 
@@ -877,3 +912,60 @@ The next algorithmic gains should come from better continuous family priors rath
   - `npm run lint`: passed
   - `npm run build`: passed
 - Deployed to GitHub Pages via the existing `main` push workflow.
+
+### 2026-05-05
+
+- Retired raw v6 from the visible research lab and gauntlet outputs. It remains in the codebase as an internal scaffold, but the visible comparison is now `brand-exact-fair` vs `continuous-curve`.
+- Expanded the focused research lab with additional pressure colors: orange, coral, red, hot pink, aqua, teal, and earth/muted seeds.
+- Added an Edge Anchors group to the gauntlet:
+  - very-light seed
+  - very-dark seed
+  - highlight-edge warm
+  - highlight-edge cool
+  - highlight-edge pink
+- Added a continuous-curve highlight-edge placement policy:
+  - if the seed is already near the top edge
+  - and the light-side OKLab budget is too small to support a real stop above the seed
+  - then the exact seed anchors at `50`
+- Result:
+  - brand-exact fairing intentionally exposes the old failure on highlight-edge seeds: the `50 -> 100` shelf has nearly zero perceptual distance
+  - continuous curve solves the edge-anchor class in the generated gauntlet
+  - very-light seed now anchors at `50`, removes the flat top lightness step, and keeps an even first step into `100`
+- Added regression coverage in `src/engine/__tests__/continuousCurveSolver.test.ts` for warm, cool, pink, and very-light highlight-edge anchors.
+
+### 2026-05-06
+
+- Added a saturated warm-red highlight envelope for orange, coral, and red:
+  - the trigger is hue-family, seed chroma, and mid-body seed lightness rather than a named color
+  - `50` targets a stronger red-family blush while staying highlight-light
+  - rose and hot pink remain outside the rule because their generic endpoints already retain highlight color
+- Result:
+  - orange `50` moved from `#F6ECE7` to `#F8EAE3`
+  - coral `50` moved from `#F4ECEB` to `#F9E9E6`
+  - red `50` moved from `#F6ECEA` to `#F9E9E6`
+  - continuous curve remains 41 ok / 0 watch / 0 fail in the generated gauntlet after adding Earth / Muted
+- Added regression coverage that protects red-family blush strength, exact seed placement, even top-bridge cadence, and tail chroma retention.
+- Added a bright blue-cyan highlight envelope:
+  - cyan `50` moved from `#E1FBFF` to `#DAF7FC`
+  - sky blue `50` moved from `#F1FAFF` to `#E9F5FC`
+  - blue-leaning cyan `50` moved from `#E1F2F7` to `#E1F5FC`
+  - aqua and teal intentionally remain outside this rule because their smoothness degrades under the same push
+- Added regression coverage that protects blue-cyan highlight color, exact seed placement, even top-bridge cadence, and tail chroma retention.
+- Added an Earth / Muted pressure group to the generated lab and gauntlet:
+  - ochre, mustard, terracotta, rust, olive, moss, burgundy, dusty rose, clay taupe, and pine
+  - all ten currently pass continuous-curve metrics
+  - ochre and mustard are the visual watch cases because their `50`s may read as warm paper rather than muted chromatic color
+- Added `continuous-compressed` as a research-only gamut-mapping variant:
+  - splits raw OKLab curve construction from final gamut mapping
+  - measures segment-level gamut pressure before sampling
+  - applies a smooth compression fit instead of independent pointwise clipping
+  - exposes `max gp` and `wall stops` diagnostics in the lab and gauntlet
+- First evidence:
+  - `continuous-compressed` remains 41 ok / 0 watch / 0 fail in the generated gauntlet
+  - Ochre `50` moves from `#FFF8EA` to `#FEF7EB`
+  - Ochre light-side pressure drops from `50 occ 102%` / `max gp 102%` to `50 occ 88%` / `max gp 91%`
+  - the top bridge remains even at `50 -> 100 0.074` and `100 -> 200 0.074`
+- Added a blue-green highlight guardrail:
+  - Aqua compression now spends lightness before chroma at the very top of the curve
+  - Aqua `50` is `#E3FEFD`, preserving the current curve's chroma while reducing `50 occ` from `101%` to `90%`
+  - this protects against the earlier compressed `#E5FEFD` result, which was numerically cleaner but visually too milky

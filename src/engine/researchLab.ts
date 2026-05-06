@@ -49,6 +49,8 @@ export interface ResearchLabFocusMetrics {
   darkEdgeDistance: number | null;
   darkExitRatio: number | null;
   spacingCv: number;
+  maxGamutPressure: number;
+  nearBoundaryStops: number;
   monotone: boolean;
   seedSplitLabel: string | null;
 }
@@ -195,6 +197,8 @@ function evaluateFocusGate(run: SeedEvaluationRun): ResearchLabFocusMetrics {
     darkEdgeDistance: distanceBetweenLabels(run, "900", "950"),
     darkExitRatio: darkExitRatio(run),
     spacingCv: analysis.lightRamp.adjacentDistance.coefficientOfVariation,
+    maxGamutPressure: analysis.lightRamp.gamutPressure.max,
+    nearBoundaryStops: analysis.lightRamp.gamutPressure.nearBoundaryStops,
     monotone: analysis.lightRamp.lightness.nonIncreasing,
     seedSplitLabel:
       metadata === null
@@ -207,7 +211,11 @@ export function buildResearchLabData(
   seeds: readonly ResearchSeed[] = RESEARCH_SEEDS,
   options: Omit<EvaluateSeedOptions, "engine"> = {},
 ): ResearchLabData {
-  const engines: ResearchEngine[] = ["v6-archetype", "v6", "brand-exact-fair"];
+  const engines: ResearchEngine[] = [
+    "brand-exact-fair",
+    "continuous-curve",
+    "continuous-compressed",
+  ];
   return {
     generatedAt: new Date().toISOString(),
     seeds: seeds.map((seed) => ({

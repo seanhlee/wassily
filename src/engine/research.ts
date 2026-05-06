@@ -8,6 +8,10 @@ import {
   type V6SolveMetadata,
 } from "./v6ResearchSolver";
 import { solveBrandExactFairRamp } from "./brandExactFairingSolver";
+import {
+  solveContinuousCompressedRamp,
+  solveContinuousCurveRamp,
+} from "./continuousCurveSolver";
 
 export interface ResearchSeed {
   id: string;
@@ -101,6 +105,13 @@ export interface LightnessStats {
   maxStep: number;
 }
 
+export interface GamutPressureStats {
+  values: number[];
+  mean: number;
+  max: number;
+  nearBoundaryStops: number;
+}
+
 export interface EndpointStats {
   lightness: number;
   chroma: number;
@@ -113,6 +124,7 @@ export interface RampVariantAnalysis {
   colors: OklchColor[];
   adjacentDistance: DistanceStats;
   lightness: LightnessStats;
+  gamutPressure: GamutPressureStats;
   gamutViolations: number;
   maxHueDriftFromSeed: number;
 }
@@ -135,7 +147,12 @@ export interface EvaluateSeedOptions {
   engine?: ResearchEngine;
 }
 
-export type ResearchEngine = "v6-archetype" | "v6" | "brand-exact-fair";
+export type ResearchEngine =
+  | "v6-archetype"
+  | "v6"
+  | "brand-exact-fair"
+  | "continuous-curve"
+  | "continuous-compressed";
 
 export interface SeedEvaluationRun {
   engine: ResearchEngine;
@@ -219,7 +236,11 @@ export function evaluateSeedRun(
       ? solveV6ResearchRamp(config)
       : engine === "brand-exact-fair"
         ? solveBrandExactFairRamp(config)
-        : solveV6ArchetypeRamp(config);
+        : engine === "continuous-curve"
+          ? solveContinuousCurveRamp(config)
+          : engine === "continuous-compressed"
+            ? solveContinuousCompressedRamp(config)
+            : solveV6ArchetypeRamp(config);
 
   return {
     engine,
@@ -237,11 +258,26 @@ function analyzeVariant(
     colors,
     adjacentDistance: computeDistanceStats(colors),
     lightness: computeLightnessStats(colors),
+    gamutPressure: computeGamutPressureStats(colors),
     gamutViolations: colors.filter((color) => !isInGamut(color)).length,
     maxHueDriftFromSeed:
       seedColor === null
         ? 0
         : Math.max(...colors.map((color) => circularHueDelta(color.h, seedColor.h))),
+  };
+}
+
+function computeGamutPressureStats(colors: OklchColor[]): GamutPressureStats {
+  const values = colors.map((color) => {
+    const available = maxChroma(color.l, color.h);
+    return available > 0 ? color.c / available : color.c > 0 ? Infinity : 0;
+  });
+
+  return {
+    values,
+    mean: average(values.filter(Number.isFinite)),
+    max: values.length === 0 ? 0 : Math.max(...values),
+    nearBoundaryStops: values.filter((value) => value >= 0.88).length,
   };
 }
 

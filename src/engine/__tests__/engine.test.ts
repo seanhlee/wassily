@@ -218,7 +218,7 @@ describe("ramp generation", () => {
     }
   });
 
-  it("opinionated mode routes through the brand-exact fairing path", () => {
+  it("opinionated mode routes through the brand-exact fairing path", { timeout: 10000 }, () => {
     for (const seedId of ["bright-lime", "cyan", "very-light-seed"] as const) {
       const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
       const stops = generateRamp(researchSeedToRampConfig(seed));

@@ -27,7 +27,11 @@ const STOP_LABELS = [
   "950",
 ] as const;
 
-const GAUNTLET_ENGINES: ResearchEngine[] = ["v6", "brand-exact-fair"];
+const GAUNTLET_ENGINES: ResearchEngine[] = [
+  "brand-exact-fair",
+  "continuous-curve",
+  "continuous-compressed",
+];
 
 interface GauntletGroup {
   label: string;
@@ -58,6 +62,8 @@ interface GauntletMetrics {
   darkTailRatio: number | null;
   endpointDarkLightness: number;
   endpointDarkChroma: number;
+  maxGamutPressure: number;
+  nearBoundaryStops: number;
   monotone: boolean;
   status: "ok" | "watch" | "fail";
 }
@@ -114,6 +120,44 @@ const GAUNTLET_GROUPS: GauntletGroup[] = [
     ],
   },
   {
+    label: "Edge Anchors",
+    note: "Seeds already near the highlight or shadow edge should anchor honestly instead of manufacturing collapsed extra stops.",
+    seeds: [
+      researchSeed("very-light-seed"),
+      researchSeed("very-dark-seed"),
+      seed(
+        "highlight-edge-warm",
+        "Highlight Edge Warm",
+        "Very light warm seed with limited room above the exact anchor.",
+        {
+          l: 0.975,
+          c: 0.038,
+          h: 55,
+        },
+      ),
+      seed(
+        "highlight-edge-cool",
+        "Highlight Edge Cool",
+        "Very light cool seed with limited room above the exact anchor.",
+        {
+          l: 0.975,
+          c: 0.038,
+          h: 215,
+        },
+      ),
+      seed(
+        "highlight-edge-pink",
+        "Highlight Edge Pink",
+        "Very light pink seed with limited room above the exact anchor.",
+        {
+          l: 0.975,
+          c: 0.038,
+          h: 330,
+        },
+      ),
+    ],
+  },
+  {
     label: "Warm Hues",
     note: "Yellows, oranges, reds, and roses should avoid muddy shadows and harsh top clips.",
     seeds: [
@@ -137,6 +181,62 @@ const GAUNTLET_GROUPS: GauntletGroup[] = [
         l: 0.64,
         c: 0.18,
         h: 355,
+      }),
+    ],
+  },
+  {
+    label: "Earth / Muted",
+    note: "Muted chromatic seeds test the boundary between preserving earthiness and keeping color alive.",
+    seeds: [
+      seed("ochre", "Ochre", "Earth yellow that can lose heat and turn beige through the highlights.", {
+        l: 0.7,
+        c: 0.115,
+        h: 82,
+      }),
+      seed("mustard", "Mustard", "Muted yellow-green earth color where mids can flatten into khaki.", {
+        l: 0.64,
+        c: 0.105,
+        h: 92,
+      }),
+      seed("terracotta", "Terracotta", "Muted clay-orange that tests peach highlights and brown shadows.", {
+        l: 0.58,
+        c: 0.125,
+        h: 42,
+      }),
+      seed("rust", "Rust", "Deep earthy orange-red that can collapse into brown-black.", {
+        l: 0.5,
+        c: 0.12,
+        h: 36,
+      }),
+      seed("olive", "Olive", "Muted yellow-green that can become khaki paper and dead mud.", {
+        l: 0.52,
+        c: 0.085,
+        h: 118,
+      }),
+      seed("moss", "Moss", "Earthy green that tests muted color retention across body and tail.", {
+        l: 0.48,
+        c: 0.075,
+        h: 135,
+      }),
+      seed("burgundy", "Burgundy", "Dark muted red where the tail can become black-purple or dried brown.", {
+        l: 0.42,
+        c: 0.125,
+        h: 18,
+      }),
+      seed("dusty-rose", "Dusty Rose", "Low-chroma pink that can become gray paper at the top.", {
+        l: 0.68,
+        c: 0.075,
+        h: 12,
+      }),
+      seed("clay-taupe", "Clay Taupe", "Warm muted color on the boundary between neutral and chromatic.", {
+        l: 0.6,
+        c: 0.045,
+        h: 55,
+      }),
+      seed("pine", "Pine", "Deep muted forest green that can lose color in the highlights or tail.", {
+        l: 0.38,
+        c: 0.095,
+        h: 155,
       }),
     ],
   },
@@ -339,6 +439,8 @@ function buildRow(group: string, seed: ResearchSeed, engine: ResearchEngine): Ga
     darkTailRatio: darkTailRatio(distances),
     endpointDarkLightness: run.analysis.endpointDark.lightness,
     endpointDarkChroma: run.analysis.endpointDark.chroma,
+    maxGamutPressure: run.analysis.lightRamp.gamutPressure.max,
+    nearBoundaryStops: run.analysis.lightRamp.gamutPressure.nearBoundaryStops,
     monotone: run.analysis.lightRamp.lightness.nonIncreasing,
   };
 
@@ -404,6 +506,10 @@ function engineLabel(engine: ResearchEngine): string {
   switch (engine) {
     case "brand-exact-fair":
       return "fair";
+    case "continuous-curve":
+      return "curve";
+    case "continuous-compressed":
+      return "compressed";
     case "v6-archetype":
       return "archetype";
     default:
@@ -435,6 +541,8 @@ function renderRow(row: GauntletRow): string {
         ${renderMetricPill("tail ratio", formatMetric(row.metrics.darkTailRatio, 2))}
         ${renderMetricPill("edge", `${formatMetric(row.metrics.lightEntrance)}x`)}
         ${renderMetricPill("cv", formatMetric(row.metrics.spacingCv))}
+        ${renderMetricPill("max gp", formatPercent(row.metrics.maxGamutPressure))}
+        ${renderMetricPill("wall", String(row.metrics.nearBoundaryStops))}
         ${renderMetricPill("950 L", formatMetric(row.metrics.endpointDarkLightness, 3))}
         ${renderMetricPill("950 c", formatMetric(row.metrics.endpointDarkChroma, 3))}
       </div>
