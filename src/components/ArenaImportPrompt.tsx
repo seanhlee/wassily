@@ -59,17 +59,7 @@ export function ArenaImportPrompt({
     : 0;
   const channelName = preview?.channel.title ?? preview?.channel.slug ?? "Are.na";
   const busy = loading !== null;
-  const primaryLabel = loading
-    ? loading === "import"
-      ? "Importing"
-      : loading === "preview"
-        ? "Loading"
-        : preview
-          ? `Import ${selectedCount}`
-          : "Preview"
-    : preview
-      ? `Import ${selectedCount}`
-      : "Preview";
+  const primaryLabel = getPrimaryLabel(loading, preview !== null, selectedCount);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -267,6 +257,16 @@ export function ArenaImportPrompt({
     </form>,
     document.body,
   );
+}
+
+function getPrimaryLabel(
+  loading: ArenaImportLoading,
+  hasPreview: boolean,
+  selectedCount: number,
+): string {
+  if (loading === "import") return "Importing";
+  if (loading === "preview") return "Loading";
+  return hasPreview ? `Import ${selectedCount}` : "Preview";
 }
 
 function buttonStyle(color: string): React.CSSProperties {

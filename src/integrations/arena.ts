@@ -2,6 +2,7 @@ import type { ReferenceImageSource, Size } from "../types";
 
 const ARENA_API_ORIGIN = "https://api.are.na";
 const DEFAULT_PREVIEW_LIMIT = 100;
+const DEFAULT_IMPORT_CONCURRENCY = 6;
 
 interface ArenaImageVersion {
   src?: string;
@@ -95,6 +96,15 @@ export interface ArenaImportResult {
   skipped: number;
 }
 
+export interface ArenaImportImagesResult {
+  images: ArenaImportedImage[];
+  failed: number;
+}
+
+interface ImportArenaImagesOptions {
+  concurrency?: number;
+}
+
 export function parseArenaChannelInput(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) throw new Error("Enter an Are.na channel.");
@@ -178,11 +188,21 @@ export async function previewArenaChannel(
 
 export async function importArenaImages(
   previews: ArenaImagePreview[],
-): Promise<ArenaImportedImage[]> {
-  const attempts = await Promise.all(previews.map(importArenaPreview));
-  return attempts.filter(
+  options: ImportArenaImagesOptions = {},
+): Promise<ArenaImportImagesResult> {
+  const concurrency = Math.max(
+    1,
+    options.concurrency ?? DEFAULT_IMPORT_CONCURRENCY,
+  );
+  const attempts = await mapWithConcurrency(
+    previews,
+    concurrency,
+    importArenaPreview,
+  );
+  const images = attempts.filter(
     (image): image is ArenaImportedImage => image !== null,
   );
+  return { images, failed: previews.length - images.length };
 }
 
 export async function importArenaChannel(
@@ -190,13 +210,32 @@ export async function importArenaChannel(
   options: ArenaImportOptions = {},
 ): Promise<ArenaImportResult> {
   const preview = await previewArenaChannel(input, options);
-  const images = await importArenaImages(preview.images);
+  const { images, failed } = await importArenaImages(preview.images);
 
   return {
     channel: preview.channel,
     images,
-    skipped: preview.images.length - images.length + preview.skipped,
+    skipped: preview.skipped + failed,
   };
+}
+
+async function mapWithConcurrency<T, U>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<U>,
+): Promise<U[]> {
+  if (items.length === 0) return [];
+  const results: U[] = new Array(items.length);
+  let cursor = 0;
+  const workerCount = Math.min(limit, items.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await fn(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
 }
 
 async function fetchArenaJson<T>(path: string, token?: string): Promise<T> {
