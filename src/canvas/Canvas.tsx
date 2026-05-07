@@ -383,11 +383,12 @@ export function Canvas() {
   // ---- Notes (defined before keyboard effect because T uses handleCreateNote) ----
   const handleCreateNote = useCallback(
     (canvasPosition: Point) => {
-      snapshot();
+      // CREATE_NOTE produces its own undo entry via historyReducer; no extra
+      // snapshot needed (matches the createSwatch flow).
       const id = createNote(canvasPosition);
       setEditingNoteId(id);
     },
-    [createNote, snapshot],
+    [createNote],
   );
 
   const handleNoteTextChange = useCallback(
