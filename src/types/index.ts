@@ -70,7 +70,14 @@ export interface ReferenceImage {
   source?: ReferenceImageSource;
 }
 
-export type CanvasObject = Swatch | Ramp | Connection | ReferenceImage;
+export interface Note {
+  id: string;
+  type: "note";
+  text: string;
+  position: Point;
+}
+
+export type CanvasObject = Swatch | Ramp | Connection | ReferenceImage | Note;
 
 export interface ReferenceImageSource {
   provider: "arena";
@@ -179,6 +186,8 @@ export type Action =
         source?: ReferenceImageSource;
       }[];
     }
+  | { type: "CREATE_NOTE"; id?: string; position: Point; text?: string }
+  | { type: "UPDATE_NOTE_TEXT"; id: string; text: string }
 
   // Selection
   | { type: "SELECT"; id: string; additive?: boolean }
