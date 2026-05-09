@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { displayable, oklab as toOklab } from "culori";
-import type { OklchColor, RampStop } from "../src/types";
-import { generateRamp } from "../src/engine/ramp";
+import type { OklchColor, RampSeedExactness, TargetGamut } from "../src/types";
+import { solveRamp } from "../src/engine/ramp";
 import { maxChroma, toHex } from "../src/engine/gamut";
 import {
   GENERATED_FONT_FACE_CSS,
@@ -99,12 +99,22 @@ interface RampComparison {
   metrics: RampMetrics;
 }
 
+interface WassilyContract {
+  targetGamut: TargetGamut;
+  exactness: RampSeedExactness;
+  seedLabel: string;
+  sourceSeedDelta: number;
+  targetSeedDelta: number;
+  fallbackSeedDelta: number | null;
+}
+
 interface FamilyComparison {
   family: TailwindFamily;
   group: "Chromatic" | "Neutral";
   seed: ComparisonSwatch;
   tailwind: RampComparison;
   wassily: RampComparison;
+  wassilyContract: WassilyContract;
   wassilyAnchorLabel: StopLabel;
   seedDelta: number;
   notes: string[];
@@ -279,32 +289,26 @@ function comparisonForColors(colors: readonly OklchColor[]): RampComparison {
   };
 }
 
-function nearestStopToSeed(stops: readonly RampStop[], seed: OklchColor): {
-  label: StopLabel;
-  delta: number;
-} {
-  let best = stops[0];
-  let bestDelta = Infinity;
-  for (const stop of stops) {
-    const delta = labDistance(stop.color, seed);
-    if (delta < bestDelta) {
-      best = stop;
-      bestDelta = delta;
-    }
-  }
-  return { label: best.label as StopLabel, delta: bestDelta };
-}
-
 function buildNotes(
   family: TailwindFamily,
   tailwind: RampComparison,
   wassily: RampComparison,
   wassilyAnchorLabel: StopLabel,
   seedDelta: number,
+  contract: WassilyContract,
 ): string[] {
   const notes: string[] = [];
   if (tailwind.swatches[5].inSrgb === false) {
     notes.push("Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.");
+  }
+  if (contract.exactness === "target-mapped") {
+    notes.push(
+      `Contract: source seed maps to sRGB target (source d=${contract.sourceSeedDelta.toFixed(3)}, target d=${contract.targetSeedDelta.toFixed(3)}).`,
+    );
+  } else if (contract.exactness === "unanchored") {
+    notes.push(
+      `Contract: nearest target stop is not exact (target d=${contract.targetSeedDelta.toFixed(3)}).`,
+    );
   }
   if (wassilyAnchorLabel !== "500") {
     notes.push(`Wassily anchors the seed nearest ${wassilyAnchorLabel}, not 500.`);
@@ -341,17 +345,32 @@ async function buildComparisonData(): Promise<ComparisonData> {
   const families = FAMILY_ORDER.map((family): FamilyComparison => {
     const tailwindColors = tailwindTheme[family];
     const seed = tailwindColors[5];
-    const wassilyStops = generateRamp({
+    const wassilySolved = solveRamp({
       hue: seed.h,
       seedChroma: seed.c,
       seedLightness: seed.l,
       stopCount: 11,
       mode: "opinionated",
     });
+    const wassilyStops = wassilySolved.stops;
     const wassilyColors = wassilyStops.map((stop) => stop.color);
     const tailwind = comparisonForColors(tailwindColors);
     const wassily = comparisonForColors(wassilyColors);
-    const anchor = nearestStopToSeed(wassilyStops, seed);
+    const anchor = {
+      label: wassilySolved.metadata.seedLabel as StopLabel,
+      delta: wassilySolved.metadata.seedDelta.source,
+    };
+    const contract: WassilyContract = {
+      targetGamut: wassilySolved.metadata.targetGamut,
+      exactness: wassilySolved.metadata.exactness,
+      seedLabel: wassilySolved.metadata.seedLabel,
+      sourceSeedDelta: Number(wassilySolved.metadata.seedDelta.source.toFixed(5)),
+      targetSeedDelta: Number(wassilySolved.metadata.seedDelta.target.toFixed(5)),
+      fallbackSeedDelta:
+        wassilySolved.metadata.seedDelta.fallback === undefined
+          ? null
+          : Number(wassilySolved.metadata.seedDelta.fallback.toFixed(5)),
+    };
 
     return {
       family,
@@ -369,9 +388,10 @@ async function buildComparisonData(): Promise<ComparisonData> {
       seed: swatchFromColor("500", seed),
       tailwind,
       wassily,
+      wassilyContract: contract,
       wassilyAnchorLabel: anchor.label,
       seedDelta: Number(anchor.delta.toFixed(5)),
-      notes: buildNotes(family, tailwind, wassily, anchor.label, anchor.delta),
+      notes: buildNotes(family, tailwind, wassily, anchor.label, anchor.delta, contract),
     };
   });
 

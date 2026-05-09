@@ -9,7 +9,7 @@ import {
   parseColor,
 } from "../gamut";
 import { purify, purifyColor, randomPurifiedColor } from "../purify";
-import { generateRamp, nameForHue, uniqueRampName } from "../ramp";
+import { generateRamp, nameForHue, solveRamp, uniqueRampName } from "../ramp";
 import {
   contrastRatio,
   checkContrast,
@@ -233,6 +233,36 @@ describe("ramp generation", () => {
       expect(analysis.lightRamp.gamutViolations).toBe(0);
       expect(analysis.lightRamp.lightness.nonIncreasing).toBe(true);
     }
+  });
+
+  it("solveRamp preserves generateRamp compatibility while reporting sRGB exactness", () => {
+    const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === "bright-lime")!;
+    const config = researchSeedToRampConfig(seed);
+    const solved = solveRamp(config);
+
+    expect(generateRamp(config)).toEqual(solved.stops);
+    expect(solved.metadata.solver).toBe("brand-exact-fair");
+    expect(solved.metadata.targetGamut).toBe("srgb");
+    expect(solved.metadata.seedLabel).toBe(solved.stops[solved.metadata.seedIndex].label);
+    expect(solved.metadata.seedDelta.target).toBeLessThan(1e-6);
+    expect(solved.metadata.seedDelta.source).toBeGreaterThanOrEqual(
+      solved.metadata.seedDelta.target,
+    );
+    expect(["source-exact", "target-mapped"]).toContain(solved.metadata.exactness);
+  });
+
+  it("solveRamp marks pure ramps as unanchored when they do not preserve the seed", () => {
+    const solved = solveRamp({
+      hue: 265,
+      seedChroma: 0.18,
+      seedLightness: 0.47,
+      stopCount: 11,
+      mode: "pure",
+    });
+
+    expect(solved.metadata.solver).toBe("pure");
+    expect(solved.metadata.exactness).toBe("unanchored");
+    expect(solved.metadata.seedDelta.target).toBeGreaterThan(1e-3);
   });
 
   it("opinionated mode gives hard chromatic ramps airy tints and colored ink", () => {

@@ -23,6 +23,39 @@ export interface RampStop {
   darkColor: OklchColor; // dark mode variant
 }
 
+export type TargetGamut = "srgb" | "display-p3" | "dual";
+
+export type RampSeedExactness =
+  | "source-exact"
+  | "target-exact"
+  | "target-mapped"
+  | "fallback-mapped"
+  | "unanchored";
+
+export interface RampSeedDelta {
+  source: number;
+  target: number;
+  fallback?: number;
+}
+
+export interface RampSolveMetadata {
+  solver: string;
+  targetGamut: TargetGamut;
+  seedIndex: number;
+  seedLabel: string;
+  seedFraction: number;
+  exactness: RampSeedExactness;
+  seedDelta: RampSeedDelta;
+  sourceSeed: OklchColor;
+  targetSeed: OklchColor;
+  fallbackSeed?: OklchColor;
+}
+
+export interface RampSolveResult {
+  stops: RampStop[];
+  metadata: RampSolveMetadata;
+}
+
 export interface Ramp {
   id: string;
   type: "ramp";
@@ -127,6 +160,8 @@ export interface RampConfig {
   hue: number;
   stopCount: StopPreset | number;
   mode: "opinionated" | "pure";
+  /** Target gamut for generation and exactness metadata. Current engine supports sRGB. */
+  targetGamut?: TargetGamut;
   /** Seed chroma level. If < 0.05, generates a neutral ramp. */
   seedChroma?: number;
   /** Original seed color lightness — used to calibrate the chroma curve. */

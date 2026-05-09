@@ -6,9 +6,13 @@
  * `pure` remains a simple hue-constant baseline used for comparison.
  */
 
-import type { RampConfig, RampStop, StopPreset } from "../types";
+import type { RampConfig, RampSolveResult, RampStop, StopPreset } from "../types";
 import { clampToGamut, maxChroma } from "./gamut";
 import { solveBrandExactFairRamp } from "./brandExactFairingSolver";
+import {
+  buildRampSolveMetadata,
+  normalizeTargetGamut,
+} from "./rampContract";
 
 const STOP_PRESETS: Record<StopPreset, string[]> = {
   3: ["200", "500", "800"],
@@ -49,9 +53,22 @@ const L_MAX = 0.98;
 const L_MIN = 0.25;
 
 export function generateRamp(config: RampConfig): RampStop[] {
+  return solveRamp(config).stops;
+}
+
+export function solveRamp(config: RampConfig): RampSolveResult {
   const { hue, stopCount, mode } = config;
+  const targetGamut = normalizeTargetGamut(config.targetGamut);
   if (mode === "opinionated") {
-    return solveBrandExactFairRamp(config).stops;
+    const solved = solveBrandExactFairRamp(config);
+    return {
+      stops: solved.stops,
+      metadata: buildRampSolveMetadata(solved.stops, config, {
+        solver: solved.metadata.solver,
+        seedIndex: solved.metadata.seedIndex,
+        targetGamut,
+      }),
+    };
   }
 
   const labels =
@@ -59,9 +76,17 @@ export function generateRamp(config: RampConfig): RampStop[] {
       ? STOP_PRESETS[stopCount as StopPreset]
       : generateCustomLabels(stopCount);
 
-  return labels.map((label, index) =>
+  const stops = labels.map((label, index) =>
     generatePureStop(label, hue, index, labels.length),
   );
+
+  return {
+    stops,
+    metadata: buildRampSolveMetadata(stops, config, {
+      solver: "pure",
+      targetGamut,
+    }),
+  };
 }
 
 function generatePureStop(

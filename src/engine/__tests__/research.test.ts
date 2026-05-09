@@ -108,6 +108,9 @@ describe("research harness", () => {
 
     expect(analysis.seedStopIndex).not.toBeNull();
     expect(analysis.seedDelta).toBeLessThan(1e-6);
+    expect(analysis.targetSeedDelta).toBe(analysis.seedDelta);
+    expect(analysis.sourceSeedDelta).toBeLessThan(1e-6);
+    expect(analysis.fallbackSeedDelta).toBeNull();
     expect(analysis.labels).toHaveLength(11);
     expect(analysis.lightRamp.adjacentDistance.mean).toBeGreaterThan(0);
     expect(Number.isFinite(analysis.lightRamp.adjacentDistance.variance)).toBe(true);

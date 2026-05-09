@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-09T13:04:53.612Z",
+  "generatedAt": "2026-05-09T16:15:38.156Z",
   "tailwindVersion": "4.3.0",
   "tailwindThemeUrl": "https://unpkg.com/tailwindcss@4.3.0/theme.css",
   "summary": {
@@ -323,6 +323,14 @@
           "maxOccupancy": 1.013
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
       "notes": [
@@ -631,10 +639,19 @@
           "maxOccupancy": 1.0028
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "400",
+        "sourceSeedDelta": 0.01984,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "400",
       "seedDelta": 0.01984,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.020, target d=0.000).",
         "Wassily anchors the seed nearest 400, not 500.",
         "Peak chroma shifts from Tailwind 600 to Wassily 400.",
         "Hue drift behavior is materially different.",
@@ -943,10 +960,19 @@
           "maxOccupancy": 1.0004
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "300",
+        "sourceSeedDelta": 0.02153,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "300",
       "seedDelta": 0.02153,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.022, target d=0.000).",
         "Wassily anchors the seed nearest 300, not 500.",
         "Nearest Wassily stop is visibly away from Tailwind 500 (d=0.022).",
         "Peak chroma shifts from Tailwind 400 to Wassily 300.",
@@ -1256,10 +1282,19 @@
           "maxOccupancy": 1.0013
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "300",
+        "sourceSeedDelta": 0.02129,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "300",
       "seedDelta": 0.02129,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.021, target d=0.000).",
         "Wassily anchors the seed nearest 300, not 500.",
         "Nearest Wassily stop is visibly away from Tailwind 500 (d=0.021).",
         "Peak chroma shifts from Tailwind 400 to Wassily 300.",
@@ -1569,10 +1604,19 @@
           "maxOccupancy": 0.9999
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "300",
+        "sourceSeedDelta": 0.02364,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "300",
       "seedDelta": 0.02364,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.024, target d=0.000).",
         "Wassily anchors the seed nearest 300, not 500.",
         "Nearest Wassily stop is visibly away from Tailwind 500 (d=0.024).",
         "Peak chroma shifts from Tailwind 400 to Wassily 300."
@@ -1880,10 +1924,19 @@
           "maxOccupancy": 1.0017
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "400",
+        "sourceSeedDelta": 0.01788,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "400",
       "seedDelta": 0.01788,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.018, target d=0.000).",
         "Wassily anchors the seed nearest 400, not 500.",
         "Peak chroma shifts from Tailwind 500 to Wassily 400."
       ]
@@ -2190,10 +2243,19 @@
           "maxOccupancy": 1.005
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "400",
+        "sourceSeedDelta": 0.01847,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "400",
       "seedDelta": 0.01847,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.018, target d=0.000).",
         "Wassily anchors the seed nearest 400, not 500."
       ]
     },
@@ -2499,10 +2561,19 @@
           "maxOccupancy": 1.0057
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "400",
+        "sourceSeedDelta": 0.01429,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "400",
       "seedDelta": 0.01429,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.014, target d=0.000).",
         "Wassily anchors the seed nearest 400, not 500."
       ]
     },
@@ -2808,10 +2879,19 @@
           "maxOccupancy": 1.0053
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "400",
+        "sourceSeedDelta": 0.01655,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "400",
       "seedDelta": 0.01655,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.017, target d=0.000).",
         "Wassily anchors the seed nearest 400, not 500.",
         "Hue drift behavior is materially different."
       ]
@@ -3118,10 +3198,19 @@
           "maxOccupancy": 1.0018
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "400",
+        "sourceSeedDelta": 0.01873,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "400",
       "seedDelta": 0.01873,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.019, target d=0.000).",
         "Wassily anchors the seed nearest 400, not 500.",
         "Peak chroma shifts from Tailwind 500 to Wassily 400."
       ]
@@ -3428,10 +3517,19 @@
           "maxOccupancy": 1.0044
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0.01021,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0.01021,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.010, target d=0.000).",
         "Peak chroma shifts from Tailwind 600 to Wassily 500.",
         "Hue drift behavior is materially different."
       ]
@@ -3738,10 +3836,19 @@
           "maxOccupancy": 1.0045
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "600",
+        "sourceSeedDelta": 0.00353,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "600",
       "seedDelta": 0.00353,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.004, target d=0.000).",
         "Wassily anchors the seed nearest 600, not 500."
       ]
     },
@@ -4047,10 +4154,19 @@
           "maxOccupancy": 1.0039
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0.01379,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0.01379,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.014, target d=0.000).",
         "Peak chroma shifts from Tailwind 600 to Wassily 500."
       ]
     },
@@ -4356,10 +4472,19 @@
           "maxOccupancy": 1.005
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0.01511,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0.01511,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.015, target d=0.000).",
         "Peak chroma shifts from Tailwind 600 to Wassily 500."
       ]
     },
@@ -4664,6 +4789,14 @@
           "outOfSrgbStops": 0,
           "maxOccupancy": 0.9721
         }
+      },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
       },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
@@ -4970,6 +5103,14 @@
           "outOfSrgbStops": 0,
           "maxOccupancy": 1.0071
         }
+      },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
       },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
@@ -5280,10 +5421,19 @@
           "maxOccupancy": 1.005
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "target-mapped",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0.00225,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0.00225,
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
+        "Contract: source seed maps to sRGB target (source d=0.002, target d=0.000).",
         "Peak chroma shifts from Tailwind 600 to Wassily 500."
       ]
     },
@@ -5588,6 +5738,14 @@
           "outOfSrgbStops": 0,
           "maxOccupancy": 0.23
         }
+      },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
       },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
@@ -5896,6 +6054,14 @@
           "outOfSrgbStops": 0,
           "maxOccupancy": 0.14
         }
+      },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
       },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
@@ -6207,6 +6373,14 @@
           "maxOccupancy": 0.14
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
       "notes": [
@@ -6517,6 +6691,14 @@
           "maxOccupancy": 0
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
       "notes": [
@@ -6824,6 +7006,14 @@
           "outOfSrgbStops": 0,
           "maxOccupancy": 0.1408
         }
+      },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
       },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
@@ -7133,6 +7323,14 @@
           "outOfSrgbStops": 0,
           "maxOccupancy": 0.1962
         }
+      },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "600",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
       },
       "wassilyAnchorLabel": "600",
       "seedDelta": 0,
@@ -7445,6 +7643,14 @@
           "maxOccupancy": 0.2496
         }
       },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
+      },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
       "notes": [
@@ -7752,6 +7958,14 @@
           "outOfSrgbStops": 0,
           "maxOccupancy": 0.22
         }
+      },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
       },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,
@@ -8061,6 +8275,14 @@
           "outOfSrgbStops": 0,
           "maxOccupancy": 0.1895
         }
+      },
+      "wassilyContract": {
+        "targetGamut": "srgb",
+        "exactness": "source-exact",
+        "seedLabel": "500",
+        "sourceSeedDelta": 0,
+        "targetSeedDelta": 0,
+        "fallbackSeedDelta": null
       },
       "wassilyAnchorLabel": "500",
       "seedDelta": 0,

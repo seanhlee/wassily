@@ -589,3 +589,23 @@ motion, dark endpoint usefulness, and highlight identity?"
   `familyProfiles.ts` corpus is not enough.
 - Preserve screenshots or HTML gauntlets for visual review after each solver
   change.
+
+## Implementation Checkpoint: Contract Layer
+
+Date: 2026-05-09
+
+We started the "boring contract first" slice recommended by the independent
+review. The current app-facing `generateRamp()` remains stop-compatible, while
+new `solveRamp()` returns both stops and explicit metadata:
+
+- target gamut, currently guarded to sRGB
+- solver name
+- seed anchor index/label/fraction
+- exactness classification
+- source seed, target seed, and source/target seed deltas
+
+Key observation from the Tailwind comparison: many vivid Tailwind v4 `500`
+seeds are outside sRGB, so Wassily's current "exact" behavior is often
+`target-mapped`: exact to the sRGB-mapped target, not exact to the original P3-ish
+source seed. That makes the next technical question much clearer: implement
+real target-gamut helpers before judging Tailwind-DNA taste.

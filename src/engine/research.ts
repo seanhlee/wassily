@@ -133,6 +133,9 @@ export interface RampAnalysis {
   seed: ResearchSeed | null;
   labels: string[];
   seedStopIndex: number | null;
+  sourceSeedDelta: number | null;
+  targetSeedDelta: number | null;
+  fallbackSeedDelta: number | null;
   seedDelta: number | null;
   seedPlacementImbalance: number | null;
   endpointLight: EndpointStats;
@@ -188,7 +191,11 @@ export function analyzeRamp(
 
   const seedStopIndex =
     displaySeedColor === null ? null : findNearestColorIndex(lightColors, displaySeedColor);
-  const seedDelta =
+  const sourceSeedDelta =
+    seedColor === null || seedStopIndex === null
+      ? null
+      : oklabDistance(lightColors[seedStopIndex], seedColor);
+  const targetSeedDelta =
     displaySeedColor === null || seedStopIndex === null
       ? null
       : oklabDistance(lightColors[seedStopIndex], displaySeedColor);
@@ -197,7 +204,10 @@ export function analyzeRamp(
     seed: seedMeta,
     labels: stops.map((stop) => stop.label),
     seedStopIndex,
-    seedDelta,
+    sourceSeedDelta,
+    targetSeedDelta,
+    fallbackSeedDelta: null,
+    seedDelta: targetSeedDelta,
     seedPlacementImbalance:
       seedStopIndex === null
         ? null
