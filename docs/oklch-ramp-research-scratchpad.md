@@ -6,6 +6,9 @@ This is intentionally messier than a final design memo. Use it to park ideas,
 source links, observations, falsifications, and candidate algorithms as the
 research evolves.
 
+For the distilled architecture direction, see
+[oklch-ramp-synthesis.md](./oklch-ramp-synthesis.md).
+
 ## Core Question
 
 Can Wassily generate Tailwind-level or better UI color ramps from a single seed
@@ -65,6 +68,187 @@ Initial conclusion: Tailwind does not publish a seed-to-ramp algorithm. The
 palette appears to be a curated static corpus. We can learn its path shapes,
 but we should not assume there is a hidden simple formula.
 
+### External Tool Observations
+
+- [oklch.fyi Create](https://oklch.fyi/create)
+  - Useful reference for an approachable OKLCH palette tool. It exposes palette
+    size, target color space, OKLCH controls, CSS export, and WCAG/APCA contrast
+    checks.
+  - Observed behavior: the entered color is not preserved as an exact stop in
+    the generated ramp. The tool appears to treat the input as a set of
+    parameters for a new scale, not as an anchored token.
+  - Current shipped JS indicates this flow:
+    - Convert seed to OKLCH.
+    - Compute `Cmax(seed.l, seed.h, gamut)`.
+    - Store seed chroma as a percentage of that local maximum.
+    - Build a lightness window around the seed: roughly `seed.l - up to 0.4`
+      through `seed.l + up to 0.4`, clamped around `0.05..0.95`.
+    - Sample evenly across that window according to the requested palette size.
+    - At each sampled lightness, set chroma to
+      `seedRelativeChroma * Cmax(sample.l, seed.h, gamut)`.
+  - This explains Sean's annoyance: the output ramp can be smooth and
+    gamut-aware, but the exact seed usually drifts because no stop is constrained
+    to equal the input.
+  - Wassily principle: offer this as a possible "normalize to a scale" mode, but
+    make the default design-token workflow seed-exact. The seed is a contract;
+    neighboring stops should solve around it.
+
+Repo scans on 2026-05-09:
+
+- [meodai/rampensau](https://github.com/meodai/rampensau)
+  - Agent/local read at commit `e328099`: a lightweight TypeScript ramp
+    generator that produces abstract `[hue, saturationOrChroma, lightness]`
+    tuples with independent easing for hue, the middle channel, and lightness.
+  - Core behavior is curve-first, not seed-first: hue comes from either an exact
+    `hueList` entry or a generated hue-cycle formula; the other channels come
+    from eased ranges. There is no full color seed, no OKLab interpolation, and
+    no exact OKLCH token anchor.
+  - OKLCH support is formatting/mapping rather than a true OKLCH solver. The
+    README demo scales the middle channel to OKLCH chroma with `c = s * 0.4`,
+    while the CSS helper emits percentage chroma. That ambiguity is a warning
+    sign for API design: "saturation" and OKLCH chroma should not share a loose
+    channel without very explicit units.
+  - Gamut handling is essentially delegated to the browser or a downstream color
+    library. This is fine for generative art, but not enough for design-token
+    ramps where exactness and output contracts matter.
+  - Lesson for Wassily: borrow the UI/API idea of independent hue/chroma/L
+    easing and transform hooks; do not borrow the underlying color model as a
+    production OKLCH ramp algorithm.
+
+- [royalfig/color-palette-generator](https://github.com/royalfig/color-palette-generator)
+  - Agent/local read at commit `8bd0697`: a broader palette synthesizer using
+    `colorjs.io`, with analogous/triadic/etc. palettes plus a tints-and-shades
+    generator.
+  - The tints-and-shades path is relevant: it defines a 12-step OKLCH lightness
+    progression, finds the closest step to the seed lightness, and replaces that
+    step with the seed lightness. Several modes then generate colors around
+    that base index.
+  - Seed preservation is mostly explicit, but not universal. Standard palette
+    generators preserve the seed at index 0; tints/shades clones the seed at the
+    chosen base index; later modulation and UI semantic modes can move it.
+  - Gamut handling is pragmatic, not surgical: clamp OKLCH `l`/`c` globally,
+    then use `colorjs.io` `toGamut()` for output conversions. It does not appear
+    to solve per-hue/per-lightness chroma maxima or guarantee exactness after
+    gamut mapping.
+  - Lesson for Wassily: the "find closest lightness stop, then insert the seed"
+    pattern is worth keeping. But Wassily should make the seed contract mode
+    explicit and test it through every transform, modulation, and gamut target.
+
+- [meodai/dittoTones](https://github.com/meodai/dittoTones)
+  - Local read at commit `acd656b`: this is the closest conceptual cousin to
+    our Tailwind comparison work. It transforms any color into a full palette by
+    copying the perceptual "DNA" of design systems such as Tailwind, Radix,
+    Shoelace, Flexoki, and Web Awesome.
+  - Core flow:
+    - Parse input to OKLCH.
+    - Find the closest reference ramp stop using Euclidean distance in OKLCH.
+    - If close enough, use that single ramp; otherwise blend two reference
+      ramps in OKLab at each shade.
+    - Rotate the reference ramp to the target hue, optionally preserving hue
+      offsets across stops.
+    - Correct lightness with a piecewise linear function anchored at black,
+      white, and the matched shade, so the matched stop hits the target
+      lightness exactly.
+    - Correct chroma with a ratio/power hybrid: lower-chroma colors avoid being
+      overblown, while highly saturated target colors avoid runaway peaks.
+  - This is seed-exact before optional gamut mapping because the matched shade's
+    L/C/H are solved to the target. However, the optional gamut map is sRGB
+    only (`toGamut("rgb", "oklch")`), so a P3-first mode would need a different
+    target and exactness check.
+  - Lesson for Wassily: a "design-system DNA" mode is highly compatible with
+    our Tailwind research. But we should improve on it by using a more careful
+    distance metric than raw OKLCH Euclidean, supporting P3/sRGB target gamut
+    choices, and keeping anchor exactness after gamut solving when possible.
+
+- [meodai/color-palette-shader](https://github.com/meodai/color-palette-shader)
+  - Local read at commit `52382df`: not a ramp generator. It is a dependency-free
+    WebGL2 palette auditor that maps a palette across perceptual color spaces
+    and colors each pixel by the nearest palette entry.
+  - The interesting output is a perceptual Voronoi view: tiny claimed regions
+    suggest redundant colors; huge regions suggest colors doing too much work;
+    lopsided regions reveal hue/lightness/chroma bias.
+  - Supports many view spaces, including OKHSL/OKHSV, OKLab, OKLCH, toe-corrected
+    OKLab variants, CIELab/LCH D65/D50, and CAM16-UCS D65. Distance metrics
+    include OKLab, toe-corrected OKLab, OK lightness, CIE76/94/2000,
+    Kotsarenko/Ramos, and CAM16-UCS.
+  - Contains useful GLSL implementations of Bjorn Ottosson OKLab, OKHSL/OKHSV,
+    cusp finding, and several gamut-clipping strategies. This is reference
+    material for thinking about gamut, with attribution requirements, not a
+    direct TS ramp engine.
+  - Important nuance from the agent read: the public `gamutClip` option is an
+    audit/display mode that discards out-of-sRGB pixels to reveal the gamut
+    boundary. It does not invoke the perceptual `gamut_clip_*` correction
+    functions. Those functions are implementation reference material, not the
+    current product behavior.
+  - Boundary naming matters: the README says linear sRGB inputs, while the
+    implementation/demo path behaves like gamma-encoded sRGB that is converted
+    to linear for OKLab math. Wassily should be painfully explicit about RGB
+    encoding at API boundaries.
+  - Lesson for Wassily: add a palette-audit view or generated report that shows
+    Tailwind and Wassily ramps as nearest-color regions in OKLCH/OKLab slices.
+    This could quantify "do these stops each earn their keep?" better than
+    adjacent delta tables alone.
+
+- Other meodai color repos surfaced by the account scan:
+  - [pro-color-harmonies](https://github.com/meodai/pro-color-harmonies):
+    OKLCH-first harmony generation from a base color. Agent takeaway: adaptive
+    hue relationships and named perceptual styles are more promising than
+    purely geometric hue rotations.
+  - [pickyPalette](https://github.com/meodai/pickyPalette): interactive palette
+    sculpting using perceptual distance, OKHSL/OKLab defaults, `culori`,
+    `color-palette-shader`, and Token Beam. More tooling than algorithm, but it
+    reinforces that generation space, distance metric, and gamut choice should
+    be separate controls.
+  - [poline](https://github.com/meodai/poline): HSL/coordinate anchor palette
+    generator. Good inspiration for multi-anchor UI and per-axis easing, not a
+    perceptual design-token ramp solver.
+  - [fettepalette](https://github.com/meodai/fettepalette): HSV/HSL curve and
+    hue-shift ramp generator for illustration/pixel-art vibes. Useful for
+    studying expressive hue-shift controls, not for seed-exact OKLCH.
+  - [token-beam](https://github.com/meodai/token-beam): not ramp generation, but
+    highly relevant to output. Keep a normalized internal token model and sync
+    through target-specific adapters with stable token names.
+  - [palette-aldente](https://github.com/meodai/palette-aldente): palette
+    build/export pipeline from JSON/YAML to JS, JSON, SVG, PNG, and app palette
+    formats. Strong reminder to separate generation from packaging/export.
+  - [color-router](https://github.com/meodai/color-router): reactive palette and
+    token dependency graph with refs, computed colors, inheritance, CSS
+    variables, and JSON rendering. Useful pattern for semantic tokens over base
+    ramps, especially cycle/error handling.
+  - [RYBitten](https://github.com/meodai/RYBitten), [spectral.js](https://github.com/meodai/spectral.js),
+    [color-names](https://github.com/meodai/color-names), and
+    [color-name-api](https://github.com/meodai/color-name-api) are adjacent
+    color-knowledge tools. Interesting for creative modes, naming, or labels,
+    but lower priority for Tailwind-like ramps.
+
+Working synthesis from the tool scan:
+
+- Seed handling needs explicit modes:
+  - `seed-exact`: the input color is a contract and one stop must equal it
+    unless the target gamut makes that physically impossible.
+  - `normalize`: the input color describes hue/chroma intent, but the generated
+    scale may move it for smoothness or gamut fit. This is how oklch.fyi appears
+    to behave.
+  - `reference-DNA`: the input seed is matched to a nearby stop in a reference
+    corpus such as Tailwind/Radix, then the reference L/C/hue-offset shape is
+    transformed around the seed. dittoTones is the clearest existing example.
+- Gamut should be a first-class target, not a hidden export side effect:
+  `sRGB-safe`, `P3-vivid`, and possibly `dual` output. The exact seed contract
+  should report whether exactness is source-OKLCH exact, target-gamut exact, or
+  target-gamut mapped.
+- Chroma should be fitted against per-hue/per-lightness gamut envelopes, not a
+  fixed global OKLCH cap. Ottosson cusp/intersection math and Cmax-style tools
+  are the right family of ideas.
+- Beauty is not just uniform distance. Tailwind, dittoTones, and our comparison
+  report all point to semantic body-stop priors, family-specific hue drift, and
+  intentionally uneven dark endpoints.
+- The pipeline should stay decomposed:
+  generation space -> gamut mapping -> audit metric -> export format. Mixing
+  these is how tools become surprising.
+- Useful next audit metrics: seed delta, target-gamut occupancy, adjacent OKLab
+  distance/CV, DeltaE2000 deltas, contrast/APCA trajectory, and nearest-region
+  area from a palette-shader-style view.
+
 Seed fixture for testing all current Tailwind v4 `500` stops in Wassily:
 [tailwind-v4-500-seeds.json](./tailwind-v4-500-seeds.json).
 
@@ -81,6 +265,26 @@ MCP audit workflow added on 2026-05-09:
   values are sometimes outside sRGB, so the source swatches can be kept exact
   in OKLCH, but generated ramps may chroma-compress those seeds unless/ until
   Wassily gains an explicit P3 target-gamut mode.
+
+Generated comparison report added on 2026-05-09:
+
+- [generated Tailwind v4 comparison HTML](./generated/tailwind-v4-comparison.html)
+- [generated Tailwind v4 comparison JSON](./generated/tailwind-v4-comparison.json)
+- Generator: `npm run research:tailwind-comparison`
+
+First quantitative read from the app-facing Wassily engine against Tailwind
+v4.3.0:
+
+- 14 of 26 Tailwind `500` seeds are outside sRGB.
+- Wassily anchors 11 of 26 Tailwind `500` seeds away from `500` when using the
+  current perceptual-budget policy.
+- Biggest seed deltas are warm/cusp and high-chroma families: lime, amber,
+  yellow, orange, sky, emerald, green, cyan.
+- Tailwind is much less uniform by OKLab adjacent distance, but that unevenness
+  is part of its semantic UI palette behavior, especially the `900 -> 950`
+  endpoint and the bright body/highlight shelves.
+- Immediate research implication: "match Tailwind beauty" needs a target-gamut
+  decision and a semantic `500`/body-stop prior, not just smoother spacing.
 
 ### OKLab / OKLCH And Gamut
 
