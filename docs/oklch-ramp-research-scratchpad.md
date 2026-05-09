@@ -661,3 +661,32 @@ Interpretation: this is closer to Tailwind's semantic highlight language, but
 still a bit more conservative in the 100-300 chroma build than Tailwind. That
 may be the right Wassily personality: exact seed, honest gamut, sunny lights,
 less designer-specific exaggeration.
+
+## Implementation Checkpoint: Warm Shelf And Ink Tail
+
+Date: 2026-05-09
+
+Second warm-family pass after visual review:
+
+- keep the top stop airy, but let `100-300` descend soon enough that chroma can
+  actually bloom instead of being crushed by the high-lightness gamut boundary
+- add a warm-ink tail that shifts orange / amber / yellow shadows toward redder
+  earth hues as the ramp darkens
+- keep exact seed anchoring and the continuous-curve baseline isolated
+
+Regenerated P3 comparison:
+
+- Orange now tracks Tailwind closely through the light shelf:
+  - Wassily `100/200/300`: `0.948 0.044 70.9`,
+    `0.898 0.082 67.4`, `0.840 0.123 62.3`
+  - Tailwind `100/200/300`: `0.954 0.038 75.2`,
+    `0.901 0.076 70.7`, `0.837 0.128 66.3`
+- Amber now has a Tailwind-like top and a stronger shelf, but remains more
+  conservative from `200-400`.
+- Yellow now has stronger `200/300` chroma and a much better warm dark tail,
+  though the seed still naturally anchors at `400` in Wassily's current policy.
+
+Interpretation: this feels closer to "same beauty language, Wassily accent."
+The next open taste question is whether amber/yellow should receive a
+Tailwind-DNA body-shelf profile that intentionally prioritizes the `500` label,
+or whether Wassily should keep choosing the seed's perceptual anchor.

@@ -322,6 +322,9 @@ describe("ramp generation", () => {
         targetGamut: "display-p3",
       });
       const top = solved.stops[0].color;
+      const stop200 = solved.stops.find((stop) => stop.label === "200")!.color;
+      const stop900 = solved.stops.find((stop) => stop.label === "900")!.color;
+      const stop950 = solved.stops.find((stop) => stop.label === "950")!.color;
       const seedStop = solved.stops[solved.metadata.seedIndex].color;
 
       expect(solved.metadata.exactness).toBe("source-exact");
@@ -334,6 +337,11 @@ describe("ramp generation", () => {
       expect(top.c).toBeLessThan(seed.seedChroma * 0.2);
       expect(top.h).toBeGreaterThan(seed.hue);
       expect(circularHueDistance(top.h, seed.hue)).toBeGreaterThan(10);
+      expect(stop200.c).toBeGreaterThan(seed.seedChroma * 0.35);
+      expect(stop900.c).toBeGreaterThan(seed.seedChroma * 0.5);
+      expect(stop950.c).toBeGreaterThan(seed.seedChroma * 0.33);
+      expect(stop900.h).toBeLessThan(seed.hue);
+      expect(circularHueDistance(stop900.h, seed.hue)).toBeGreaterThan(8);
     }
   });
 

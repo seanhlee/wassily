@@ -95,10 +95,12 @@ function warmBodyHighlightWeight(
   seed: OklchColor,
   targetGamut: ColorGamut,
 ): number {
-  const orangeWeight = clamp(1 - hueDistance(seed.h, 50) / 22, 0, 1);
-  const amberWeight = clamp(1 - hueDistance(seed.h, 72) / 28, 0, 1);
-  const yellowWeight = clamp(1 - hueDistance(seed.h, 90) / 28, 0, 1);
+  const hue = normalizeHue(seed.h);
+  const orangeWeight = clamp(1 - hueDistance(seed.h, 48) / 28, 0, 1);
+  const amberWeight = clamp(1 - hueDistance(seed.h, 70) / 32, 0, 1);
+  const yellowWeight = clamp(1 - hueDistance(seed.h, 86) / 34, 0, 1);
   const hueWeight = Math.max(orangeWeight, amberWeight, yellowWeight);
+  const warmRangeGate = smoothstep(34, 45, hue) * (1 - smoothstep(98, 110, hue));
   const intensityWeight = Math.max(
     clamp((relativeChroma(seed, targetGamut) - 0.48) / 0.28, 0, 1),
     clamp((seed.c - 0.1) / 0.08, 0, 1),
@@ -107,7 +109,7 @@ function warmBodyHighlightWeight(
     clamp((seed.l - 0.58) / 0.13, 0, 1) *
     clamp((0.89 - seed.l) / 0.1, 0, 1);
 
-  return hueWeight * intensityWeight * bodyLightnessWeight;
+  return hueWeight * warmRangeGate * intensityWeight * bodyLightnessWeight;
 }
 
 function warmShoulderHue(seedHue: number): number {
@@ -127,9 +129,9 @@ function warmHighlightPrior(
 
   const yellowness = smoothstep(50, 92, normalizeHue(seed.h));
   const h = warmShoulderHue(seed.h);
-  const l = lerp(0.982, 0.988, yellowness);
-  const seedRatio = lerp(0.08, 0.15, yellowness);
-  const occupancy = lerp(0.7, 0.84, yellowness);
+  const l = lerp(0.984, 0.99, yellowness);
+  const seedRatio = lerp(0.12, 0.145, yellowness);
+  const occupancy = lerp(0.86, 0.9, yellowness);
   const c = Math.min(seed.c * seedRatio, maxChroma(l, h, targetGamut) * occupancy);
 
   return {
@@ -148,10 +150,12 @@ function warmHighlightColor(
 ): OklchColor {
   const progress = clamp(linearProgress, 0, 1);
   const shelfExponent =
-    seedIndex <= 3
-      ? lerp(3.1, 3.55, prior.yellowness)
-      : lerp(1.9, 2.25, prior.yellowness);
-  const chromaExponent = lerp(1.6, 1.32, prior.yellowness);
+    seedIndex >= 5
+      ? lerp(1.32, 1.55, prior.yellowness)
+      : seedIndex <= 3
+      ? lerp(3.3, 3.75, prior.yellowness)
+      : lerp(1.75, 2.35, prior.yellowness);
+  const chromaExponent = lerp(1.18, 0.55, prior.yellowness);
   const hueExponent = lerp(1.75, 2.25, prior.yellowness);
 
   return clampToGamut({
@@ -163,6 +167,42 @@ function warmHighlightColor(
     c: Math.max(0, lerp(prior.endpoint.c, seed.c, progress ** chromaExponent)),
     h: mixHue(prior.endpoint.h, seed.h, progress ** hueExponent),
   }, targetGamut);
+}
+
+function warmDarkInkColor(
+  seed: OklchColor,
+  prior: WarmHighlightPrior,
+  normalColor: OklchColor,
+  linearProgress: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const tailHue = normalizeHue(seed.h - lerp(10, 33, prior.yellowness));
+  const hue = mixHue(
+    seed.h,
+    tailHue,
+    smoothstep(0.04, lerp(0.42, 0.78, prior.yellowness ** 2), progress),
+  );
+  const tailLightness = lerp(0.272, 0.286, prior.yellowness);
+  const lightnessExponent = lerp(1.18, 1.65, smoothstep(0.55, 0.9, progress));
+  const l = Math.max(
+    normalColor.l,
+    lerp(seed.l, tailLightness, progress ** lightnessExponent),
+  );
+  const seedOccupancy = relativeChroma(seed, targetGamut);
+  const tailOccupancy = lerp(0.8, 0.86, prior.yellowness);
+  const occupancy = lerp(
+    Math.min(seedOccupancy * 0.98, 1),
+    tailOccupancy,
+    progress ** 1.25,
+  );
+  const chromaFade = lerp(0.38, 0.56, prior.yellowness);
+  const c = Math.min(
+    seed.c * (1 - chromaFade * progress ** 1.55),
+    maxChroma(l, hue, targetGamut) * occupancy,
+  );
+
+  return clampToGamut({ l, c: Math.max(0, c), h: hue }, targetGamut);
 }
 
 function pairwiseDistances(stops: readonly RampStop[]): number[] {
@@ -273,6 +313,21 @@ function fairVisibleStops(
       const progress =
         lastIndex <= seedIndex ? 1 : (index - seedIndex) / (lastIndex - seedIndex);
       color = colorFromLab(lerpLab(seedLab, darkEndpoint, progress), exactSeed.h, targetGamut);
+      if (warmPrior) {
+        color = mixColorsInLab(
+          color,
+          warmDarkInkColor(
+            exactSeed,
+            warmPrior,
+            color,
+            progress,
+            targetGamut,
+          ),
+          warmPrior.weight * smoothstep(0.02, 0.45, progress),
+          exactSeed.h,
+          targetGamut,
+        );
+      }
     }
 
     return {
