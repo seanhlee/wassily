@@ -311,10 +311,12 @@ function buildNotes(
     );
   }
   if (wassilyAnchorLabel !== "500") {
-    notes.push(`Wassily anchors the seed nearest ${wassilyAnchorLabel}, not 500.`);
+    notes.push(`Wassily's reported seed anchor is ${wassilyAnchorLabel}, not 500.`);
   }
   if (seedDelta > 0.02) {
-    notes.push(`Nearest Wassily stop is visibly away from Tailwind 500 (d=${seedDelta.toFixed(3)}).`);
+    notes.push(
+      `Reported Wassily anchor is visibly away from the Tailwind 500 source seed (d=${seedDelta.toFixed(3)}).`,
+    );
   }
   if (tailwind.metrics.peakChromaLabel !== wassily.metrics.peakChromaLabel) {
     notes.push(
@@ -798,7 +800,7 @@ ${GENERATED_FONT_FACE_CSS}
       <p class="lede">
         Tailwind rows use the full static Tailwind CSS ${data.tailwindVersion} OKLCH palette.
         Wassily rows are generated from each Tailwind <span class="mono">500</span> seed using the app-facing opinionated ramp engine.
-        The outlined stop marks Tailwind <span class="mono">500</span> or the nearest Wassily stop to that source seed.
+        The outlined stop marks Tailwind <span class="mono">500</span> or Wassily's reported seed anchor for the current target-gamut contract.
       </p>
     </header>
 

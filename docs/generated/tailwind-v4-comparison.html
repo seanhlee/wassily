@@ -283,7 +283,7 @@
       <p class="lede">
         Tailwind rows use the full static Tailwind CSS 4.3.0 OKLCH palette.
         Wassily rows are generated from each Tailwind <span class="mono">500</span> seed using the app-facing opinionated ramp engine.
-        The outlined stop marks Tailwind <span class="mono">500</span> or the nearest Wassily stop to that source seed.
+        The outlined stop marks Tailwind <span class="mono">500</span> or Wassily's reported seed anchor for the current target-gamut contract.
       </p>
     </header>
 
@@ -876,7 +876,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.020, target d=0.000).</li><li>Wassily anchors the seed nearest 400, not 500.</li><li>Peak chroma shifts from Tailwind 600 to Wassily 400.</li><li>Hue drift behavior is materially different.</li><li>Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.020, target d=0.000).</li><li>Wassily's reported seed anchor is 400, not 500.</li><li>Peak chroma shifts from Tailwind 600 to Wassily 400.</li><li>Hue drift behavior is materially different.</li><li>Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan.</li></ul>
     </article>
 
     <article class="family-card" id="amber">
@@ -1138,7 +1138,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.022, target d=0.000).</li><li>Wassily anchors the seed nearest 300, not 500.</li><li>Nearest Wassily stop is visibly away from Tailwind 500 (d=0.022).</li><li>Peak chroma shifts from Tailwind 400 to Wassily 300.</li><li>Hue drift behavior is materially different.</li><li>Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.022, target d=0.000).</li><li>Wassily's reported seed anchor is 300, not 500.</li><li>Reported Wassily anchor is visibly away from the Tailwind 500 source seed (d=0.022).</li><li>Peak chroma shifts from Tailwind 400 to Wassily 300.</li><li>Hue drift behavior is materially different.</li><li>Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan.</li></ul>
     </article>
 
     <article class="family-card" id="yellow">
@@ -1400,7 +1400,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.021, target d=0.000).</li><li>Wassily anchors the seed nearest 300, not 500.</li><li>Nearest Wassily stop is visibly away from Tailwind 500 (d=0.021).</li><li>Peak chroma shifts from Tailwind 400 to Wassily 300.</li><li>Hue drift behavior is materially different.</li><li>Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.021, target d=0.000).</li><li>Wassily's reported seed anchor is 300, not 500.</li><li>Reported Wassily anchor is visibly away from the Tailwind 500 source seed (d=0.021).</li><li>Peak chroma shifts from Tailwind 400 to Wassily 300.</li><li>Hue drift behavior is materially different.</li><li>Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan.</li></ul>
     </article>
 
     <article class="family-card" id="lime">
@@ -1662,7 +1662,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.024, target d=0.000).</li><li>Wassily anchors the seed nearest 300, not 500.</li><li>Nearest Wassily stop is visibly away from Tailwind 500 (d=0.024).</li><li>Peak chroma shifts from Tailwind 400 to Wassily 300.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.024, target d=0.000).</li><li>Wassily's reported seed anchor is 300, not 500.</li><li>Reported Wassily anchor is visibly away from the Tailwind 500 source seed (d=0.024).</li><li>Peak chroma shifts from Tailwind 400 to Wassily 300.</li></ul>
     </article>
 
     <article class="family-card" id="green">
@@ -1924,7 +1924,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.018, target d=0.000).</li><li>Wassily anchors the seed nearest 400, not 500.</li><li>Peak chroma shifts from Tailwind 500 to Wassily 400.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.018, target d=0.000).</li><li>Wassily's reported seed anchor is 400, not 500.</li><li>Peak chroma shifts from Tailwind 500 to Wassily 400.</li></ul>
     </article>
 
     <article class="family-card" id="emerald">
@@ -2186,7 +2186,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.018, target d=0.000).</li><li>Wassily anchors the seed nearest 400, not 500.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.018, target d=0.000).</li><li>Wassily's reported seed anchor is 400, not 500.</li></ul>
     </article>
 
     <article class="family-card" id="teal">
@@ -2448,7 +2448,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.014, target d=0.000).</li><li>Wassily anchors the seed nearest 400, not 500.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.014, target d=0.000).</li><li>Wassily's reported seed anchor is 400, not 500.</li></ul>
     </article>
 
     <article class="family-card" id="cyan">
@@ -2710,7 +2710,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.017, target d=0.000).</li><li>Wassily anchors the seed nearest 400, not 500.</li><li>Hue drift behavior is materially different.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.017, target d=0.000).</li><li>Wassily's reported seed anchor is 400, not 500.</li><li>Hue drift behavior is materially different.</li></ul>
     </article>
 
     <article class="family-card" id="sky">
@@ -2972,7 +2972,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.019, target d=0.000).</li><li>Wassily anchors the seed nearest 400, not 500.</li><li>Peak chroma shifts from Tailwind 500 to Wassily 400.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.019, target d=0.000).</li><li>Wassily's reported seed anchor is 400, not 500.</li><li>Peak chroma shifts from Tailwind 500 to Wassily 400.</li></ul>
     </article>
 
     <article class="family-card" id="blue">
@@ -3496,7 +3496,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.004, target d=0.000).</li><li>Wassily anchors the seed nearest 600, not 500.</li></ul>
+      <ul class="notes"><li>Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.</li><li>Contract: source seed maps to sRGB target (source d=0.004, target d=0.000).</li><li>Wassily's reported seed anchor is 600, not 500.</li></ul>
     </article>
 
     <article class="family-card" id="violet">
@@ -6381,7 +6381,7 @@
         </div>
       </section>
 
-      <ul class="notes"><li>Wassily anchors the seed nearest 600, not 500.</li><li>Peak chroma shifts from Tailwind 500 to Wassily 600.</li><li>Light endpoint differs by 0.030 L.</li><li>Hue drift behavior is materially different.</li></ul>
+      <ul class="notes"><li>Wassily's reported seed anchor is 600, not 500.</li><li>Peak chroma shifts from Tailwind 500 to Wassily 600.</li><li>Light endpoint differs by 0.030 L.</li><li>Hue drift behavior is materially different.</li></ul>
     </article>
 
     <article class="family-card" id="olive">
@@ -7172,7 +7172,7 @@
 
 
     <footer>
-      Generated 2026-05-09T16:15:38.156Z from https://unpkg.com/tailwindcss@4.3.0/theme.css.
+      Generated 2026-05-09T19:04:48.768Z from https://unpkg.com/tailwindcss@4.3.0/theme.css.
       Tailwind swatches marked P3 are outside sRGB according to the local sRGB gamut check.
     </footer>
   </body>

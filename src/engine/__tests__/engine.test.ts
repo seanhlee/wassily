@@ -251,6 +251,25 @@ describe("ramp generation", () => {
     expect(["source-exact", "target-mapped"]).toContain(solved.metadata.exactness);
   });
 
+  it("guards planned non-sRGB target gamuts until they are implemented", () => {
+    const config = {
+      hue: 130,
+      seedChroma: 0.24,
+      seedLightness: 0.72,
+      stopCount: 11,
+      mode: "opinionated",
+    } as const;
+
+    for (const targetGamut of ["display-p3", "dual"] as const) {
+      expect(() => solveRamp({ ...config, targetGamut })).toThrow(
+        /planned but not implemented/,
+      );
+      expect(() => generateRamp({ ...config, targetGamut })).toThrow(
+        /planned but not implemented/,
+      );
+    }
+  });
+
   it("solveRamp marks pure ramps as unanchored when they do not preserve the seed", () => {
     const solved = solveRamp({
       hue: 265,

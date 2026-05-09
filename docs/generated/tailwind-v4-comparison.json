@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-09T16:15:38.156Z",
+  "generatedAt": "2026-05-09T19:04:48.768Z",
   "tailwindVersion": "4.3.0",
   "tailwindThemeUrl": "https://unpkg.com/tailwindcss@4.3.0/theme.css",
   "summary": {
@@ -652,7 +652,7 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.020, target d=0.000).",
-        "Wassily anchors the seed nearest 400, not 500.",
+        "Wassily's reported seed anchor is 400, not 500.",
         "Peak chroma shifts from Tailwind 600 to Wassily 400.",
         "Hue drift behavior is materially different.",
         "Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan."
@@ -973,8 +973,8 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.022, target d=0.000).",
-        "Wassily anchors the seed nearest 300, not 500.",
-        "Nearest Wassily stop is visibly away from Tailwind 500 (d=0.022).",
+        "Wassily's reported seed anchor is 300, not 500.",
+        "Reported Wassily anchor is visibly away from the Tailwind 500 source seed (d=0.022).",
         "Peak chroma shifts from Tailwind 400 to Wassily 300.",
         "Hue drift behavior is materially different.",
         "Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan."
@@ -1295,8 +1295,8 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.021, target d=0.000).",
-        "Wassily anchors the seed nearest 300, not 500.",
-        "Nearest Wassily stop is visibly away from Tailwind 500 (d=0.021).",
+        "Wassily's reported seed anchor is 300, not 500.",
+        "Reported Wassily anchor is visibly away from the Tailwind 500 source seed (d=0.021).",
         "Peak chroma shifts from Tailwind 400 to Wassily 300.",
         "Hue drift behavior is materially different.",
         "Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan."
@@ -1617,8 +1617,8 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.024, target d=0.000).",
-        "Wassily anchors the seed nearest 300, not 500.",
-        "Nearest Wassily stop is visibly away from Tailwind 500 (d=0.024).",
+        "Wassily's reported seed anchor is 300, not 500.",
+        "Reported Wassily anchor is visibly away from the Tailwind 500 source seed (d=0.024).",
         "Peak chroma shifts from Tailwind 400 to Wassily 300."
       ]
     },
@@ -1937,7 +1937,7 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.018, target d=0.000).",
-        "Wassily anchors the seed nearest 400, not 500.",
+        "Wassily's reported seed anchor is 400, not 500.",
         "Peak chroma shifts from Tailwind 500 to Wassily 400."
       ]
     },
@@ -2256,7 +2256,7 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.018, target d=0.000).",
-        "Wassily anchors the seed nearest 400, not 500."
+        "Wassily's reported seed anchor is 400, not 500."
       ]
     },
     {
@@ -2574,7 +2574,7 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.014, target d=0.000).",
-        "Wassily anchors the seed nearest 400, not 500."
+        "Wassily's reported seed anchor is 400, not 500."
       ]
     },
     {
@@ -2892,7 +2892,7 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.017, target d=0.000).",
-        "Wassily anchors the seed nearest 400, not 500.",
+        "Wassily's reported seed anchor is 400, not 500.",
         "Hue drift behavior is materially different."
       ]
     },
@@ -3211,7 +3211,7 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.019, target d=0.000).",
-        "Wassily anchors the seed nearest 400, not 500.",
+        "Wassily's reported seed anchor is 400, not 500.",
         "Peak chroma shifts from Tailwind 500 to Wassily 400."
       ]
     },
@@ -3849,7 +3849,7 @@
       "notes": [
         "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
         "Contract: source seed maps to sRGB target (source d=0.004, target d=0.000).",
-        "Wassily anchors the seed nearest 600, not 500."
+        "Wassily's reported seed anchor is 600, not 500."
       ]
     },
     {
@@ -7335,7 +7335,7 @@
       "wassilyAnchorLabel": "600",
       "seedDelta": 0,
       "notes": [
-        "Wassily anchors the seed nearest 600, not 500.",
+        "Wassily's reported seed anchor is 600, not 500.",
         "Peak chroma shifts from Tailwind 500 to Wassily 600.",
         "Light endpoint differs by 0.030 L.",
         "Hue drift behavior is materially different."
