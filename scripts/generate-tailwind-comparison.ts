@@ -1,9 +1,15 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { displayable, oklab as toOklab } from "culori";
-import type { OklchColor, RampSeedExactness, TargetGamut } from "../src/types";
+import { oklab as toOklab } from "culori";
+import type {
+  ColorGamut,
+  OklchColor,
+  RampSeedExactness,
+  RampSolveResult,
+  TargetGamut,
+} from "../src/types";
 import { solveRamp } from "../src/engine/ramp";
-import { maxChroma, toHex } from "../src/engine/gamut";
+import { isInGamut, maxChroma, toHex } from "../src/engine/gamut";
 import {
   GENERATED_FONT_FACE_CSS,
   GENERATED_TEXT_FONT,
@@ -61,6 +67,7 @@ const FAMILY_ORDER = [
 
 type StopLabel = (typeof STOP_LABELS)[number];
 type TailwindFamily = (typeof FAMILY_ORDER)[number];
+type WassilyVariantKey = "srgb" | "p3" | "dualFallback";
 
 interface ComparisonSwatch {
   label: StopLabel;
@@ -71,6 +78,7 @@ interface ComparisonSwatch {
   c: number;
   h: number;
   inSrgb: boolean;
+  inP3: boolean;
   occupancy: number | null;
 }
 
@@ -91,6 +99,7 @@ interface RampMetrics {
   spacingCv: number;
   worstAdjacentRatio: number;
   outOfSrgbStops: number;
+  outOfP3Stops: number;
   maxOccupancy: number | null;
 }
 
@@ -101,6 +110,8 @@ interface RampComparison {
 
 interface WassilyContract {
   targetGamut: TargetGamut;
+  fallbackGamut: ColorGamut | null;
+  fallbackPolicy: string;
   exactness: RampSeedExactness;
   seedLabel: string;
   sourceSeedDelta: number;
@@ -108,16 +119,22 @@ interface WassilyContract {
   fallbackSeedDelta: number | null;
 }
 
+interface WassilyVariant {
+  key: WassilyVariantKey;
+  label: string;
+  comparison: RampComparison;
+  contract: WassilyContract;
+  anchorLabel: StopLabel;
+  seedDelta: number;
+  notes: string[];
+}
+
 interface FamilyComparison {
   family: TailwindFamily;
   group: "Chromatic" | "Neutral";
   seed: ComparisonSwatch;
   tailwind: RampComparison;
-  wassily: RampComparison;
-  wassilyContract: WassilyContract;
-  wassilyAnchorLabel: StopLabel;
-  seedDelta: number;
-  notes: string[];
+  wassily: Record<WassilyVariantKey, WassilyVariant>;
 }
 
 interface ComparisonData {
@@ -129,12 +146,18 @@ interface ComparisonData {
     chromaticCount: number;
     neutralCount: number;
     tailwindOutOfSrgb500Count: number;
-    wassilyNon500AnchorCount: number;
-    averageSeedDelta: number;
-    largestSeedDelta: { family: string; delta: number };
-    anchorCounts: Record<string, number>;
+    tailwindOutOfP3500Count: number;
+    wassily: Record<WassilyVariantKey, ModeSummary>;
   };
   families: FamilyComparison[];
+}
+
+interface ModeSummary {
+  non500AnchorCount: number;
+  averageSeedDelta: number;
+  largestSeedDelta: { family: string; delta: number };
+  anchorCounts: Record<string, number>;
+  exactnessCounts: Record<string, number>;
 }
 
 function normalizeHue(hue: number): number {
@@ -220,13 +243,17 @@ function formatCssOklch(color: OklchColor): string {
   return `oklch(${(color.l * 100).toFixed(1)}% ${color.c.toFixed(3)} ${color.h.toFixed(3)})`;
 }
 
-function occupancy(color: OklchColor): number | null {
-  const available = maxChroma(color.l, color.h);
+function occupancy(color: OklchColor, targetGamut: ColorGamut): number | null {
+  const available = maxChroma(color.l, color.h, targetGamut);
   return available > 1e-9 ? color.c / available : null;
 }
 
-function swatchFromColor(label: StopLabel, color: OklchColor): ComparisonSwatch {
-  const occ = occupancy(color);
+function swatchFromColor(
+  label: StopLabel,
+  color: OklchColor,
+  occupancyGamut: ColorGamut = "srgb",
+): ComparisonSwatch {
+  const occ = occupancy(color, occupancyGamut);
   return {
     label,
     css: formatCssOklch(color),
@@ -235,14 +262,18 @@ function swatchFromColor(label: StopLabel, color: OklchColor): ComparisonSwatch 
     l: Number(color.l.toFixed(4)),
     c: Number(color.c.toFixed(4)),
     h: Number(color.h.toFixed(3)),
-    inSrgb: displayable({ mode: "oklch", ...color }),
+    inSrgb: isInGamut(color),
+    inP3: isInGamut(color, "display-p3"),
     occupancy: occ === null ? null : Number(occ.toFixed(4)),
   };
 }
 
-function metricsForColors(colors: readonly OklchColor[]): RampMetrics {
+function metricsForColors(
+  colors: readonly OklchColor[],
+  occupancyGamut: ColorGamut,
+): RampMetrics {
   const swatches = colors.map((color, index) =>
-    swatchFromColor(STOP_LABELS[index], color),
+    swatchFromColor(STOP_LABELS[index], color, occupancyGamut),
   );
   const peakIndex = colors.reduce(
     (bestIndex, color, index) => (color.c > colors[bestIndex].c ? index : bestIndex),
@@ -275,31 +306,98 @@ function metricsForColors(colors: readonly OklchColor[]): RampMetrics {
       (Math.max(...distances) / Math.max(Math.min(...distances), 1e-9)).toFixed(4),
     ),
     outOfSrgbStops: swatches.filter((swatch) => !swatch.inSrgb).length,
+    outOfP3Stops: swatches.filter((swatch) => !swatch.inP3).length,
     maxOccupancy:
       occupancies.length === 0 ? null : Number(Math.max(...occupancies).toFixed(4)),
   };
 }
 
-function comparisonForColors(colors: readonly OklchColor[]): RampComparison {
+function comparisonForColors(
+  colors: readonly OklchColor[],
+  occupancyGamut: ColorGamut,
+): RampComparison {
   return {
     swatches: colors.map((color, index) =>
-      swatchFromColor(STOP_LABELS[index], color),
+      swatchFromColor(STOP_LABELS[index], color, occupancyGamut),
     ),
-    metrics: metricsForColors(colors),
+    metrics: metricsForColors(colors, occupancyGamut),
+  };
+}
+
+function familyGroup(family: TailwindFamily): "Chromatic" | "Neutral" {
+  return family === "slate" ||
+    family === "gray" ||
+    family === "zinc" ||
+    family === "neutral" ||
+    family === "stone" ||
+    family === "mauve" ||
+    family === "olive" ||
+    family === "mist" ||
+    family === "taupe"
+    ? "Neutral"
+    : "Chromatic";
+}
+
+function buildContract(solved: RampSolveResult): WassilyContract {
+  return {
+    targetGamut: solved.metadata.targetGamut,
+    fallbackGamut: solved.metadata.fallbackGamut ?? null,
+    fallbackPolicy: solved.metadata.fallbackPolicy,
+    exactness: solved.metadata.exactness,
+    seedLabel: solved.metadata.seedLabel,
+    sourceSeedDelta: Number(solved.metadata.seedDelta.source.toFixed(5)),
+    targetSeedDelta: Number(solved.metadata.seedDelta.target.toFixed(5)),
+    fallbackSeedDelta:
+      solved.metadata.seedDelta.fallback === undefined
+        ? null
+        : Number(solved.metadata.seedDelta.fallback.toFixed(5)),
+  };
+}
+
+function buildWassilyVariant(
+  key: WassilyVariantKey,
+  label: string,
+  solved: RampSolveResult,
+  seed: OklchColor,
+  colors: readonly OklchColor[],
+  occupancyGamut: ColorGamut,
+  family: TailwindFamily,
+  tailwind: RampComparison,
+): WassilyVariant {
+  const anchorLabel = solved.metadata.seedLabel as StopLabel;
+  const anchorIndex = solved.metadata.seedIndex;
+  const seedDelta = labDistance(colors[anchorIndex], seed);
+  const comparison = comparisonForColors(colors, occupancyGamut);
+  const variant: Omit<WassilyVariant, "notes"> = {
+    key,
+    label,
+    comparison,
+    contract: buildContract(solved),
+    anchorLabel,
+    seedDelta: Number(seedDelta.toFixed(5)),
+  };
+
+  return {
+    ...variant,
+    notes: buildNotes(family, tailwind, variant),
   };
 }
 
 function buildNotes(
   family: TailwindFamily,
   tailwind: RampComparison,
-  wassily: RampComparison,
-  wassilyAnchorLabel: StopLabel,
-  seedDelta: number,
-  contract: WassilyContract,
+  variant: Omit<WassilyVariant, "notes">,
 ): string[] {
   const notes: string[] = [];
-  if (tailwind.swatches[5].inSrgb === false) {
+  const { comparison, anchorLabel, seedDelta, contract, key } = variant;
+  if (key === "srgb" && tailwind.swatches[5].inSrgb === false) {
     notes.push("Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.");
+  }
+  if (key === "p3" && tailwind.swatches[5].inP3 && contract.exactness === "source-exact") {
+    notes.push("P3 target preserves the Tailwind 500 source seed exactly.");
+  }
+  if (key === "dualFallback") {
+    notes.push("Dual fallback is sRGB mapped from the P3 target ramp, not separately solved.");
   }
   if (contract.exactness === "target-mapped") {
     notes.push(
@@ -310,31 +408,67 @@ function buildNotes(
       `Contract: nearest target stop is not exact (target d=${contract.targetSeedDelta.toFixed(3)}).`,
     );
   }
-  if (wassilyAnchorLabel !== "500") {
-    notes.push(`Wassily's reported seed anchor is ${wassilyAnchorLabel}, not 500.`);
+  if (anchorLabel !== "500") {
+    notes.push(`Wassily's reported seed anchor is ${anchorLabel}, not 500.`);
   }
   if (seedDelta > 0.02) {
     notes.push(
-      `Reported Wassily anchor is visibly away from the Tailwind 500 source seed (d=${seedDelta.toFixed(3)}).`,
+      `Row anchor is visibly away from the Tailwind 500 source seed (d=${seedDelta.toFixed(3)}).`,
     );
   }
-  if (tailwind.metrics.peakChromaLabel !== wassily.metrics.peakChromaLabel) {
+  if (tailwind.metrics.peakChromaLabel !== comparison.metrics.peakChromaLabel) {
     notes.push(
-      `Peak chroma shifts from Tailwind ${tailwind.metrics.peakChromaLabel} to Wassily ${wassily.metrics.peakChromaLabel}.`,
+      `Peak chroma shifts from Tailwind ${tailwind.metrics.peakChromaLabel} to ${variant.label} ${comparison.metrics.peakChromaLabel}.`,
     );
   }
-  if (Math.abs(tailwind.metrics.l50 - wassily.metrics.l50) > 0.03) {
+  if (Math.abs(tailwind.metrics.l50 - comparison.metrics.l50) > 0.03) {
     notes.push(
-      `Light endpoint differs by ${Math.abs(tailwind.metrics.l50 - wassily.metrics.l50).toFixed(3)} L.`,
+      `Light endpoint differs by ${Math.abs(tailwind.metrics.l50 - comparison.metrics.l50).toFixed(3)} L.`,
     );
   }
-  if (Math.abs(tailwind.metrics.hueDrift50To950 - wassily.metrics.hueDrift50To950) > 12) {
+  if (Math.abs(tailwind.metrics.hueDrift50To950 - comparison.metrics.hueDrift50To950) > 12) {
     notes.push("Hue drift behavior is materially different.");
   }
-  if (family === "orange" || family === "amber" || family === "yellow") {
+  if ((family === "orange" || family === "amber" || family === "yellow") && key !== "dualFallback") {
     notes.push("Inspect highlight identity: Tailwind trends sunny/yellow; Wassily may trend peach/tan.");
   }
   return notes;
+}
+
+function summarizeMode(
+  families: readonly FamilyComparison[],
+  key: WassilyVariantKey,
+): ModeSummary {
+  const variants = families.map((family) => ({
+    family: family.family,
+    variant: family.wassily[key],
+  }));
+  const anchorCounts = variants.reduce<Record<string, number>>((counts, entry) => {
+    counts[entry.variant.anchorLabel] = (counts[entry.variant.anchorLabel] ?? 0) + 1;
+    return counts;
+  }, {});
+  const exactnessCounts = variants.reduce<Record<string, number>>((counts, entry) => {
+    counts[entry.variant.contract.exactness] =
+      (counts[entry.variant.contract.exactness] ?? 0) + 1;
+    return counts;
+  }, {});
+  const largest = variants.reduce(
+    (best, entry) =>
+      entry.variant.seedDelta > best.delta
+        ? { family: entry.family, delta: entry.variant.seedDelta }
+        : best,
+    { family: "", delta: -Infinity },
+  );
+
+  return {
+    non500AnchorCount: variants.filter((entry) => entry.variant.anchorLabel !== "500").length,
+    averageSeedDelta: Number(
+      average(variants.map((entry) => entry.variant.seedDelta)).toFixed(5),
+    ),
+    largestSeedDelta: largest,
+    anchorCounts,
+    exactnessCounts,
+  };
 }
 
 async function buildComparisonData(): Promise<ComparisonData> {
@@ -347,64 +481,61 @@ async function buildComparisonData(): Promise<ComparisonData> {
   const families = FAMILY_ORDER.map((family): FamilyComparison => {
     const tailwindColors = tailwindTheme[family];
     const seed = tailwindColors[5];
-    const wassilySolved = solveRamp({
+    const baseConfig = {
       hue: seed.h,
       seedChroma: seed.c,
       seedLightness: seed.l,
       stopCount: 11,
       mode: "opinionated",
-    });
-    const wassilyStops = wassilySolved.stops;
-    const wassilyColors = wassilyStops.map((stop) => stop.color);
-    const tailwind = comparisonForColors(tailwindColors);
-    const wassily = comparisonForColors(wassilyColors);
-    const anchor = {
-      label: wassilySolved.metadata.seedLabel as StopLabel,
-      delta: wassilySolved.metadata.seedDelta.source,
-    };
-    const contract: WassilyContract = {
-      targetGamut: wassilySolved.metadata.targetGamut,
-      exactness: wassilySolved.metadata.exactness,
-      seedLabel: wassilySolved.metadata.seedLabel,
-      sourceSeedDelta: Number(wassilySolved.metadata.seedDelta.source.toFixed(5)),
-      targetSeedDelta: Number(wassilySolved.metadata.seedDelta.target.toFixed(5)),
-      fallbackSeedDelta:
-        wassilySolved.metadata.seedDelta.fallback === undefined
-          ? null
-          : Number(wassilySolved.metadata.seedDelta.fallback.toFixed(5)),
-    };
+    } as const;
+    const tailwind = comparisonForColors(tailwindColors, "display-p3");
+    const srgbSolved = solveRamp({ ...baseConfig, targetGamut: "srgb" });
+    const p3Solved = solveRamp({ ...baseConfig, targetGamut: "display-p3" });
+    const dualSolved = solveRamp({ ...baseConfig, targetGamut: "dual" });
+    const dualFallbackColors = dualSolved.fallbackStops?.map((stop) => stop.color);
+    if (!dualFallbackColors) {
+      throw new Error(`Missing dual fallback stops for ${family}`);
+    }
 
     return {
       family,
-      group: family === "slate" ||
-        family === "gray" ||
-        family === "zinc" ||
-        family === "neutral" ||
-        family === "stone" ||
-        family === "mauve" ||
-        family === "olive" ||
-        family === "mist" ||
-        family === "taupe"
-        ? "Neutral"
-        : "Chromatic",
-      seed: swatchFromColor("500", seed),
+      group: familyGroup(family),
+      seed: swatchFromColor("500", seed, "display-p3"),
       tailwind,
-      wassily,
-      wassilyContract: contract,
-      wassilyAnchorLabel: anchor.label,
-      seedDelta: Number(anchor.delta.toFixed(5)),
-      notes: buildNotes(family, tailwind, wassily, anchor.label, anchor.delta, contract),
+      wassily: {
+        srgb: buildWassilyVariant(
+          "srgb",
+          "Wassily sRGB",
+          srgbSolved,
+          seed,
+          srgbSolved.stops.map((stop) => stop.color),
+          "srgb",
+          family,
+          tailwind,
+        ),
+        p3: buildWassilyVariant(
+          "p3",
+          "Wassily P3 target",
+          p3Solved,
+          seed,
+          p3Solved.stops.map((stop) => stop.color),
+          "display-p3",
+          family,
+          tailwind,
+        ),
+        dualFallback: buildWassilyVariant(
+          "dualFallback",
+          "Dual sRGB fallback",
+          dualSolved,
+          seed,
+          dualFallbackColors,
+          "srgb",
+          family,
+          tailwind,
+        ),
+      },
     };
   });
-
-  const anchorCounts = families.reduce<Record<string, number>>((counts, family) => {
-    counts[family.wassilyAnchorLabel] = (counts[family.wassilyAnchorLabel] ?? 0) + 1;
-    return counts;
-  }, {});
-  const largest = families.reduce(
-    (best, family) => (family.seedDelta > best.delta ? { family: family.family, delta: family.seedDelta } : best),
-    { family: "", delta: -Infinity },
-  );
 
   return {
     generatedAt: new Date().toISOString(),
@@ -415,12 +546,12 @@ async function buildComparisonData(): Promise<ComparisonData> {
       chromaticCount: families.filter((family) => family.group === "Chromatic").length,
       neutralCount: families.filter((family) => family.group === "Neutral").length,
       tailwindOutOfSrgb500Count: families.filter((family) => !family.seed.inSrgb).length,
-      wassilyNon500AnchorCount: families.filter(
-        (family) => family.wassilyAnchorLabel !== "500",
-      ).length,
-      averageSeedDelta: Number(average(families.map((family) => family.seedDelta)).toFixed(5)),
-      largestSeedDelta: largest,
-      anchorCounts,
+      tailwindOutOfP3500Count: families.filter((family) => !family.seed.inP3).length,
+      wassily: {
+        srgb: summarizeMode(families, "srgb"),
+        p3: summarizeMode(families, "p3"),
+        dualFallback: summarizeMode(families, "dualFallback"),
+      },
     },
     families,
   };
@@ -441,7 +572,7 @@ function renderSwatches(swatches: readonly ComparisonSwatch[], seedLabel?: StopL
         .map(
           (swatch) => `
             <div
-              class="swatch${swatch.label === seedLabel ? " swatch--seed" : ""}${!swatch.inSrgb ? " swatch--p3" : ""}"
+              class="swatch${swatch.label === seedLabel ? " swatch--seed" : ""}${!swatch.inSrgb ? " swatch--p3" : ""}${!swatch.inP3 ? " swatch--outside-p3" : ""}"
               style="background:${swatch.css}; color:${textColorForLightness(swatch.l)}"
               title="${swatch.label} ${swatch.oklch}"
             >
@@ -466,8 +597,49 @@ function renderMetrics(comparison: RampComparison, anchor?: StopLabel): string {
       <div><span>spacing CV</span><b>${metrics.spacingCv.toFixed(3)}</b></div>
       <div><span>worst step</span><b>${metrics.worstAdjacentRatio.toFixed(2)}x</b></div>
       <div><span>sRGB misses</span><b>${metrics.outOfSrgbStops}</b></div>
+      <div><span>P3 misses</span><b>${metrics.outOfP3Stops}</b></div>
       <div><span>max occ</span><b>${metric(metrics.maxOccupancy)}</b></div>
     </div>
+  `;
+}
+
+function renderContract(variant: WassilyVariant): string {
+  const { contract } = variant;
+  return `
+    <div class="contract">
+      <span>${contract.targetGamut}</span>
+      <span>${contract.exactness}</span>
+      <span>source d=${contract.sourceSeedDelta.toFixed(3)}</span>
+      <span>target d=${contract.targetSeedDelta.toFixed(3)}</span>
+      ${
+        contract.fallbackSeedDelta === null
+          ? ""
+          : `<span>fallback d=${contract.fallbackSeedDelta.toFixed(3)}</span>`
+      }
+      ${
+        contract.fallbackGamut === null
+          ? ""
+          : `<span>${contract.fallbackPolicy} -> ${contract.fallbackGamut}</span>`
+      }
+    </div>
+  `;
+}
+
+function renderWassilyRow(variant: WassilyVariant): string {
+  return `
+    <section class="ramp-row ramp-row--${variant.key}">
+      <div class="ramp-row__label">${variant.label}</div>
+      <div class="ramp-row__body">
+        ${renderSwatches(variant.comparison.swatches, variant.anchorLabel)}
+        ${renderMetrics(variant.comparison, variant.anchorLabel)}
+        ${renderContract(variant)}
+        ${
+          variant.notes.length > 0
+            ? `<ul class="notes notes--row">${variant.notes.map((note) => `<li>${note}</li>`).join("")}</ul>`
+            : ""
+        }
+      </div>
+    </section>
   `;
 }
 
@@ -483,8 +655,8 @@ function renderFamilyCard(family: FamilyComparison): string {
           </p>
         </div>
         <div class="seed-delta">
-          <span>seed delta</span>
-          <b>${family.seedDelta.toFixed(3)}</b>
+          <span>P3 seed delta</span>
+          <b>${family.wassily.p3.seedDelta.toFixed(3)}</b>
         </div>
       </header>
 
@@ -496,45 +668,81 @@ function renderFamilyCard(family: FamilyComparison): string {
         </div>
       </section>
 
-      <section class="ramp-row">
-        <div class="ramp-row__label">Wassily</div>
-        <div class="ramp-row__body">
-          ${renderSwatches(family.wassily.swatches, family.wassilyAnchorLabel)}
-          ${renderMetrics(family.wassily, family.wassilyAnchorLabel)}
-        </div>
-      </section>
-
-      ${
-        family.notes.length > 0
-          ? `<ul class="notes">${family.notes.map((note) => `<li>${note}</li>`).join("")}</ul>`
-          : ""
-      }
+      ${renderWassilyRow(family.wassily.srgb)}
+      ${renderWassilyRow(family.wassily.p3)}
+      ${renderWassilyRow(family.wassily.dualFallback)}
     </article>
   `;
 }
 
-function renderTopDivergences(data: ComparisonData): string {
+function renderTopDivergences(
+  data: ComparisonData,
+  key: WassilyVariantKey,
+  title: string,
+): string {
   const top = [...data.families]
-    .sort((a, b) => b.seedDelta - a.seedDelta)
+    .sort((a, b) => b.wassily[key].seedDelta - a.wassily[key].seedDelta)
     .slice(0, 8);
 
   return `
     <section class="summary-panel">
-      <h2>Largest Seed Deltas</h2>
+      <h2>${title}</h2>
       <div class="divergence-list">
         ${top
           .map(
             (family) => `
               <a href="#${family.family}">
                 <span>${family.family}</span>
-                <b>${family.seedDelta.toFixed(3)}</b>
-                <small>anchor ${family.wassilyAnchorLabel}</small>
+                <b>${family.wassily[key].seedDelta.toFixed(3)}</b>
+                <small>anchor ${family.wassily[key].anchorLabel}</small>
               </a>
             `,
           )
           .join("")}
       </div>
     </section>
+  `;
+}
+
+function renderAnchorAudit(
+  data: ComparisonData,
+  key: WassilyVariantKey,
+  title: string,
+): string {
+  const non500 = data.families
+    .filter((family) => family.wassily[key].anchorLabel !== "500")
+    .sort((a, b) => Number(a.wassily[key].anchorLabel) - Number(b.wassily[key].anchorLabel));
+
+  return `
+    <section class="summary-panel">
+      <h2>${title}</h2>
+      <div class="divergence-list">
+        ${non500
+          .map(
+            (family) => `
+              <a href="#${family.family}">
+                <span>${family.family}</span>
+                <b>${family.wassily[key].anchorLabel}</b>
+                <small>${family.wassily[key].contract.exactness}, d=${family.wassily[key].seedDelta.toFixed(3)}</small>
+              </a>
+            `,
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderModeSummary(label: string, summary: ModeSummary): string {
+  return `
+    <div class="summary-stat">
+      <span>${label} avg d</span>
+      <b>${summary.averageSeedDelta.toFixed(3)}</b>
+    </div>
+    <div class="summary-stat">
+      <span>${label} anchors</span>
+      <b>${Object.entries(summary.anchorCounts).map(([stop, count]) => `${stop}:${count}`).join(" ")}</b>
+    </div>
   `;
 }
 
@@ -592,7 +800,7 @@ ${GENERATED_FONT_FACE_CSS}
       }
       .summary-grid {
         display: grid;
-        grid-template-columns: repeat(6, minmax(130px, 1fr));
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
         gap: 10px;
         max-width: 1400px;
         margin: 0 auto 18px;
@@ -728,6 +936,11 @@ ${GENERATED_FONT_FACE_CSS}
         font-weight: 700;
         opacity: 0.7;
       }
+      .swatch--outside-p3::before {
+        content: "!P3";
+        background: rgba(255,255,255,0.42);
+        padding: 1px 3px;
+      }
       .swatch__label,
       .swatch__hex {
         display: block;
@@ -746,7 +959,7 @@ ${GENERATED_FONT_FACE_CSS}
       }
       .metrics {
         display: grid;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
+        grid-template-columns: repeat(9, minmax(0, 1fr));
         gap: 6px;
         margin-top: 8px;
       }
@@ -763,19 +976,30 @@ ${GENERATED_FONT_FACE_CSS}
         font-weight: 700;
         font-variant-numeric: tabular-nums;
       }
-      .notes {
-        margin: 12px 0 0 124px;
-        padding: 0;
+      .contract {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
-        list-style: none;
+        margin-top: 8px;
       }
+      .contract span,
       .notes li {
         border: 1px solid rgba(0,0,0,0.12);
         background: rgba(0,0,0,0.035);
         padding: 5px 7px;
         font-size: 12px;
+      }
+      .contract span:first-child {
+        background: rgba(255,255,255,0.52);
+        font-weight: 700;
+      }
+      .notes {
+        margin: 8px 0 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        list-style: none;
       }
       footer {
         max-width: 1400px;
@@ -799,21 +1023,23 @@ ${GENERATED_FONT_FACE_CSS}
       <h1>Tailwind v4 vs Wassily</h1>
       <p class="lede">
         Tailwind rows use the full static Tailwind CSS ${data.tailwindVersion} OKLCH palette.
-        Wassily rows are generated from each Tailwind <span class="mono">500</span> seed using the app-facing opinionated ramp engine.
-        The outlined stop marks Tailwind <span class="mono">500</span> or Wassily's reported seed anchor for the current target-gamut contract.
+        Wassily rows are generated from each Tailwind <span class="mono">500</span> seed in three contracts: current sRGB, P3 target, and dual-mode sRGB fallback.
+        The outlined stop marks Tailwind <span class="mono">500</span> or Wassily's reported seed anchor for that row's target-gamut contract.
       </p>
     </header>
 
     <section class="summary-grid">
       <div class="summary-stat"><span>families</span><b>${data.summary.familyCount}</b></div>
       <div class="summary-stat"><span>P3 / non-sRGB 500s</span><b>${data.summary.tailwindOutOfSrgb500Count}</b></div>
-      <div class="summary-stat"><span>non-500 Wassily anchors</span><b>${data.summary.wassilyNon500AnchorCount}</b></div>
-      <div class="summary-stat"><span>avg seed delta</span><b>${data.summary.averageSeedDelta.toFixed(3)}</b></div>
-      <div class="summary-stat"><span>largest delta</span><b>${data.summary.largestSeedDelta.family}</b></div>
-      <div class="summary-stat"><span>anchor spread</span><b>${Object.entries(data.summary.anchorCounts).map(([label, count]) => `${label}:${count}`).join(" ")}</b></div>
+      <div class="summary-stat"><span>outside P3 500s</span><b>${data.summary.tailwindOutOfP3500Count}</b></div>
+      <div class="summary-stat"><span>P3 exactness</span><b>${Object.entries(data.summary.wassily.p3.exactnessCounts).map(([name, count]) => `${name}:${count}`).join(" ")}</b></div>
+      ${renderModeSummary("sRGB", data.summary.wassily.srgb)}
+      ${renderModeSummary("P3", data.summary.wassily.p3)}
+      ${renderModeSummary("fallback", data.summary.wassily.dualFallback)}
     </section>
 
-    ${renderTopDivergences(data)}
+    ${renderTopDivergences(data, "srgb", "Largest sRGB Seed Deltas")}
+    ${renderAnchorAudit(data, "p3", "P3 Non-500 Seed Anchors")}
 
     <h2 class="section-title">Chromatic</h2>
     ${chromatic.map(renderFamilyCard).join("")}
