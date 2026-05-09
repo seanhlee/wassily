@@ -105,7 +105,7 @@ export function useMcpBridge(
 
           switch (message.op) {
             case "create": {
-              const id = bm.createBoard(message.name);
+              const id = bm.createBoard(message.name, Boolean(message.andSwitch));
               result = { id, name: message.name };
               break;
             }

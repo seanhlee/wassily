@@ -78,6 +78,10 @@ function error(msg: string) {
   return { content: [{ type: "text" as const, text: JSON.stringify({ error: msg }) }], isError: true };
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function stopToRecord(stop: RampStop) {
   return {
     index: stop.index,
@@ -263,6 +267,129 @@ interface BoardOpResult {
   [key: string]: unknown;
 }
 
+interface RampSuiteSeedInput {
+  name: string;
+  color: string;
+}
+
+interface RampSuiteSeedRecord {
+  id: string;
+  name: string;
+  input: string;
+  hex: string;
+  oklch: string;
+  inGamut: boolean;
+  position: { x: number; y: number };
+}
+
+interface RampSuiteBuildResult {
+  actions: Action[];
+  created: RampSuiteSeedRecord[];
+}
+
+const TAILWIND_V4_500_SEEDS: readonly RampSuiteSeedInput[] = [
+  { name: "tw-red-500", color: "oklch(63.7% 0.237 25.331)" },
+  { name: "tw-orange-500", color: "oklch(70.5% 0.213 47.604)" },
+  { name: "tw-amber-500", color: "oklch(76.9% 0.188 70.08)" },
+  { name: "tw-yellow-500", color: "oklch(79.5% 0.184 86.047)" },
+  { name: "tw-lime-500", color: "oklch(76.8% 0.233 130.85)" },
+  { name: "tw-green-500", color: "oklch(72.3% 0.219 149.579)" },
+  { name: "tw-emerald-500", color: "oklch(69.6% 0.17 162.48)" },
+  { name: "tw-teal-500", color: "oklch(70.4% 0.14 182.503)" },
+  { name: "tw-cyan-500", color: "oklch(71.5% 0.143 215.221)" },
+  { name: "tw-sky-500", color: "oklch(68.5% 0.169 237.323)" },
+  { name: "tw-blue-500", color: "oklch(62.3% 0.214 259.815)" },
+  { name: "tw-indigo-500", color: "oklch(58.5% 0.233 277.117)" },
+  { name: "tw-violet-500", color: "oklch(60.6% 0.25 292.717)" },
+  { name: "tw-purple-500", color: "oklch(62.7% 0.265 303.9)" },
+  { name: "tw-fuchsia-500", color: "oklch(66.7% 0.295 322.15)" },
+  { name: "tw-pink-500", color: "oklch(65.6% 0.241 354.308)" },
+  { name: "tw-rose-500", color: "oklch(64.5% 0.246 16.439)" },
+  { name: "tw-slate-500", color: "oklch(55.4% 0.046 257.417)" },
+  { name: "tw-gray-500", color: "oklch(55.1% 0.027 264.364)" },
+  { name: "tw-zinc-500", color: "oklch(55.2% 0.016 285.938)" },
+  { name: "tw-neutral-500", color: "oklch(55.6% 0 0)" },
+  { name: "tw-stone-500", color: "oklch(55.3% 0.013 58.071)" },
+  { name: "tw-mauve-500", color: "oklch(54.2% 0.034 322.5)" },
+  { name: "tw-olive-500", color: "oklch(58% 0.031 107.3)" },
+  { name: "tw-mist-500", color: "oklch(56% 0.021 213.5)" },
+  { name: "tw-taupe-500", color: "oklch(54.7% 0.021 43.1)" },
+];
+
+export function buildRampSuiteActions(
+  seeds: readonly RampSuiteSeedInput[],
+  options: {
+    stopCount: StopPreset;
+    x: number;
+    y: number;
+    columns: number;
+    rowGap: number;
+    columnGap: number;
+    preserveColors: boolean;
+  },
+): RampSuiteBuildResult | { error: string } {
+  const parsed = seeds.map((seed) => {
+    const color = parseColor(seed.color);
+    return color ? { seed, color } : { seed, color: null };
+  });
+  const invalid = parsed.find((entry) => entry.color === null);
+  if (invalid) {
+    return {
+      error: `Could not parse color for "${invalid.seed.name}": "${invalid.seed.color}"`,
+    };
+  }
+
+  const columns = Math.max(1, Math.floor(options.columns));
+  const swatches = parsed.map((entry, index) => {
+    const color = entry.color!;
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    return {
+      id: crypto.randomUUID(),
+      name: entry.seed.name,
+      input: entry.seed.color,
+      color,
+      position: {
+        x: options.x + column * options.columnGap,
+        y: options.y + row * options.rowGap,
+      },
+    };
+  });
+
+  const createAction: Action = {
+    type: "CREATE_SWATCHES",
+    preserveColors: options.preserveColors,
+    swatches: swatches.map((swatch) => ({
+      id: swatch.id,
+      color: swatch.color,
+      position: swatch.position,
+    })),
+  };
+  const promoteActions: Action[] = swatches.map((swatch) => ({
+    type: "PROMOTE_TO_RAMP",
+    id: swatch.id,
+    stopCount: options.stopCount,
+  }));
+  const renameActions: Action[] = swatches.map((swatch) => ({
+    type: "RENAME_RAMP",
+    id: swatch.id,
+    name: swatch.name,
+  }));
+
+  return {
+    actions: [createAction, ...promoteActions, ...renameActions],
+    created: swatches.map((swatch) => ({
+      id: swatch.id,
+      name: swatch.name,
+      input: swatch.input,
+      hex: toHex(swatch.color),
+      oklch: formatOklch(swatch.color),
+      inGamut: isInGamut(swatch.color),
+      position: swatch.position,
+    })),
+  };
+}
+
 /** Fetch live canvas state from the Vite MCP bridge. Returns null if bridge unavailable. */
 async function fetchLiveState(): Promise<CanvasState | null> {
   try {
@@ -358,6 +485,62 @@ function autoPlace(state: CanvasState, count: number): { x: number; y: number }[
     positions.push({ x: startX + i * 56, y: startY });
   }
   return positions;
+}
+
+async function createRampSuiteOnCanvas(
+  seeds: readonly RampSuiteSeedInput[],
+  options: {
+    boardName?: string;
+    stopCount: StopPreset;
+    x?: number;
+    y?: number;
+    columns: number;
+    rowGap: number;
+    columnGap: number;
+    preserveColors: boolean;
+  },
+) {
+  let board: { id: unknown; name: string } | null = null;
+  if (options.boardName) {
+    const result = await boardOp({
+      op: "create",
+      name: options.boardName,
+      andSwitch: true,
+    });
+    if (!result.success) return error(result.error as string);
+    board = { id: result.id, name: options.boardName };
+    // Let React apply the board switch before the next MCP dispatch arrives.
+    await sleep(400);
+  }
+
+  const state = await fetchLiveState();
+  const fallback = state ? autoPlace(state, 1)[0] : { x: 100, y: 100 };
+  const built = buildRampSuiteActions(seeds, {
+    stopCount: options.stopCount,
+    x: options.x ?? fallback.x,
+    y: options.y ?? fallback.y,
+    columns: options.columns,
+    rowGap: options.rowGap,
+    columnGap: options.columnGap,
+    preserveColors: options.preserveColors,
+  });
+  if ("error" in built) return error(built.error);
+
+  const result = await dispatchActions(built.actions);
+  if (!result.success) return error(result.error ?? "Failed to create ramp suite");
+
+  const outOfGamut = built.created.filter((seed) => !seed.inGamut);
+  return json({
+    board,
+    stopCount: options.stopCount,
+    preserveColors: options.preserveColors,
+    sourceSeedCount: built.created.length,
+    outOfGamutSeedCount: outOfGamut.length,
+    outOfGamutSeeds: outOfGamut.map((seed) => seed.name),
+    createdRamps: built.created,
+    caveat:
+      "Source swatches are preserved exactly when preserveColors is true. The current opinionated ramp engine is sRGB-gamut-safe, so out-of-sRGB/P3 seeds may be chroma-compressed inside generated ramps.",
+  });
 }
 
 // ---- Tool Registration ----
@@ -823,13 +1006,17 @@ export function registerTools(server: McpServer): void {
   // 15. create_swatches
   server.tool(
     "create_swatches",
-    "Create multiple swatches at once. Colors are purified. Auto-placed in a horizontal row if positions omitted.",
+    "Create multiple swatches at once. Colors are purified by default unless preserve_colors is true. Auto-placed in a horizontal row if positions omitted.",
     {
       colors: z.array(z.string()).min(1).describe("Array of CSS colors"),
       x: z.number().optional().describe("Starting X position. Auto-placed if omitted."),
       y: z.number().optional().describe("Starting Y position. Auto-placed if omitted."),
+      preserve_colors: z
+        .boolean()
+        .default(false)
+        .describe("Keep parsed source colors exactly instead of purifying chromatic colors."),
     },
-    async ({ colors, x, y }) => {
+    async ({ colors, x, y, preserve_colors }) => {
       const parsed: OklchColor[] = [];
       for (const c of colors) {
         const p = parseColor(c);
@@ -854,20 +1041,145 @@ export function registerTools(server: McpServer): void {
         position: positions[i],
         color,
       }));
+      const reportedColors = parsed.map((color) =>
+        preserve_colors || color.c < NEUTRAL_CHROMA ? color : purifyColor(color),
+      );
 
-      const action: Action = { type: "CREATE_SWATCHES", swatches };
+      const action: Action = {
+        type: "CREATE_SWATCHES",
+        swatches,
+        preserveColors: preserve_colors,
+      };
       const result = await dispatchActions([action]);
       if (!result.success) return error(result.error ?? "Failed to create swatches");
 
       return json({
-        created: swatches.map((s) => ({
+        preserveColors: preserve_colors,
+        created: swatches.map((s, index) => ({
           id: s.id,
-          hex: toHex(s.color),
-          oklch: formatOklch(s.color),
+          hex: toHex(reportedColors[index]),
+          oklch: formatOklch(reportedColors[index]),
+          inGamut: isInGamut(reportedColors[index]),
           position: s.position,
         })),
       });
     },
+  );
+
+  server.tool(
+    "create_ramp_suite",
+    "Create a named suite of source-exact swatches, promote each one to a ramp, and rename each ramp. Useful for visual audits and reference-corpus comparisons.",
+    {
+      seeds: z
+        .array(
+          z.object({
+            name: z.string().min(1).describe("Ramp name, e.g. tw-orange-500"),
+            color: z.string().min(1).describe("CSS color seed: hex, rgb, hsl, oklch, etc."),
+          }),
+        )
+        .min(1)
+        .describe("Named source colors to turn into ramps."),
+      board_name: z
+        .string()
+        .optional()
+        .describe("If provided, creates and switches to a new board before placing the suite."),
+      stop_count: z
+        .number()
+        .refine(isStopPreset, {
+          message: "Must be 3, 5, 7, 9, 11, or 13",
+        })
+        .default(11)
+        .describe("Number of stops per ramp."),
+      preserve_colors: z
+        .boolean()
+        .default(true)
+        .describe("Keep source swatches exact before promotion. Recommended for reference audits."),
+      x: z.number().optional().describe("Starting X position. Auto-placed if omitted."),
+      y: z.number().optional().describe("Starting Y position. Auto-placed if omitted."),
+      columns: z
+        .number()
+        .int()
+        .min(1)
+        .max(6)
+        .default(1)
+        .describe("Number of columns in the placed suite."),
+      row_gap: z.number().min(56).default(92).describe("Vertical spacing between ramps."),
+      column_gap: z.number().min(560).default(640).describe("Horizontal spacing between columns."),
+    },
+    async ({
+      seeds,
+      board_name,
+      stop_count,
+      preserve_colors,
+      x,
+      y,
+      columns,
+      row_gap,
+      column_gap,
+    }) =>
+      createRampSuiteOnCanvas(seeds, {
+        boardName: board_name,
+        stopCount: stop_count,
+        preserveColors: preserve_colors,
+        x,
+        y,
+        columns,
+        rowGap: row_gap,
+        columnGap: column_gap,
+      }),
+  );
+
+  server.tool(
+    "create_tailwind_v4_500_suite",
+    "Create a visual audit board containing ramps generated from every Tailwind CSS v4.3.0 default 500 color.",
+    {
+      board_name: z
+        .string()
+        .default("Tailwind v4 500 audit")
+        .describe("New board name. Creates and switches to this board before placing the suite."),
+      stop_count: z
+        .number()
+        .refine(isStopPreset, {
+          message: "Must be 3, 5, 7, 9, 11, or 13",
+        })
+        .default(11)
+        .describe("Number of stops per ramp."),
+      preserve_colors: z
+        .boolean()
+        .default(true)
+        .describe("Keep Tailwind source swatches exact before promotion."),
+      x: z.number().default(100).describe("Starting X position."),
+      y: z.number().default(100).describe("Starting Y position."),
+      columns: z
+        .number()
+        .int()
+        .min(1)
+        .max(6)
+        .default(1)
+        .describe("Number of columns in the placed suite."),
+      row_gap: z.number().min(56).default(92).describe("Vertical spacing between ramps."),
+      column_gap: z.number().min(560).default(640).describe("Horizontal spacing between columns."),
+    },
+    async ({
+      board_name,
+      stop_count,
+      preserve_colors,
+      x,
+      y,
+      columns,
+      row_gap,
+      column_gap,
+    }) =>
+      createRampSuiteOnCanvas(TAILWIND_V4_500_SEEDS, {
+        boardName: board_name,
+        stopCount: stop_count,
+        preserveColors: preserve_colors,
+        x,
+        y,
+        columns,
+        rowGap: row_gap,
+        columnGap: column_gap,
+      }),
   );
 
   // 16. delete_objects

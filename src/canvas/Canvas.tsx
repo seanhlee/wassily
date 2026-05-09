@@ -52,6 +52,10 @@ function primeImageCanvas(
   else img.onload = draw;
 }
 
+function normalizeShortcutKey(key: string): string {
+  return key.length === 1 ? key.toLowerCase() : key;
+}
+
 export function Canvas() {
   // Board state initialized from localStorage (migration happens on first load)
   const [boardState, setBoardState] = useState<BoardState>(() => migrateFromLegacy());
@@ -108,6 +112,7 @@ export function Canvas() {
   const [iKeyHeld, setIKeyHeld] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [suppressedNoteTintId, setSuppressedNoteTintId] = useState<string | null>(null);
   const mouseClientPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // ---- Eyedropper state ----
@@ -386,6 +391,7 @@ export function Canvas() {
       // CREATE_NOTE produces its own undo entry via historyReducer; no extra
       // snapshot needed (matches the createSwatch flow).
       const id = createNote(canvasPosition);
+      setSuppressedNoteTintId(null);
       setEditingNoteId(id);
     },
     [createNote],
@@ -398,6 +404,7 @@ export function Canvas() {
 
   const handleNoteCommit = useCallback(
     (id: string, text: string) => {
+      setSuppressedNoteTintId(id);
       setEditingNoteId(null);
       if (text.trim() === "") {
         deleteObjects([id]);
@@ -407,7 +414,12 @@ export function Canvas() {
   );
 
   const handleNoteStartEdit = useCallback((id: string) => {
+    setSuppressedNoteTintId(null);
     setEditingNoteId(id);
+  }, []);
+
+  const handleShowNoteSelectedTint = useCallback(() => {
+    setSuppressedNoteTintId(null);
   }, []);
 
   // ---- Keyboard shortcuts ----
@@ -424,30 +436,32 @@ export function Canvas() {
         return;
       }
 
-      if (e.key === " " && !e.repeat) {
+      const key = normalizeShortcutKey(e.key);
+
+      if (key === " " && !e.repeat) {
         e.preventDefault();
         setSpaceHeld(true);
         return;
       }
 
-      if (e.key === "e" && !e.repeat && !e.metaKey && !e.ctrlKey) {
+      if (key === "e" && !e.repeat && !e.metaKey && !e.ctrlKey) {
         setEKeyHeld(true);
         return;
       }
 
-        if (e.key === "i" && !e.repeat && !e.metaKey && !e.ctrlKey) {
-          // Store original color for revert on cancel
-          const targetId = state.selectedIds[0];
-          const targetObj = targetId ? state.objects[targetId] : null;
-          if (targetObj?.type === "swatch") {
-            setEyedropperTarget(targetId);
-            eyedropperOriginalColor.current = { ...(targetObj as Swatch).color };
-            eyedropperCommitted.current = false;
-          } else {
-            setEyedropperTarget(null);
-          }
-          setIKeyHeld(true);
-          return;
+      if (key === "i" && !e.repeat && !e.metaKey && !e.ctrlKey) {
+        // Store original color for revert on cancel
+        const targetId = state.selectedIds[0];
+        const targetObj = targetId ? state.objects[targetId] : null;
+        if (targetObj?.type === "swatch") {
+          setEyedropperTarget(targetId);
+          eyedropperOriginalColor.current = { ...(targetObj as Swatch).color };
+          eyedropperCommitted.current = false;
+        } else {
+          setEyedropperTarget(null);
+        }
+        setIKeyHeld(true);
+        return;
       }
 
       const selected = state.selectedIds[0];
@@ -466,7 +480,7 @@ export function Canvas() {
         return null;
       };
 
-      switch (e.key) {
+      switch (key) {
         case "d":
           if (!e.metaKey && !e.ctrlKey && !e.repeat) toggleLightMode();
           break;
@@ -620,6 +634,7 @@ export function Canvas() {
 
         case "t":
           if (!e.metaKey && !e.ctrlKey && !e.repeat) {
+            e.preventDefault();
             const rect = containerRef.current?.getBoundingClientRect();
             const cam = cameraRef.current;
             const mouse = mouseClientPosRef.current;
@@ -698,11 +713,11 @@ export function Canvas() {
           const sw = selectedObj as Swatch;
           const step = e.shiftKey ? 5 : 1;
           let newColor: OklchColor;
-          if (e.key === "ArrowUp") {
+          if (key === "ArrowUp") {
             newColor = { ...sw.color, l: Math.min(0.97, sw.color.l + 0.01 * step) };
-          } else if (e.key === "ArrowDown") {
+          } else if (key === "ArrowDown") {
             newColor = { ...sw.color, l: Math.max(0.06, sw.color.l - 0.01 * step) };
-          } else if (e.key === "ArrowRight") {
+          } else if (key === "ArrowRight") {
             const max = maxChroma(sw.color.l, sw.color.h);
             newColor = { ...sw.color, c: Math.min(max, sw.color.c + 0.005 * step) };
           } else {
@@ -751,10 +766,11 @@ export function Canvas() {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === " ") setSpaceHeld(false);
-      if (e.key === "m") setPeekPureMode(false);
-      if (e.key === "e") setEKeyHeld(false);
-      if (e.key === "i") {
+      const key = normalizeShortcutKey(e.key);
+      if (key === " ") setSpaceHeld(false);
+      if (key === "m") setPeekPureMode(false);
+      if (key === "e") setEKeyHeld(false);
+      if (key === "i") {
         // Revert if not committed
         const targetId = eyedropperTargetId.current;
         if (!eyedropperCommitted.current && targetId && eyedropperOriginalColor.current) {
@@ -1044,6 +1060,7 @@ export function Canvas() {
                 key={obj.id}
                 note={obj as Note}
                 selected={state.selectedIds.includes(obj.id)}
+                suppressSelectedTint={suppressedNoteTintId === obj.id}
                 editing={editingNoteId === obj.id}
                 zoom={state.camera.zoom}
                 lightMode={state.lightMode}
@@ -1055,6 +1072,7 @@ export function Canvas() {
                 onTextChange={handleNoteTextChange}
                 onCommit={handleNoteCommit}
                 onStartEdit={handleNoteStartEdit}
+                onShowSelectedTint={handleShowNoteSelectedTint}
               />
             );
           }

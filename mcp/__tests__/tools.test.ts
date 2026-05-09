@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { stopCountDeltaForTarget } from "../tools.js";
+import { buildRampSuiteActions, stopCountDeltaForTarget } from "../tools.js";
 
 // Boot safety: importing tools.ts triggers all engine imports.
 // If gamut.ts or any DOM-dependent module fails to load, this blows up.
@@ -133,6 +133,60 @@ describe("set_stop_count", () => {
     expect(stopCountDeltaForTarget(12, 13)).toBe(1);
     expect(stopCountDeltaForTarget(10, 9)).toBe(-1);
     expect(stopCountDeltaForTarget(10, 11)).toBe(1);
+  });
+});
+
+describe("create_ramp_suite", () => {
+  it("builds source-preserving create, promote, and rename actions", () => {
+    const result = buildRampSuiteActions(
+      [{ name: "tw-orange-500", color: "oklch(70.5% 0.213 47.604)" }],
+      {
+        stopCount: 11,
+        x: 100,
+        y: 120,
+        columns: 1,
+        rowGap: 92,
+        columnGap: 640,
+        preserveColors: true,
+      },
+    );
+
+    expect("error" in result).toBe(false);
+    if ("error" in result) return;
+    expect(result.created).toHaveLength(1);
+    expect(result.created[0].name).toBe("tw-orange-500");
+    expect(result.actions).toHaveLength(3);
+    expect(result.actions[0]).toMatchObject({
+      type: "CREATE_SWATCHES",
+      preserveColors: true,
+    });
+    expect(result.actions[1]).toMatchObject({
+      type: "PROMOTE_TO_RAMP",
+      id: result.created[0].id,
+      stopCount: 11,
+    });
+    expect(result.actions[2]).toMatchObject({
+      type: "RENAME_RAMP",
+      id: result.created[0].id,
+      name: "tw-orange-500",
+    });
+  });
+
+  it("reports invalid seed colors before dispatch", () => {
+    const result = buildRampSuiteActions(
+      [{ name: "bad", color: "not a color" }],
+      {
+        stopCount: 11,
+        x: 100,
+        y: 120,
+        columns: 1,
+        rowGap: 92,
+        columnGap: 640,
+        preserveColors: true,
+      },
+    );
+
+    expect("error" in result).toBe(true);
   });
 });
 

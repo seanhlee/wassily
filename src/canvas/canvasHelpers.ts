@@ -7,8 +7,8 @@ import type { ReferenceImage } from "../types";
 // visually crosses a note picks it up.
 const NOTE_APPROX_CHAR_WIDTH = 8.5;
 const NOTE_APPROX_LINE_HEIGHT = 17.5;
-const NOTE_APPROX_PADDING_X = 16;
-const NOTE_APPROX_PADDING_Y = 8;
+const NOTE_APPROX_PADDING_X = 12;
+const NOTE_APPROX_PADDING_Y = 7;
 
 /** Bounding box of a canvas object (canvas space) */
 export function getObjectBounds(obj: CanvasObject): { x: number; y: number; w: number; h: number } | null {
@@ -25,7 +25,7 @@ export function getObjectBounds(obj: CanvasObject): { x: number; y: number; w: n
     return {
       x: note.position.x,
       y: note.position.y,
-      w: Math.max(60, longest * NOTE_APPROX_CHAR_WIDTH + NOTE_APPROX_PADDING_X * 2),
+      w: Math.max(72, longest * NOTE_APPROX_CHAR_WIDTH + NOTE_APPROX_PADDING_X * 2),
       h: lines.length * NOTE_APPROX_LINE_HEIGHT + NOTE_APPROX_PADDING_Y * 2,
     };
   }

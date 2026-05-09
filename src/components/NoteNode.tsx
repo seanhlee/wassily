@@ -5,14 +5,21 @@ import { useDrag } from "../hooks/useDrag";
 
 const NOTE_FONT_SIZE = 14;
 const NOTE_LINE_HEIGHT = 1.25;
-const NOTE_LETTER_SPACING = "-0.55px";
-const NOTE_PADDING_X = 8;
-const NOTE_PADDING_Y = 4;
-const NOTE_MIN_WIDTH = 60;
+const NOTE_LETTER_SPACING = "0";
+const NOTE_PADDING_X = 12;
+const NOTE_PADDING_Y = 7;
+const NOTE_MIN_WIDTH = 72;
+const STRAIGHT_SINGLE_QUOTE = "'";
+const STRAIGHT_DOUBLE_QUOTE = "\"";
+const OPEN_SINGLE_QUOTE = "‘";
+const CLOSE_SINGLE_QUOTE = "’";
+const OPEN_DOUBLE_QUOTE = "“";
+const CLOSE_DOUBLE_QUOTE = "”";
 
 interface NoteNodeProps {
   note: Note;
   selected: boolean;
+  suppressSelectedTint: boolean;
   editing: boolean;
   zoom: number;
   lightMode: boolean;
@@ -24,11 +31,13 @@ interface NoteNodeProps {
   onTextChange: (id: string, text: string) => void;
   onCommit: (id: string, text: string) => void;
   onStartEdit: (id: string) => void;
+  onShowSelectedTint: () => void;
 }
 
 export function NoteNode({
   note,
   selected,
+  suppressSelectedTint,
   editing,
   zoom,
   lightMode,
@@ -40,6 +49,7 @@ export function NoteNode({
   onTextChange,
   onCommit,
   onStartEdit,
+  onShowSelectedTint,
 }: NoteNodeProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,7 +76,7 @@ export function NoteNode({
 
   const handleInput = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      onTextChange(note.id, e.target.value);
+      onTextChange(note.id, smartenNoteText(e.target.value));
     },
     [note.id, onTextChange],
   );
@@ -95,15 +105,24 @@ export function NoteNode({
     [editing, note.id, onStartEdit],
   );
 
+  const handleNoteMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      onShowSelectedTint();
+      handleMouseDown(e);
+    },
+    [handleMouseDown, onShowSelectedTint],
+  );
+
   const ink = lightMode ? "#000" : "#fff";
 
-  // Warm-tinted highlighter background
+  // Barely-there neutral field for hover and selection.
   const tintHover = lightMode
-    ? "rgba(245, 225, 190, 0.32)"
-    : "rgba(70, 55, 35, 0.32)";
+    ? "rgba(0, 0, 0, 0.02)"
+    : "rgba(255, 255, 255, 0.03)";
   const tintActive = lightMode
-    ? "rgba(245, 225, 190, 0.55)"
-    : "rgba(70, 55, 35, 0.55)";
+    ? "rgba(0, 0, 0, 0.035)"
+    : "rgba(255, 255, 255, 0.045)";
+  const showSelectedTint = selected && !editing && !suppressSelectedTint;
 
   // Empty + not editing collapses to nothing visually, but the box stays
   // around for the grow-wrap mirror in edit mode.
@@ -132,7 +151,7 @@ export function NoteNode({
   return (
     <div
       className="note-node"
-      onMouseDown={editing ? undefined : handleMouseDown}
+      onMouseDown={editing ? undefined : handleNoteMouseDown}
       onDoubleClick={handleDoubleClick}
       style={{
         position: "absolute",
@@ -140,22 +159,18 @@ export function NoteNode({
         top: note.position.y,
         padding: `${NOTE_PADDING_Y}px ${NOTE_PADDING_X}px`,
         minWidth: editing ? NOTE_MIN_WIDTH : undefined,
-        background: editing
-          ? tintActive
-          : selected
-            ? tintActive
-            : "transparent",
+        background: showSelectedTint ? tintActive : "transparent",
         cursor: editing ? "text" : selected ? "move" : "default",
         // Make the padded region a hover target via :hover via inline event
         // — see onMouseEnter/Leave below for the tint swap.
       }}
       // Use inline JS for hover state since we can't use :hover with style obj
       onMouseEnter={(e) => {
-        if (editing || selected) return;
+        if (editing || showSelectedTint) return;
         e.currentTarget.style.background = tintHover;
       }}
       onMouseLeave={(e) => {
-        if (editing || selected) return;
+        if (editing || showSelectedTint) return;
         e.currentTarget.style.background = "transparent";
       }}
     >
@@ -186,4 +201,56 @@ export function NoteNode({
       )}
     </div>
   );
+}
+
+function smartenNoteText(text: string): string {
+  let smart = "";
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === STRAIGHT_DOUBLE_QUOTE) {
+      smart += isOpeningQuoteContext(smart)
+        ? OPEN_DOUBLE_QUOTE
+        : CLOSE_DOUBLE_QUOTE;
+    } else if (char === STRAIGHT_SINGLE_QUOTE) {
+      smart += isOpeningSingleQuote(text, i, smart)
+        ? OPEN_SINGLE_QUOTE
+        : CLOSE_SINGLE_QUOTE;
+    } else {
+      smart += char;
+    }
+  }
+  return smart;
+}
+
+function isOpeningSingleQuote(
+  text: string,
+  index: number,
+  smartText: string,
+): boolean {
+  const previous = smartText.at(-1);
+  const next = text[index + 1];
+  if (isWordChar(previous) && isWordChar(next)) return false;
+  if (isDigit(next)) return false;
+  return isOpeningQuoteContext(smartText);
+}
+
+function isOpeningQuoteContext(text: string): boolean {
+  const previous = text.at(-1);
+  return (
+    previous === undefined ||
+    /\s/.test(previous) ||
+    "([{<".includes(previous) ||
+    previous === OPEN_DOUBLE_QUOTE ||
+    previous === OPEN_SINGLE_QUOTE ||
+    previous === "—" ||
+    previous === "–"
+  );
+}
+
+function isWordChar(char: string | undefined): boolean {
+  return char !== undefined && /[A-Za-z0-9]/.test(char);
+}
+
+function isDigit(char: string | undefined): boolean {
+  return char !== undefined && /[0-9]/.test(char);
 }
