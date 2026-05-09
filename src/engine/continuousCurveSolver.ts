@@ -885,8 +885,8 @@ function solveContinuousCurveRampWithMode(
   const canonical = solveBrandExactFairRamp(
     { ...config, stopCount: 11 },
     // Continuous curves have their own endpoint models; use the math-first
-    // fairing baseline so app-facing semantic shoulders do not double count.
-    { warmHighlightShoulder: false },
+    // fairing baseline so app-facing semantic profiles do not double count.
+    { semanticProfiles: false },
   );
   const labels = labelSource.stops.map((stop) => stop.label);
   const canonicalLabels = canonical.stops.map((stop) => stop.label);
