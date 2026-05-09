@@ -5,6 +5,8 @@ Status: synthesis memo, 2026-05-09.
 This document distills the current OKLab/OKLCH ramp research into a practical
 direction for leveling up Wassily. The scratchpad remains the raw lab notebook:
 [oklch-ramp-research-scratchpad.md](./oklch-ramp-research-scratchpad.md).
+The semantic grammar that emerged from the successful P3 orange pass lives in
+[semantic-ramp-grammar.md](./semantic-ramp-grammar.md).
 
 The goal is not to copy Tailwind. The goal is to understand why Tailwind v4
 feels good, why many OKLCH generators feel almost good, and what Wassily can
