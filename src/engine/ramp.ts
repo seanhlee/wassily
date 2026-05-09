@@ -6,8 +6,19 @@
  * `pure` remains a simple hue-constant baseline used for comparison.
  */
 
-import type { RampConfig, RampSolveResult, RampStop, StopPreset } from "../types";
-import { clampToGamut, maxChroma } from "./gamut";
+import type {
+  ColorGamut,
+  RampConfig,
+  RampSolveResult,
+  RampStop,
+  StopPreset,
+} from "../types";
+import {
+  clampToGamut,
+  fallbackGamutForTarget,
+  maxChroma,
+  solvingGamutForTarget,
+} from "./gamut";
 import { solveBrandExactFairRamp } from "./brandExactFairingSolver";
 import {
   buildRampSolveMetadata,
@@ -59,10 +70,13 @@ export function generateRamp(config: RampConfig): RampStop[] {
 export function solveRamp(config: RampConfig): RampSolveResult {
   const { hue, stopCount, mode } = config;
   const targetGamut = normalizeTargetGamut(config.targetGamut);
+  const solvingGamut = solvingGamutForTarget(targetGamut);
   if (mode === "opinionated") {
     const solved = solveBrandExactFairRamp(config);
+    const fallbackStops = buildFallbackStops(solved.stops, targetGamut);
     return {
       stops: solved.stops,
+      ...(fallbackStops === undefined ? {} : { fallbackStops }),
       metadata: buildRampSolveMetadata(solved.stops, config, {
         solver: solved.metadata.solver,
         seedIndex: solved.metadata.seedIndex,
@@ -77,11 +91,13 @@ export function solveRamp(config: RampConfig): RampSolveResult {
       : generateCustomLabels(stopCount);
 
   const stops = labels.map((label, index) =>
-    generatePureStop(label, hue, index, labels.length),
+    generatePureStop(label, hue, index, labels.length, solvingGamut),
   );
+  const fallbackStops = buildFallbackStops(stops, targetGamut);
 
   return {
     stops,
+    ...(fallbackStops === undefined ? {} : { fallbackStops }),
     metadata: buildRampSolveMetadata(stops, config, {
       solver: "pure",
       targetGamut,
@@ -89,21 +105,36 @@ export function solveRamp(config: RampConfig): RampSolveResult {
   };
 }
 
+function buildFallbackStops(
+  stops: readonly RampStop[],
+  targetGamut: RampConfig["targetGamut"],
+): RampStop[] | undefined {
+  const fallbackGamut = fallbackGamutForTarget(targetGamut);
+  if (fallbackGamut === null) return undefined;
+
+  return stops.map((stop) => ({
+    ...stop,
+    color: clampToGamut(stop.color, fallbackGamut),
+    darkColor: clampToGamut(stop.darkColor, fallbackGamut),
+  }));
+}
+
 function generatePureStop(
   label: string,
   seedHue: number,
   index: number,
   total: number,
+  targetGamut: ColorGamut = "srgb",
 ): RampStop {
   const t = total > 1 ? index / (total - 1) : 0.5;
   const l = L_MAX - (L_MAX - L_MIN) * t;
-  const c = maxChroma(l, seedHue) * 0.85;
-  const color = clampToGamut({ l, c, h: seedHue });
+  const c = maxChroma(l, seedHue, targetGamut) * 0.85;
+  const color = clampToGamut({ l, c, h: seedHue }, targetGamut);
   const darkColor = clampToGamut({
     l: Math.max(0.05, Math.min(0.98, l + 0.03)),
     c: c * 0.9,
     h: seedHue,
-  });
+  }, targetGamut);
 
   return { index, label, color, darkColor };
 }

@@ -1,12 +1,21 @@
 /**
  * Gamut mapping utilities.
  *
- * All generated colors must be in-gamut for sRGB.
+ * Generated colors default to sRGB, with optional Display P3 target support.
  * When desired chroma exceeds the boundary, chroma is reduced (never lightness).
  */
 
-import { oklch, rgb, displayable, clampChroma, type Oklch, okhsl as toOkhslMode } from "culori";
-import type { OklchColor } from "../types";
+import {
+  oklch,
+  rgb,
+  p3,
+  displayable,
+  inGamut,
+  clampChroma,
+  type Oklch,
+  okhsl as toOkhslMode,
+} from "culori";
+import type { ColorGamut, OklchColor, TargetGamut } from "../types";
 
 /** Chroma below this is considered achromatic. Matches perceptual threshold in OKLCH. */
 export const NEUTRAL_CHROMA = 0.05;
@@ -21,29 +30,55 @@ function fromCulori(color: Oklch): OklchColor {
   return { l: color.l, c: color.c ?? 0, h: color.h ?? 0 };
 }
 
-/** Check if an OKLCH color is displayable in sRGB */
-export function isInGamut(color: OklchColor): boolean {
-  return displayable(toCulori(color));
+export function solvingGamutForTarget(targetGamut?: TargetGamut): ColorGamut {
+  return targetGamut === "display-p3" || targetGamut === "dual"
+    ? "display-p3"
+    : "srgb";
 }
 
-/** Clamp a color to sRGB gamut by reducing chroma (never lightness) */
-export function clampToGamut(color: OklchColor): OklchColor {
-  const clamped = clampChroma(toCulori(color), "oklch");
+export function fallbackGamutForTarget(targetGamut?: TargetGamut): ColorGamut | null {
+  return targetGamut === "dual" ? "srgb" : null;
+}
+
+function culoriGamut(targetGamut: ColorGamut): "rgb" | "p3" {
+  return targetGamut === "display-p3" ? "p3" : "rgb";
+}
+
+/** Check if an OKLCH color is displayable in the requested RGB gamut. */
+export function isInGamut(
+  color: OklchColor,
+  targetGamut: ColorGamut = "srgb",
+): boolean {
+  return targetGamut === "srgb"
+    ? displayable(toCulori(color))
+    : inGamut(culoriGamut(targetGamut))(toCulori(color));
+}
+
+/** Clamp a color to an RGB gamut by reducing chroma (never lightness). */
+export function clampToGamut(
+  color: OklchColor,
+  targetGamut: ColorGamut = "srgb",
+): OklchColor {
+  const clamped = clampChroma(toCulori(color), "oklch", culoriGamut(targetGamut));
   return fromCulori(clamped as Oklch);
 }
 
 /**
- * Find the maximum chroma for a given lightness and hue in sRGB gamut.
+ * Find the maximum chroma for a given lightness and hue in an RGB gamut.
  * Binary search — fast and precise.
  */
-export function maxChroma(l: number, h: number): number {
+export function maxChroma(
+  l: number,
+  h: number,
+  targetGamut: ColorGamut = "srgb",
+): number {
   let lo = 0;
   let hi = 0.4; // OKLCH chroma rarely exceeds ~0.37
   const epsilon = 0.001;
 
   while (hi - lo > epsilon) {
     const mid = (lo + hi) / 2;
-    if (displayable({ mode: "oklch", l, c: mid, h })) {
+    if (isInGamut({ l, c: mid, h }, targetGamut)) {
       lo = mid;
     } else {
       hi = mid;
@@ -58,7 +93,10 @@ export function maxChroma(l: number, h: number): number {
  * This is the hue's "chroma peak" — used in purification when the input
  * lightness sits in a chroma valley.
  */
-export function chromaPeakLightness(h: number): {
+export function chromaPeakLightness(
+  h: number,
+  targetGamut: ColorGamut = "srgb",
+): {
   l: number;
   maxC: number;
 } {
@@ -67,7 +105,7 @@ export function chromaPeakLightness(h: number): {
 
   // Sweep lightness in coarse steps, then refine
   for (let l = 0.1; l <= 0.95; l += 0.05) {
-    const c = maxChroma(l, h);
+    const c = maxChroma(l, h, targetGamut);
     if (c > bestC) {
       bestC = c;
       bestL = l;
@@ -78,7 +116,7 @@ export function chromaPeakLightness(h: number): {
   const lo = Math.max(0.05, bestL - 0.05);
   const hi = Math.min(0.95, bestL + 0.05);
   for (let l = lo; l <= hi; l += 0.005) {
-    const c = maxChroma(l, h);
+    const c = maxChroma(l, h, targetGamut);
     if (c > bestC) {
       bestC = c;
       bestL = l;
@@ -100,6 +138,15 @@ export function toHex(color: OklchColor): string {
 /** Format an OklchColor as a CSS oklch() string */
 export function toOklchString(color: OklchColor): string {
   return `oklch(${color.l.toFixed(3)} ${color.c.toFixed(3)} ${color.h.toFixed(1)})`;
+}
+
+/** Format an OklchColor as a CSS display-p3 color string. */
+export function toDisplayP3String(color: OklchColor): string {
+  const p3Color = p3(toCulori(color));
+  const r = Math.max(0, Math.min(1, p3Color.r));
+  const g = Math.max(0, Math.min(1, p3Color.g));
+  const b = Math.max(0, Math.min(1, p3Color.b));
+  return `color(display-p3 ${r.toFixed(5)} ${g.toFixed(5)} ${b.toFixed(5)})`;
 }
 
 /** Parse any CSS color string into OklchColor */

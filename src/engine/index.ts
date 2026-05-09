@@ -6,7 +6,12 @@
 
 export { purify, purifyColor } from "./purify";
 export {
+  clampToGamut,
+  fallbackGamutForTarget,
   isInGamut,
+  maxChroma,
+  solvingGamutForTarget,
+  toDisplayP3String,
   toHex,
   parseColor,
 } from "./gamut";

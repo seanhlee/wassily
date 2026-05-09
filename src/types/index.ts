@@ -23,7 +23,9 @@ export interface RampStop {
   darkColor: OklchColor; // dark mode variant
 }
 
-export type TargetGamut = "srgb" | "display-p3" | "dual";
+export type ColorGamut = "srgb" | "display-p3";
+export type TargetGamut = ColorGamut | "dual";
+export type RampFallbackPolicy = "none" | "map-target-to-srgb";
 
 export type RampSeedExactness =
   | "source-exact"
@@ -41,6 +43,8 @@ export interface RampSeedDelta {
 export interface RampSolveMetadata {
   solver: string;
   targetGamut: TargetGamut;
+  fallbackGamut?: ColorGamut;
+  fallbackPolicy: RampFallbackPolicy;
   seedIndex: number;
   seedLabel: string;
   seedFraction: number;
@@ -53,6 +57,7 @@ export interface RampSolveMetadata {
 
 export interface RampSolveResult {
   stops: RampStop[];
+  fallbackStops?: RampStop[];
   metadata: RampSolveMetadata;
 }
 

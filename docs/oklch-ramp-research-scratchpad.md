@@ -609,3 +609,25 @@ seeds are outside sRGB, so Wassily's current "exact" behavior is often
 `target-mapped`: exact to the sRGB-mapped target, not exact to the original P3-ish
 source seed. That makes the next technical question much clearer: implement
 real target-gamut helpers before judging Tailwind-DNA taste.
+
+## Implementation Checkpoint: P3 / Dual Gamut
+
+Date: 2026-05-09
+
+The engine now has concrete sRGB and Display P3 gamut helpers:
+
+- `isInGamut(color, "display-p3")`
+- `clampToGamut(color, "display-p3")`
+- `maxChroma(l, h, "display-p3")`
+- `toDisplayP3String(color)`
+
+`solveRamp({ targetGamut: "display-p3" })` solves against P3 and can preserve
+vivid Tailwind-like seeds exactly when they are outside sRGB but inside P3.
+`solveRamp({ targetGamut: "dual" })` solves against P3 and also returns
+`fallbackStops`, produced by mapping the P3 target ramp into sRGB. This locks
+the first dual-mode policy: fallback is target-derived, not a separately solved
+sRGB taste pass.
+
+Open follow-up: decide whether the UI should expose P3 rendering/export now, or
+keep P3 as a research/export mode until the Tailwind-DNA prototype can show why
+wide-gamut output is visually worth surfacing.

@@ -1,5 +1,5 @@
-import type { OklchColor, RampConfig, RampStop } from "../types";
-import { clampToGamut } from "./gamut";
+import type { ColorGamut, OklchColor, RampConfig, RampStop } from "../types";
+import { clampToGamut, solvingGamutForTarget } from "./gamut";
 import {
   distanceLab,
   labVectorToOklch,
@@ -20,13 +20,17 @@ function lerpLab(a: LabVector, b: LabVector, t: number): LabVector {
   };
 }
 
-function colorFromLab(lab: LabVector, fallbackHue: number): OklchColor {
+function colorFromLab(
+  lab: LabVector,
+  fallbackHue: number,
+  targetGamut: ColorGamut,
+): OklchColor {
   const color = labVectorToOklch(lab, fallbackHue);
   return clampToGamut({
     l: clamp01(color.l),
     c: Math.max(0, color.c ?? 0),
     h: Number.isFinite(color.h) ? color.h : fallbackHue,
-  });
+  }, targetGamut);
 }
 
 function pairwiseDistances(stops: readonly RampStop[]): number[] {
@@ -98,6 +102,7 @@ function fairVisibleStops(
   exactSeed: OklchColor,
   seedIndex: number,
   lightEase: number,
+  targetGamut: ColorGamut,
 ): RampStop[] {
   const lastIndex = baseStops.length - 1;
   const lightEndpoint = toLabVector(baseStops[0].color);
@@ -111,11 +116,11 @@ function fairVisibleStops(
     } else if (index < seedIndex) {
       const linearProgress = seedIndex <= 0 ? 1 : index / seedIndex;
       const progress = linearProgress ** lightEase;
-      color = colorFromLab(lerpLab(lightEndpoint, seedLab, progress), exactSeed.h);
+      color = colorFromLab(lerpLab(lightEndpoint, seedLab, progress), exactSeed.h, targetGamut);
     } else {
       const progress =
         lastIndex <= seedIndex ? 1 : (index - seedIndex) / (lastIndex - seedIndex);
-      color = colorFromLab(lerpLab(seedLab, darkEndpoint, progress), exactSeed.h);
+      color = colorFromLab(lerpLab(seedLab, darkEndpoint, progress), exactSeed.h, targetGamut);
     }
 
     return {
@@ -144,6 +149,7 @@ function scoreCandidate(stops: readonly RampStop[], seedIndex: number): number {
 }
 
 export function solveBrandExactFairRamp(config: RampConfig): V6SolveResult {
+  const targetGamut = solvingGamutForTarget(config.targetGamut);
   const base = solveV6ResearchRamp(config);
   const exactSeed = base.stops[base.metadata.seedIndex]?.color ?? {
     l: config.seedLightness ?? 0.62,
@@ -177,6 +183,7 @@ export function solveBrandExactFairRamp(config: RampConfig): V6SolveResult {
         exactSeed,
         seedIndex,
         lightEase,
+        targetGamut,
       );
       const score = scoreCandidate(candidate, seedIndex);
       if (score < bestScore) {

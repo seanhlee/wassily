@@ -1,6 +1,12 @@
-import type { OklchColor, RampConfig, RampStop, StopPreset } from "../types";
+import type { ColorGamut, OklchColor, RampConfig, RampStop, StopPreset } from "../types";
 import { BLACK, contrastRatio } from "./contrast";
-import { clampToGamut, isInGamut, maxChroma, NEUTRAL_CHROMA } from "./gamut";
+import {
+  clampToGamut,
+  isInGamut,
+  maxChroma,
+  NEUTRAL_CHROMA,
+  solvingGamutForTarget,
+} from "./gamut";
 import {
   addLab,
   buildSeedCenteredFrame,
@@ -172,6 +178,7 @@ interface EndpointSearchContext {
   seed: OklchColor;
   seedLab: LabVector;
   seedIntensity: number;
+  targetGamut: ColorGamut;
 }
 
 interface V6EndpointGeometryCandidate {
@@ -253,13 +260,13 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function chromaIntensity(color: OklchColor): number {
-  const available = maxChroma(color.l, color.h);
+function chromaIntensity(color: OklchColor, targetGamut: ColorGamut = "srgb"): number {
+  const available = maxChroma(color.l, color.h, targetGamut);
   return available > EPSILON ? clamp(color.c / available, 0, 1) : 0;
 }
 
-function occupancy(color: OklchColor): number {
-  const available = maxChroma(color.l, color.h);
+function occupancy(color: OklchColor, targetGamut: ColorGamut = "srgb"): number {
+  const available = maxChroma(color.l, color.h, targetGamut);
   return available > EPSILON ? clamp(color.c / available, 0, 1.1) : 0;
 }
 
@@ -277,11 +284,14 @@ function weightedRmsPenalty(
   return Math.sqrt(weightedSquares / totalWeight);
 }
 
-function sanitizeSolvedColor(color: OklchColor): OklchColor {
+function sanitizeSolvedColor(
+  color: OklchColor,
+  targetGamut: ColorGamut = "srgb",
+): OklchColor {
   const constrained = clampToGamut({
     ...color,
     l: clamp(color.l, L_FLOOR, L_MAX),
-  });
+  }, targetGamut);
   return {
     l: clamp(constrained.l, L_FLOOR, L_MAX),
     c: Math.max(0, constrained.c),
@@ -294,6 +304,7 @@ function darkModeAdjust(
   c: number,
   h: number,
   t: number,
+  targetGamut: ColorGamut = "srgb",
 ): OklchColor {
   let darkL = l;
   let darkC = c;
@@ -311,7 +322,7 @@ function darkModeAdjust(
   }
 
   darkL = clamp(darkL, 0.05, 0.98);
-  return clampToGamut({ l: darkL, c: darkC, h: darkH });
+  return clampToGamut({ l: darkL, c: darkC, h: darkH }, targetGamut);
 }
 
 function generateCustomLabels(count: number): string[] {
@@ -379,7 +390,7 @@ function buildEndpointGeometry(
   const hue = normalizeHue(context.seed.h + hueOffset);
   const clampedLightness = clampEndpointLightness(side, context, lightness);
 
-  const localMax = maxChroma(clampedLightness, hue);
+  const localMax = maxChroma(clampedLightness, hue, context.targetGamut);
   if (localMax <= EPSILON) return null;
   const candidateLab = toLabVector({
     l: clamp(clampedLightness, L_FLOOR, L_CEILING),
@@ -413,11 +424,14 @@ function buildEndpointCandidate(
   const geometry = buildEndpointGeometry(side, context, hueOffset, lightness);
   if (!geometry) return null;
 
-  const color = sanitizeSolvedColor({
-    l: clamp(geometry.lightness, L_FLOOR, L_CEILING),
-    c: geometry.localMax * intensity,
-    h: geometry.hue,
-  });
+  const color = sanitizeSolvedColor(
+    {
+      l: clamp(geometry.lightness, L_FLOOR, L_CEILING),
+      c: geometry.localMax * intensity,
+      h: geometry.hue,
+    },
+    context.targetGamut,
+  );
 
   return {
     color,
@@ -864,6 +878,7 @@ function sampleSolvedPath(
   labels: string[],
   plan?: SamplingPlan,
   clipDarkTail = false,
+  targetGamut: ColorGamut = "srgb",
 ): SampledPath {
   const lightBudget = points[seedPointIndex].distance;
   const rawTotalBudget = points[points.length - 1].distance;
@@ -930,7 +945,7 @@ function sampleSolvedPath(
       ? [seed]
       : [
           ...lightTargets.map((distance) =>
-            sanitizeSolvedColor(interpolateFinePath(points, distance)),
+            sanitizeSolvedColor(interpolateFinePath(points, distance), targetGamut),
           ),
           seed,
         ];
@@ -946,12 +961,15 @@ function sampleSolvedPath(
           darkIntervals.length,
         )
       : darkProgress * rawDarkBudget;
-    return sanitizeSolvedColor(interpolateFinePath(points, lightBudget + mappedBudget));
+    return sanitizeSolvedColor(
+      interpolateFinePath(points, lightBudget + mappedBudget),
+      targetGamut,
+    );
   });
 
   return {
     colors: [...lightColors, ...darkColors].map((color, index) =>
-      index === seedIndex ? seed : sanitizeSolvedColor(color),
+      index === seedIndex ? seed : sanitizeSolvedColor(color, targetGamut),
     ),
     seedIndex,
     lightBudget,
@@ -1049,6 +1067,7 @@ function lightTopTintPenalty(
   sampledDistances: readonly number[],
   seedIndex: number,
   softPrior: V6SoftPriorComparison,
+  targetGamut: ColorGamut,
 ): number {
   const edgeBias = clamp((0.55 - stopFractionForIndex(seedIndex, colors.length)) / 0.4, 0, 1);
   const chromaBias = clamp((seed.c - NEUTRAL_CHROMA) / 0.18, 0, 1);
@@ -1078,7 +1097,10 @@ function lightTopTintPenalty(
 
     const target = interpolatePriorPathTarget(softPrior.prior.path.light, progress);
     const weight = 0.35 + progress * progress * 1.65;
-    values.push((occupancy(colors[index]) - target.occupancy) / TOP_TINT_OCCUPANCY_FLOOR);
+    values.push(
+      (occupancy(colors[index], targetGamut) - target.occupancy) /
+        TOP_TINT_OCCUPANCY_FLOOR,
+    );
     weights.push(weight * 1.15);
 
     const allowedHueDrift = 1.5 + progress * 3.5;
@@ -1277,8 +1299,17 @@ function evaluateSamplingPlan(
   seedPointIndex: number,
   labels: string[],
   plan: SamplingPlan,
+  targetGamut: ColorGamut = "srgb",
 ): { plan: SamplingPlan; sampled: SampledPath; objective: number } {
-  const sampled = sampleSolvedPath(seed, points, seedPointIndex, labels, plan);
+  const sampled = sampleSolvedPath(
+    seed,
+    points,
+    seedPointIndex,
+    labels,
+    plan,
+    false,
+    targetGamut,
+  );
   return {
     plan,
     sampled,
@@ -1353,8 +1384,16 @@ function repairSamplingPlan(
   seedPointIndex: number,
   labels: string[],
   startPlan: SamplingPlan,
+  targetGamut: ColorGamut = "srgb",
 ): SamplingPlan {
-  let best = evaluateSamplingPlan(seed, points, seedPointIndex, labels, startPlan);
+  let best = evaluateSamplingPlan(
+    seed,
+    points,
+    seedPointIndex,
+    labels,
+    startPlan,
+    targetGamut,
+  );
   const deltas = [0.08, 0.04, 0.02, 0.01, 0.005];
 
   for (const delta of deltas) {
@@ -1379,6 +1418,7 @@ function repairSamplingPlan(
               seedPointIndex,
               labels,
               candidatePlan,
+              targetGamut,
             );
             if (candidate.objective + 1e-9 < best.objective) {
               best = candidate;
@@ -1399,6 +1439,7 @@ function buildOptimizedSamplingPlan(
   seedPointIndex: number,
   labels: string[],
   fixedSeedIndex?: number,
+  targetGamut: ColorGamut = "srgb",
 ): SamplingPlan {
   const lightBudget = points[seedPointIndex].distance;
   const totalBudget = points[points.length - 1].distance;
@@ -1420,6 +1461,7 @@ function buildOptimizedSamplingPlan(
       seedPointIndex,
       labels,
       basePlan,
+      targetGamut,
     );
     const candidate = evaluateSamplingPlan(
       seed,
@@ -1427,6 +1469,7 @@ function buildOptimizedSamplingPlan(
       seedPointIndex,
       labels,
       repairedPlan,
+      targetGamut,
     );
     if (!best || candidate.objective + 1e-9 < best.objective) {
       best = candidate;
@@ -1444,6 +1487,7 @@ function computePathMetrics(
   seedPointIndex: number,
   samplingPlan?: SamplingPlan,
   clipDarkTail = false,
+  targetGamut: ColorGamut = "srgb",
 ): { colors: OklchColor[]; metrics: PathMetrics } {
   const sampled = sampleSolvedPath(
     seed,
@@ -1452,13 +1496,14 @@ function computePathMetrics(
     labels,
     samplingPlan,
     clipDarkTail,
+    targetGamut,
   );
   const colors = sampled.colors;
 
   const gamutPenalty = average(
     points.map((point) => {
-      if (isInGamut(point.color)) return 0;
-      const clamped = clampToGamut(point.color);
+      if (isInGamut(point.color, targetGamut)) return 0;
+      const clamped = clampToGamut(point.color, targetGamut);
       return distanceLab(toLabVector(point.color), toLabVector(clamped));
     }),
   );
@@ -1532,9 +1577,15 @@ function computePathMetrics(
     sampledDistances,
     sampled.seedIndex,
   );
-  const meanOccupancy = average(points.map((point) => occupancy(point.color)));
+  const meanOccupancy = average(
+    points.map((point) => occupancy(point.color, targetGamut)),
+  );
   const endpointOccupancy =
-    average([params.lightEndpoint.color, params.darkEndpoint.color].map(occupancy)) || 0;
+    average(
+      [params.lightEndpoint.color, params.darkEndpoint.color].map((color) =>
+        occupancy(color, targetGamut),
+      ),
+    ) || 0;
   const spanReward = sampled.totalBudget;
   const lightReservePenalty = Math.max(
     0,
@@ -1587,6 +1638,7 @@ function computePathMetrics(
     sampledDistances,
     sampled.seedIndex,
     softPrior,
+    targetGamut,
   );
   const endpointReservePriorPenalty = rmsPenalty([
     softPrior.parameterDeltas.lightLightness.normalized,
@@ -1707,9 +1759,19 @@ function computePathScore(
   seed: OklchColor,
   params: V6SolverParameters,
   labels: string[],
+  targetGamut: ColorGamut = "srgb",
 ): { colors: OklchColor[]; metrics: PathMetrics } {
   const { points, seedPointIndex } = buildFinePath(seed, params);
-  return computePathMetrics(seed, params, labels, points, seedPointIndex);
+  return computePathMetrics(
+    seed,
+    params,
+    labels,
+    points,
+    seedPointIndex,
+    undefined,
+    false,
+    targetGamut,
+  );
 }
 
 function samplingHardeningRank(metrics: PathMetrics): number {
@@ -1748,6 +1810,7 @@ function computeFinalPathScore(
   labels: string[],
   points: FinePathPoint[],
   seedPointIndex: number,
+  targetGamut: ColorGamut = "srgb",
 ): { colors: OklchColor[]; metrics: PathMetrics } {
   const lightBudget = points[seedPointIndex].distance;
   const totalBudget = points[points.length - 1].distance;
@@ -1760,6 +1823,8 @@ function computeFinalPathScore(
     points,
     seedPointIndex,
     undefined,
+    false,
+    targetGamut,
   );
   const optimizedPlan = buildOptimizedSamplingPlan(
     seed,
@@ -1767,6 +1832,7 @@ function computeFinalPathScore(
     seedPointIndex,
     labels,
     fixedSeedIndex,
+    targetGamut,
   );
   const optimized = computePathMetrics(
     seed,
@@ -1775,6 +1841,8 @@ function computeFinalPathScore(
     points,
     seedPointIndex,
     optimizedPlan,
+    false,
+    targetGamut,
   );
   const winnerPlan =
     samplingHardeningRank(optimized.metrics) <= samplingHardeningRank(baseline.metrics)
@@ -1789,6 +1857,7 @@ function computeFinalPathScore(
     seedPointIndex,
     winnerPlan,
     true,
+    targetGamut,
   );
 }
 
@@ -1865,7 +1934,12 @@ function evaluateParameterVector(
   const clampedVector = clampParameterVector(vector);
   const parameters = buildParametersFromVector(context, clampedVector);
   if (!parameters) return null;
-  const scored = computePathScore(context.seed, parameters, labels);
+  const scored = computePathScore(
+    context.seed,
+    parameters,
+    labels,
+    context.targetGamut,
+  );
   return {
     colors: scored.colors,
     metrics: scored.metrics,
@@ -2013,6 +2087,7 @@ function evaluateFinalParameterVector(
     labels,
     points,
     seedPointIndex,
+    context.targetGamut,
   );
   return {
     colors: scored.colors,
@@ -2175,8 +2250,8 @@ function mixHue(from: number, to: number, t: number): number {
   return normalizeHue(from + hueDelta(from, to) * clamp(t, 0, 1));
 }
 
-function tintOccupancyForSeed(seed: OklchColor): number {
-  const intensity = chromaIntensity(seed);
+function tintOccupancyForSeed(seed: OklchColor, targetGamut: ColorGamut): number {
+  const intensity = chromaIntensity(seed, targetGamut);
   const baseOccupancy = clamp(0.32 + intensity * 0.18, 0.28, 0.5);
   const greenCyanWeight = clamp(1 - Math.abs(hueDelta(165, seed.h)) / 34, 0, 1);
   const cyanAquaWeight = clamp(1 - Math.abs(hueDelta(205, seed.h)) / 38, 0, 1);
@@ -2191,11 +2266,13 @@ function tintOccupancyForSeed(seed: OklchColor): number {
   );
 }
 
-function tintEndpointForSeed(seed: OklchColor): OklchColor {
+function tintEndpointForSeed(seed: OklchColor, targetGamut: ColorGamut): OklchColor {
   const l = clamp(Math.max(seed.l + 0.02, 0.958), L_FLOOR, L_MAX);
-  const h = normalizeHue(seed.h + hueDelta(seed.h, seed.h - 3) * chromaIntensity(seed) * 0.4);
-  const c = maxChroma(l, h) * tintOccupancyForSeed(seed);
-  return sanitizeSolvedColor({ l, c, h });
+  const h = normalizeHue(
+    seed.h + hueDelta(seed.h, seed.h - 3) * chromaIntensity(seed, targetGamut) * 0.4,
+  );
+  const c = maxChroma(l, h, targetGamut) * tintOccupancyForSeed(seed, targetGamut);
+  return sanitizeSolvedColor({ l, c, h }, targetGamut);
 }
 
 function blueVioletTailWeight(seed: OklchColor): number {
@@ -2204,8 +2281,8 @@ function blueVioletTailWeight(seed: OklchColor): number {
   return hueWeight * midDarkWeight;
 }
 
-function inkEndpointForSeed(seed: OklchColor): OklchColor {
-  const intensity = chromaIntensity(seed);
+function inkEndpointForSeed(seed: OklchColor, targetGamut: ColorGamut): OklchColor {
+  const intensity = chromaIntensity(seed, targetGamut);
   const blueVioletDepth = blueVioletTailWeight(seed) * 0.024;
   const idealLightness =
     0.235 + intensity * 0.035 + Math.max(seed.l - 0.65, 0) * 0.02 - blueVioletDepth;
@@ -2213,28 +2290,28 @@ function inkEndpointForSeed(seed: OklchColor): OklchColor {
   const lowerBound = seed.l <= 0.24 ? L_FLOOR : 0.16;
   const l = clamp(Math.min(idealLightness, seed.l - minimumTailGap), lowerBound, 0.3);
   const h = seed.h;
-  const c = maxChroma(l, h) * clamp(0.62 + intensity * 0.25, 0.58, 0.84);
-  return sanitizeSolvedColor({ l, c, h });
+  const c = maxChroma(l, h, targetGamut) * clamp(0.62 + intensity * 0.25, 0.58, 0.84);
+  return sanitizeSolvedColor({ l, c, h }, targetGamut);
 }
 
-function neutralTintEndpointForSeed(seed: OklchColor): OklchColor {
+function neutralTintEndpointForSeed(seed: OklchColor, targetGamut: ColorGamut): OklchColor {
   const l = clamp(Math.max(seed.l + 0.18, 0.955), L_FLOOR, L_MAX);
-  const c = Math.min(seed.c * 0.25, maxChroma(l, seed.h) * 0.14);
-  return sanitizeSolvedColor({ l, c, h: seed.h });
+  const c = Math.min(seed.c * 0.25, maxChroma(l, seed.h, targetGamut) * 0.14);
+  return sanitizeSolvedColor({ l, c, h: seed.h }, targetGamut);
 }
 
-function neutralInkEndpointForSeed(seed: OklchColor): OklchColor {
+function neutralInkEndpointForSeed(seed: OklchColor, targetGamut: ColorGamut): OklchColor {
   const l = clamp(Math.min(seed.l - 0.34, 0.22), 0.18, 0.24);
-  const c = Math.min(seed.c * 0.55, maxChroma(l, seed.h) * 0.22);
-  return sanitizeSolvedColor({ l, c, h: seed.h });
+  const c = Math.min(seed.c * 0.55, maxChroma(l, seed.h, targetGamut) * 0.22);
+  return sanitizeSolvedColor({ l, c, h: seed.h }, targetGamut);
 }
 
-function isHighLightnessCuspSeed(seed: OklchColor): boolean {
+function isHighLightnessCuspSeed(seed: OklchColor, targetGamut: ColorGamut): boolean {
   const yellowGreenWeight = clamp(1 - Math.abs(hueDelta(121, seed.h)) / 44, 0, 1);
   return (
     seed.l >= 0.88 &&
     seed.c >= 0.16 &&
-    occupancy(seed) >= 0.72 &&
+    occupancy(seed, targetGamut) >= 0.72 &&
     yellowGreenWeight > 0.15
   );
 }
@@ -2250,6 +2327,7 @@ function cuspBodyRoleColor(
   seed: OklchColor,
   ink: OklchColor,
   progress: number,
+  targetGamut: ColorGamut,
 ): OklchColor {
   const shapedProgress = clamp(progress, 0, 1);
   const l =
@@ -2260,21 +2338,25 @@ function cuspBodyRoleColor(
     0.84,
     0.99,
   );
-  const c = maxChroma(l, h) * targetOccupancy;
-  return sanitizeSolvedColor({ l, c, h });
+  const c = maxChroma(l, h, targetGamut) * targetOccupancy;
+  return sanitizeSolvedColor({ l, c, h }, targetGamut);
 }
 
 function cuspTopBridgeColor(
   seed: OklchColor,
   tint: OklchColor,
   progress: number,
+  targetGamut: ColorGamut,
 ): OklchColor {
   const bridgeProgress = clamp(progress, 0, 1) ** 1.15;
-  return sanitizeSolvedColor({
-    l: tint.l + (seed.l - tint.l) * bridgeProgress,
-    c: tint.c + (seed.c - tint.c) * bridgeProgress ** 0.85,
-    h: mixHue(tint.h, seed.h, bridgeProgress),
-  });
+  return sanitizeSolvedColor(
+    {
+      l: tint.l + (seed.l - tint.l) * bridgeProgress,
+      c: tint.c + (seed.c - tint.c) * bridgeProgress ** 0.85,
+      h: mixHue(tint.h, seed.h, bridgeProgress),
+    },
+    targetGamut,
+  );
 }
 
 function darkRoleProgressExponent(
@@ -2292,28 +2374,35 @@ function applyNeutralRoleEnvelope(
   seed: OklchColor,
   labels: readonly string[],
   seedIndex: number,
+  targetGamut: ColorGamut,
 ): TonalRoleEnvelopeResult {
-  const tint = neutralTintEndpointForSeed(seed);
-  const ink = neutralInkEndpointForSeed(seed);
+  const tint = neutralTintEndpointForSeed(seed, targetGamut);
+  const ink = neutralInkEndpointForSeed(seed, targetGamut);
   const lastIndex = labels.length - 1;
   const colors = labels.map((_, index) => {
     if (index === seedIndex) return seed;
     if (index < seedIndex) {
       const progress = index / Math.max(seedIndex, 1);
-      return sanitizeSolvedColor({
-        l: tint.l + (seed.l - tint.l) * progress,
-        c: tint.c + (seed.c - tint.c) * progress,
-        h: mixHue(tint.h, seed.h, progress),
-      });
+      return sanitizeSolvedColor(
+        {
+          l: tint.l + (seed.l - tint.l) * progress,
+          c: tint.c + (seed.c - tint.c) * progress,
+          h: mixHue(tint.h, seed.h, progress),
+        },
+        targetGamut,
+      );
     }
 
     const progress = (index - seedIndex) / Math.max(lastIndex - seedIndex, 1);
     const shapedProgress = progress ** 0.95;
-    return sanitizeSolvedColor({
-      l: seed.l + (ink.l - seed.l) * shapedProgress,
-      c: seed.c + (ink.c - seed.c) * shapedProgress,
-      h: mixHue(seed.h, ink.h, shapedProgress),
-    });
+    return sanitizeSolvedColor(
+      {
+        l: seed.l + (ink.l - seed.l) * shapedProgress,
+        c: seed.c + (ink.c - seed.c) * shapedProgress,
+        h: mixHue(seed.h, ink.h, shapedProgress),
+      },
+      targetGamut,
+    );
   });
 
   colors[seedIndex] = seed;
@@ -2325,6 +2414,7 @@ function applyTonalRoleEnvelope(
   labels: readonly string[],
   colors: readonly OklchColor[],
   seedIndex: number,
+  targetGamut: ColorGamut,
 ): TonalRoleEnvelopeResult {
   const hasSemanticTonalLabels =
     labels.length === SEMANTIC_TONAL_LABELS.length &&
@@ -2333,20 +2423,20 @@ function applyTonalRoleEnvelope(
   if (!hasSemanticTonalLabels) {
     return {
       colors: colors.map((color, index) =>
-        index === seedIndex ? seed : sanitizeSolvedColor(color),
+        index === seedIndex ? seed : sanitizeSolvedColor(color, targetGamut),
       ),
       seedIndex,
     };
   }
 
   if (seed.c < NEUTRAL_CHROMA) {
-    return applyNeutralRoleEnvelope(seed, labels, seedIndex);
+    return applyNeutralRoleEnvelope(seed, labels, seedIndex, targetGamut);
   }
 
-  const tint = tintEndpointForSeed(seed);
-  const ink = inkEndpointForSeed(seed);
+  const tint = tintEndpointForSeed(seed, targetGamut);
+  const ink = inkEndpointForSeed(seed, targetGamut);
   const lastIndex = labels.length - 1;
-  const highLightnessCuspSeed = isHighLightnessCuspSeed(seed);
+  const highLightnessCuspSeed = isHighLightnessCuspSeed(seed, targetGamut);
   const roleSeedIndex =
     highLightnessCuspSeed && seedIndex <= 1 && labels[2] === "200" ? 2 : seedIndex;
   const shaped = colors.map((color, index) => {
@@ -2357,55 +2447,75 @@ function applyTonalRoleEnvelope(
 
     if (index < roleSeedIndex) {
       if (highLightnessCuspSeed) {
-        return cuspTopBridgeColor(seed, tint, index / Math.max(roleSeedIndex, 1));
+        return cuspTopBridgeColor(
+          seed,
+          tint,
+          index / Math.max(roleSeedIndex, 1),
+          targetGamut,
+        );
       }
 
       const sideProgress = (roleSeedIndex - index) / Math.max(roleSeedIndex, 1);
       const roleMix = sideProgress ** 0.85;
-      const roleColor = sanitizeSolvedColor({
-        l: seed.l + (tint.l - seed.l) * roleMix,
-        c: seed.c + (tint.c - seed.c) * roleMix,
-        h: mixHue(seed.h, tint.h, roleMix),
-      });
+      const roleColor = sanitizeSolvedColor(
+        {
+          l: seed.l + (tint.l - seed.l) * roleMix,
+          c: seed.c + (tint.c - seed.c) * roleMix,
+          h: mixHue(seed.h, tint.h, roleMix),
+        },
+        targetGamut,
+      );
       const strength = clamp(0.75 * sideProgress + (numericLabel === 100 ? 0.12 : 0), 0, 0.88);
-      return sanitizeSolvedColor({
-        l: color.l + (roleColor.l - color.l) * strength,
-        c: color.c + (roleColor.c - color.c) * strength,
-        h: mixHue(color.h, roleColor.h, strength),
-      });
+      return sanitizeSolvedColor(
+        {
+          l: color.l + (roleColor.l - color.l) * strength,
+          c: color.c + (roleColor.c - color.c) * strength,
+          h: mixHue(color.h, roleColor.h, strength),
+        },
+        targetGamut,
+      );
     }
 
     const darkCount = Math.max(lastIndex - roleSeedIndex, 1);
     const sideProgress = (index - roleSeedIndex) / darkCount;
     if (highLightnessCuspSeed) {
-      return cuspBodyRoleColor(seed, ink, sideProgress);
+      return cuspBodyRoleColor(seed, ink, sideProgress, targetGamut);
     }
 
     const roleProgress =
       sideProgress ** darkRoleProgressExponent(seed, roleSeedIndex, lastIndex);
-    return sanitizeSolvedColor({
-      l: seed.l + (ink.l - seed.l) * roleProgress,
-      c: seed.c + (ink.c - seed.c) * roleProgress,
-      h: mixHue(seed.h, ink.h, roleProgress),
-    });
+    return sanitizeSolvedColor(
+      {
+        l: seed.l + (ink.l - seed.l) * roleProgress,
+        c: seed.c + (ink.c - seed.c) * roleProgress,
+        h: mixHue(seed.h, ink.h, roleProgress),
+      },
+      targetGamut,
+    );
   });
 
   for (let index = 1; index < shaped.length; index++) {
     if (index === roleSeedIndex) continue;
     if (shaped[index].l >= shaped[index - 1].l - 0.001) {
-      shaped[index] = sanitizeSolvedColor({
-        ...shaped[index],
-        l: Math.max(shaped[index - 1].l - 0.001, L_FLOOR),
-      });
+      shaped[index] = sanitizeSolvedColor(
+        {
+          ...shaped[index],
+          l: Math.max(shaped[index - 1].l - 0.001, L_FLOOR),
+        },
+        targetGamut,
+      );
     }
   }
 
   for (let index = roleSeedIndex - 1; index >= 0; index--) {
     if (shaped[index].l <= shaped[index + 1].l + 0.001) {
-      shaped[index] = sanitizeSolvedColor({
-        ...shaped[index],
-        l: Math.min(shaped[index + 1].l + 0.001, L_MAX),
-      });
+      shaped[index] = sanitizeSolvedColor(
+        {
+          ...shaped[index],
+          l: Math.min(shaped[index + 1].l + 0.001, L_MAX),
+        },
+        targetGamut,
+      );
     }
   }
 
@@ -2419,11 +2529,13 @@ function applyTonalRoleEnvelope(
 function solvePath(
   seed: OklchColor,
   labels: string[],
+  targetGamut: ColorGamut = "srgb",
 ): PathSolution {
   const context: EndpointSearchContext = {
     seed,
     seedLab: toLabVector(seed),
-    seedIntensity: chromaIntensity(seed),
+    seedIntensity: chromaIntensity(seed, targetGamut),
+    targetGamut,
   };
   const lightCandidates = rankEndpointCandidates("light", context);
   const darkCandidates = rankEndpointCandidates("dark", context);
@@ -2595,6 +2707,7 @@ function solvePath(
     labels,
     points,
     seedPointIndex,
+    targetGamut,
   );
 
   return {
@@ -2617,17 +2730,19 @@ function solvePath(
 function solveArchetypePath(
   seed: OklchColor,
   labels: string[],
+  targetGamut: ColorGamut = "srgb",
 ): PathSolution {
   const context: EndpointSearchContext = {
     seed,
     seedLab: toLabVector(seed),
-    seedIntensity: chromaIntensity(seed),
+    seedIntensity: chromaIntensity(seed, targetGamut),
+    targetGamut,
   };
   const vector = archetypeVectorFromPrior(seed);
   const parameters = buildParametersFromVector(context, vector);
 
   if (!parameters) {
-    return solvePath(seed, labels);
+    return solvePath(seed, labels, targetGamut);
   }
 
   const { points, seedPointIndex } = buildArchetypeFinePath(seed, parameters);
@@ -2637,6 +2752,7 @@ function solveArchetypePath(
     labels,
     points,
     seedPointIndex,
+    targetGamut,
   );
 
   return {
@@ -2657,14 +2773,19 @@ function solveArchetypePath(
 }
 
 export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
+  const targetGamut = solvingGamutForTarget(config.targetGamut);
   const labels = resolveLabels(config.stopCount);
   const rawSeed: OklchColor = {
     l: clamp(config.seedLightness ?? 0.62, L_FLOOR, L_CEILING),
-    c: Math.max(0, config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue) * 0.55)),
+    c: Math.max(
+      0,
+      config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue, targetGamut) * 0.55),
+    ),
     h: normalizeHue(config.hue),
   };
-  const sanitizedSeed = sanitizeSolvedColor(rawSeed);
+  const sanitizedSeed = sanitizeSolvedColor(rawSeed, targetGamut);
   const cacheKey = [
+    targetGamut,
     normalizeHue(config.hue).toFixed(3),
     (config.seedChroma ?? -1).toFixed(4),
     (config.seedLightness ?? -1).toFixed(4),
@@ -2673,12 +2794,13 @@ export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
   const cached = CACHE.get(cacheKey);
   if (cached) return cached;
 
-  const solution = solvePath(sanitizedSeed, labels);
+  const solution = solvePath(sanitizedSeed, labels, targetGamut);
   const roleAdjustedColors = applyTonalRoleEnvelope(
     sanitizedSeed,
     labels,
     solution.colors,
     solution.metadata.seedIndex,
+    targetGamut,
   );
 
   const result: V6SolveResult = {
@@ -2686,13 +2808,13 @@ export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
       const color =
         index === roleAdjustedColors.seedIndex
           ? sanitizedSeed
-          : sanitizeSolvedColor(roleAdjustedColors.colors[index]);
+          : sanitizeSolvedColor(roleAdjustedColors.colors[index], targetGamut);
       const t = labels.length > 1 ? index / (labels.length - 1) : 0.5;
       return {
         index,
         label,
         color,
-        darkColor: darkModeAdjust(color.l, color.c, color.h, t),
+        darkColor: darkModeAdjust(color.l, color.c, color.h, t, targetGamut),
       };
     }),
     metadata: {
@@ -2711,15 +2833,20 @@ export function solveV6ResearchRamp(config: RampConfig): V6SolveResult {
 }
 
 export function solveV6ArchetypeRamp(config: RampConfig): V6SolveResult {
+  const targetGamut = solvingGamutForTarget(config.targetGamut);
   const labels = resolveLabels(config.stopCount);
   const rawSeed: OklchColor = {
     l: clamp(config.seedLightness ?? 0.62, L_FLOOR, L_CEILING),
-    c: Math.max(0, config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue) * 0.55)),
+    c: Math.max(
+      0,
+      config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue, targetGamut) * 0.55),
+    ),
     h: normalizeHue(config.hue),
   };
-  const sanitizedSeed = sanitizeSolvedColor(rawSeed);
+  const sanitizedSeed = sanitizeSolvedColor(rawSeed, targetGamut);
   const cacheKey = [
     "archetype",
+    targetGamut,
     normalizeHue(config.hue).toFixed(3),
     (config.seedChroma ?? -1).toFixed(4),
     (config.seedLightness ?? -1).toFixed(4),
@@ -2728,19 +2855,19 @@ export function solveV6ArchetypeRamp(config: RampConfig): V6SolveResult {
   const cached = ARCHETYPE_CACHE.get(cacheKey);
   if (cached) return cached;
 
-  const solution = solveArchetypePath(sanitizedSeed, labels);
+  const solution = solveArchetypePath(sanitizedSeed, labels, targetGamut);
   const result: V6SolveResult = {
     stops: labels.map((label, index) => {
       const color =
         index === solution.metadata.seedIndex
           ? sanitizedSeed
-          : sanitizeSolvedColor(solution.colors[index]);
+          : sanitizeSolvedColor(solution.colors[index], targetGamut);
       const t = labels.length > 1 ? index / (labels.length - 1) : 0.5;
       return {
         index,
         label,
         color,
-        darkColor: darkModeAdjust(color.l, color.c, color.h, t),
+        darkColor: darkModeAdjust(color.l, color.c, color.h, t, targetGamut),
       };
     }),
     metadata: {

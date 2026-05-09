@@ -35,8 +35,14 @@ declare module "culori" {
   export function okhsl(color: string | object): Okhsl | undefined;
   export function oklab(color: string | object): Oklab | undefined;
   export function rgb(color: string | object): Rgb;
+  export function p3(color: string | object): Rgb;
   export function displayable(color: object): boolean;
-  export function clampChroma(color: object, mode: string): object;
+  export function inGamut(mode: string): (color: object) => boolean;
+  export function clampChroma(
+    color: object,
+    mode: string,
+    rgbGamut?: string,
+  ): object;
   export function differenceEuclidean(
     mode: string,
   ): (a: object, b: object) => number;

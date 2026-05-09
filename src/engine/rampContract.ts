@@ -6,7 +6,13 @@ import type {
   RampStop,
   TargetGamut,
 } from "../types";
-import { clampToGamut, isInGamut, maxChroma } from "./gamut";
+import {
+  clampToGamut,
+  fallbackGamutForTarget,
+  isInGamut,
+  maxChroma,
+  solvingGamutForTarget,
+} from "./gamut";
 import { distanceLab, toLabVector } from "./pathGeometry";
 
 const EXACTNESS_EPSILON = 1e-6;
@@ -18,19 +24,14 @@ interface BuildRampSolveMetadataOptions {
 }
 
 export function normalizeTargetGamut(targetGamut?: TargetGamut): TargetGamut {
-  const resolved = targetGamut ?? "srgb";
-  if (resolved !== "srgb") {
-    throw new Error(
-      `Target gamut '${resolved}' is planned but not implemented yet. Current ramp solving supports 'srgb'.`,
-    );
-  }
-  return resolved;
+  return targetGamut ?? "srgb";
 }
 
 export function sourceSeedFromRampConfig(config: RampConfig): OklchColor {
+  const solvingGamut = solvingGamutForTarget(config.targetGamut);
   const seedLightness = config.seedLightness ?? 0.62;
   const seedChroma =
-    config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue) * 0.55);
+    config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue, solvingGamut) * 0.55);
 
   return {
     l: seedLightness,
@@ -40,8 +41,7 @@ export function sourceSeedFromRampConfig(config: RampConfig): OklchColor {
 }
 
 function targetSeedForGamut(sourceSeed: OklchColor, targetGamut: TargetGamut): OklchColor {
-  normalizeTargetGamut(targetGamut);
-  return clampToGamut(sourceSeed);
+  return clampToGamut(sourceSeed, solvingGamutForTarget(targetGamut));
 }
 
 function seedDistance(a: OklchColor, b: OklchColor): number {
@@ -62,8 +62,7 @@ function nearestStopIndex(stops: readonly RampStop[], seed: OklchColor): number 
 }
 
 function isSourceInTargetGamut(sourceSeed: OklchColor, targetGamut: TargetGamut): boolean {
-  normalizeTargetGamut(targetGamut);
-  return isInGamut(sourceSeed);
+  return isInGamut(sourceSeed, solvingGamutForTarget(targetGamut));
 }
 
 function classifyExactness(
@@ -101,12 +100,20 @@ export function buildRampSolveMetadata(
   const anchor = stops[seedIndex];
   const sourceDelta = seedDistance(anchor.color, sourceSeed);
   const targetDelta = seedDistance(anchor.color, targetSeed);
-  const fallbackDelta = undefined;
+  const fallbackGamut = fallbackGamutForTarget(targetGamut);
+  const fallbackSeed =
+    fallbackGamut === null ? undefined : clampToGamut(sourceSeed, fallbackGamut);
+  const fallbackDelta =
+    fallbackGamut === null || fallbackSeed === undefined
+      ? undefined
+      : seedDistance(clampToGamut(anchor.color, fallbackGamut), fallbackSeed);
   const seedFraction = stops.length > 1 ? seedIndex / (stops.length - 1) : 0.5;
 
   return {
     solver: options.solver,
     targetGamut,
+    ...(fallbackGamut === null ? {} : { fallbackGamut }),
+    fallbackPolicy: fallbackGamut === null ? "none" : "map-target-to-srgb",
     seedIndex,
     seedLabel: anchor.label,
     seedFraction,
@@ -119,8 +126,10 @@ export function buildRampSolveMetadata(
     seedDelta: {
       source: sourceDelta,
       target: targetDelta,
+      ...(fallbackDelta === undefined ? {} : { fallback: fallbackDelta }),
     },
     sourceSeed,
     targetSeed,
+    ...(fallbackSeed === undefined ? {} : { fallbackSeed }),
   };
 }

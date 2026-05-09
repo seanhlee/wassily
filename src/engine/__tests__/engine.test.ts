@@ -6,6 +6,7 @@ import {
   clampToGamut,
   toHex,
   toOklchString,
+  toDisplayP3String,
   parseColor,
 } from "../gamut";
 import { purify, purifyColor, randomPurifiedColor } from "../purify";
@@ -61,6 +62,23 @@ describe("gamut", () => {
     expect(isInGamut(clamped)).toBe(true);
     expect(clamped.c).toBeLessThan(outOfGamut.c);
     expect(clamped.l).toBeCloseTo(outOfGamut.l, 1);
+  });
+
+  it("distinguishes sRGB and display-p3 gamut boundaries", () => {
+    const vividOrange: OklchColor = { l: 0.705, c: 0.213, h: 47.604 };
+
+    expect(isInGamut(vividOrange)).toBe(false);
+    expect(isInGamut(vividOrange, "display-p3")).toBe(true);
+
+    const srgb = clampToGamut(vividOrange);
+    const displayP3 = clampToGamut(vividOrange, "display-p3");
+
+    expect(srgb.c).toBeLessThan(vividOrange.c);
+    expect(displayP3.c).toBeCloseTo(vividOrange.c, 3);
+    expect(maxChroma(vividOrange.l, vividOrange.h, "display-p3")).toBeGreaterThan(
+      maxChroma(vividOrange.l, vividOrange.h),
+    );
+    expect(toDisplayP3String(vividOrange)).toMatch(/^color\(display-p3 /);
   });
 
   it("toHex produces valid uppercase hex strings", () => {
@@ -251,23 +269,44 @@ describe("ramp generation", () => {
     expect(["source-exact", "target-mapped"]).toContain(solved.metadata.exactness);
   });
 
-  it("guards planned non-sRGB target gamuts until they are implemented", () => {
+  it("solveRamp supports P3 source exactness and dual sRGB fallback metadata", () => {
     const config = {
-      hue: 130,
-      seedChroma: 0.24,
-      seedLightness: 0.72,
+      hue: 47.604,
+      seedChroma: 0.213,
+      seedLightness: 0.705,
       stopCount: 11,
       mode: "opinionated",
     } as const;
 
-    for (const targetGamut of ["display-p3", "dual"] as const) {
-      expect(() => solveRamp({ ...config, targetGamut })).toThrow(
-        /planned but not implemented/,
-      );
-      expect(() => generateRamp({ ...config, targetGamut })).toThrow(
-        /planned but not implemented/,
-      );
-    }
+    const p3 = solveRamp({ ...config, targetGamut: "display-p3" });
+
+    expect(generateRamp({ ...config, targetGamut: "display-p3" })).toEqual(p3.stops);
+    expect(p3.metadata.targetGamut).toBe("display-p3");
+    expect(p3.metadata.exactness).toBe("source-exact");
+    expect(p3.metadata.seedDelta.source).toBeLessThan(1e-6);
+    expect(p3.metadata.seedDelta.target).toBeLessThan(1e-6);
+    expect(p3.metadata.seedDelta.fallback).toBeUndefined();
+    expect(p3.metadata.fallbackSeed).toBeUndefined();
+    expect(p3.metadata.fallbackPolicy).toBe("none");
+    expect(p3.fallbackStops).toBeUndefined();
+    expect(p3.stops.every((stop) => isInGamut(stop.color, "display-p3"))).toBe(true);
+    expect(p3.stops.some((stop) => !isInGamut(stop.color))).toBe(true);
+
+    const dual = solveRamp({ ...config, targetGamut: "dual" });
+
+    expect(dual.metadata.targetGamut).toBe("dual");
+    expect(dual.metadata.exactness).toBe("source-exact");
+    expect(dual.metadata.fallbackGamut).toBe("srgb");
+    expect(dual.metadata.fallbackPolicy).toBe("map-target-to-srgb");
+    expect(dual.metadata.fallbackSeed).toBeDefined();
+    expect(dual.fallbackStops).toHaveLength(dual.stops.length);
+    expect(dual.metadata.seedDelta.source).toBeLessThan(1e-6);
+    expect(dual.metadata.seedDelta.target).toBeLessThan(1e-6);
+    expect(dual.metadata.seedDelta.fallback).toBeLessThan(1e-6);
+    expect(isInGamut(dual.metadata.fallbackSeed!)).toBe(true);
+    expect(dual.stops.every((stop) => isInGamut(stop.color, "display-p3"))).toBe(true);
+    expect(dual.stops.some((stop) => !isInGamut(stop.color))).toBe(true);
+    expect(dual.fallbackStops!.every((stop) => isInGamut(stop.color))).toBe(true);
   });
 
   it("solveRamp marks pure ramps as unanchored when they do not preserve the seed", () => {
