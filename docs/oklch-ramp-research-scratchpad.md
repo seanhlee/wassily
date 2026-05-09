@@ -631,3 +631,33 @@ sRGB taste pass.
 Open follow-up: decide whether the UI should expose P3 rendering/export now, or
 keep P3 as a research/export mode until the Tailwind-DNA prototype can show why
 wide-gamut output is visually worth surfacing.
+
+## Implementation Checkpoint: Warm Body Highlight Shoulder
+
+Date: 2026-05-09
+
+The Tailwind v4 comparison made the Orange / Amber / Yellow gap more concrete:
+the issue was not simply "too much chroma" in Wassily's lights. Wassily was too
+literal about the seed hue and too evenly spaced on the light side. Tailwind's
+warm families use a high-lightness shoulder that bends highlights toward sunny
+yellow while keeping the body seed intact.
+
+New app-facing prior:
+
+- applies only to high-chroma, mid-body orange / amber / yellow seeds
+- keeps very high warm seeds on the existing math-first path
+- preserves the exact seed anchor
+- lifts 50s toward roughly Tailwind-like lightness
+- shifts highlight hue toward a yellow shoulder, then returns to the seed hue
+- blends the prior in OKLab so boundary behavior remains gradual
+
+First regenerated comparison result:
+
+- Orange P3 50 moved from seed-hue literal to `oklch(0.979 0.012 69.5)`
+- Amber P3 50 moved to `oklch(0.983 0.021 94.0)`
+- Yellow P3 50 moved to `oklch(0.982 0.026 97.5)`
+
+Interpretation: this is closer to Tailwind's semantic highlight language, but
+still a bit more conservative in the 100-300 chroma build than Tailwind. That
+may be the right Wassily personality: exact seed, honest gamut, sunny lights,
+less designer-specific exaggeration.

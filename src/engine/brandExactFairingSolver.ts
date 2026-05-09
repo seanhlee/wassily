@@ -1,5 +1,5 @@
 import type { ColorGamut, OklchColor, RampConfig, RampStop } from "../types";
-import { clampToGamut, solvingGamutForTarget } from "./gamut";
+import { clampToGamut, maxChroma, solvingGamutForTarget } from "./gamut";
 import {
   distanceLab,
   labVectorToOklch,
@@ -12,12 +12,60 @@ function clamp01(value: number, min = 0.02, max = 0.98): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function smoothstep(edge0: number, edge1: number, value: number): number {
+  const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function normalizeHue(hue: number): number {
+  return ((hue % 360) + 360) % 360;
+}
+
+function hueDelta(from: number, to: number): number {
+  return ((((to - from) % 360) + 540) % 360) - 180;
+}
+
+function hueDistance(a: number, b: number): number {
+  return Math.abs(hueDelta(a, b));
+}
+
+function mixHue(from: number, to: number, t: number): number {
+  return normalizeHue(from + hueDelta(from, to) * clamp(t, 0, 1));
+}
+
+function relativeChroma(color: OklchColor, targetGamut: ColorGamut): number {
+  const available = maxChroma(color.l, color.h, targetGamut);
+  return available > 1e-9 ? color.c / available : 0;
+}
+
 function lerpLab(a: LabVector, b: LabVector, t: number): LabVector {
   return {
     l: a.l + (b.l - a.l) * t,
     a: a.a + (b.a - a.a) * t,
     b: a.b + (b.b - a.b) * t,
   };
+}
+
+function mixColorsInLab(
+  a: OklchColor,
+  b: OklchColor,
+  t: number,
+  fallbackHue: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  return colorFromLab(
+    lerpLab(toLabVector(a), toLabVector(b), clamp(t, 0, 1)),
+    fallbackHue,
+    targetGamut,
+  );
 }
 
 function colorFromLab(
@@ -27,9 +75,93 @@ function colorFromLab(
 ): OklchColor {
   const color = labVectorToOklch(lab, fallbackHue);
   return clampToGamut({
-    l: clamp01(color.l),
+    l: clamp01(color.l, 0.02, 0.995),
     c: Math.max(0, color.c ?? 0),
     h: Number.isFinite(color.h) ? color.h : fallbackHue,
+  }, targetGamut);
+}
+
+interface WarmHighlightPrior {
+  weight: number;
+  endpoint: OklchColor;
+  yellowness: number;
+}
+
+interface BrandExactFairingOptions {
+  warmHighlightShoulder?: boolean;
+}
+
+function warmBodyHighlightWeight(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): number {
+  const orangeWeight = clamp(1 - hueDistance(seed.h, 50) / 22, 0, 1);
+  const amberWeight = clamp(1 - hueDistance(seed.h, 72) / 28, 0, 1);
+  const yellowWeight = clamp(1 - hueDistance(seed.h, 90) / 28, 0, 1);
+  const hueWeight = Math.max(orangeWeight, amberWeight, yellowWeight);
+  const intensityWeight = Math.max(
+    clamp((relativeChroma(seed, targetGamut) - 0.48) / 0.28, 0, 1),
+    clamp((seed.c - 0.1) / 0.08, 0, 1),
+  );
+  const bodyLightnessWeight =
+    clamp((seed.l - 0.58) / 0.13, 0, 1) *
+    clamp((0.89 - seed.l) / 0.1, 0, 1);
+
+  return hueWeight * intensityWeight * bodyLightnessWeight;
+}
+
+function warmShoulderHue(seedHue: number): number {
+  const hue = normalizeHue(seedHue);
+  if (hue <= 50) return 74;
+  if (hue <= 72) return lerp(74, 96, smoothstep(50, 72, hue));
+  if (hue <= 96) return lerp(96, 103, smoothstep(72, 96, hue));
+  return 103;
+}
+
+function warmHighlightPrior(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): WarmHighlightPrior | null {
+  const weight = warmBodyHighlightWeight(seed, targetGamut);
+  if (weight <= 0.02) return null;
+
+  const yellowness = smoothstep(50, 92, normalizeHue(seed.h));
+  const h = warmShoulderHue(seed.h);
+  const l = lerp(0.982, 0.988, yellowness);
+  const seedRatio = lerp(0.08, 0.15, yellowness);
+  const occupancy = lerp(0.7, 0.84, yellowness);
+  const c = Math.min(seed.c * seedRatio, maxChroma(l, h, targetGamut) * occupancy);
+
+  return {
+    weight,
+    yellowness,
+    endpoint: clampToGamut({ l, c, h }, targetGamut),
+  };
+}
+
+function warmHighlightColor(
+  seed: OklchColor,
+  prior: WarmHighlightPrior,
+  linearProgress: number,
+  seedIndex: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const shelfExponent =
+    seedIndex <= 3
+      ? lerp(3.1, 3.55, prior.yellowness)
+      : lerp(1.9, 2.25, prior.yellowness);
+  const chromaExponent = lerp(1.6, 1.32, prior.yellowness);
+  const hueExponent = lerp(1.75, 2.25, prior.yellowness);
+
+  return clampToGamut({
+    l: clamp(
+      lerp(prior.endpoint.l, seed.l, progress ** shelfExponent),
+      0.02,
+      0.995,
+    ),
+    c: Math.max(0, lerp(prior.endpoint.c, seed.c, progress ** chromaExponent)),
+    h: mixHue(prior.endpoint.h, seed.h, progress ** hueExponent),
   }, targetGamut);
 }
 
@@ -103,11 +235,16 @@ function fairVisibleStops(
   seedIndex: number,
   lightEase: number,
   targetGamut: ColorGamut,
+  options: BrandExactFairingOptions,
 ): RampStop[] {
   const lastIndex = baseStops.length - 1;
   const lightEndpoint = toLabVector(baseStops[0].color);
   const darkEndpoint = toLabVector(baseStops[lastIndex].color);
   const seedLab = toLabVector(exactSeed);
+  const warmPrior =
+    options.warmHighlightShoulder === false
+      ? null
+      : warmHighlightPrior(exactSeed, targetGamut);
 
   return baseStops.map((stop, index) => {
     let color: OklchColor;
@@ -117,6 +254,21 @@ function fairVisibleStops(
       const linearProgress = seedIndex <= 0 ? 1 : index / seedIndex;
       const progress = linearProgress ** lightEase;
       color = colorFromLab(lerpLab(lightEndpoint, seedLab, progress), exactSeed.h, targetGamut);
+      if (warmPrior) {
+        color = mixColorsInLab(
+          color,
+          warmHighlightColor(
+            exactSeed,
+            warmPrior,
+            linearProgress,
+            seedIndex,
+            targetGamut,
+          ),
+          warmPrior.weight,
+          exactSeed.h,
+          targetGamut,
+        );
+      }
     } else {
       const progress =
         lastIndex <= seedIndex ? 1 : (index - seedIndex) / (lastIndex - seedIndex);
@@ -148,7 +300,10 @@ function scoreCandidate(stops: readonly RampStop[], seedIndex: number): number {
   );
 }
 
-export function solveBrandExactFairRamp(config: RampConfig): V6SolveResult {
+export function solveBrandExactFairRamp(
+  config: RampConfig,
+  options: BrandExactFairingOptions = {},
+): V6SolveResult {
   const targetGamut = solvingGamutForTarget(config.targetGamut);
   const base = solveV6ResearchRamp(config);
   const exactSeed = base.stops[base.metadata.seedIndex]?.color ?? {
@@ -184,6 +339,7 @@ export function solveBrandExactFairRamp(config: RampConfig): V6SolveResult {
         seedIndex,
         lightEase,
         targetGamut,
+        options,
       );
       const score = scoreCandidate(candidate, seedIndex);
       if (score < bestScore) {

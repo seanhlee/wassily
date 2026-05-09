@@ -882,7 +882,12 @@ function solveContinuousCurveRampWithMode(
   if (cached) return cached;
 
   const labelSource = solveV6ResearchRamp(config);
-  const canonical = solveBrandExactFairRamp({ ...config, stopCount: 11 });
+  const canonical = solveBrandExactFairRamp(
+    { ...config, stopCount: 11 },
+    // Continuous curves have their own endpoint models; use the math-first
+    // fairing baseline so app-facing semantic shoulders do not double count.
+    { warmHighlightShoulder: false },
+  );
   const labels = labelSource.stops.map((stop) => stop.label);
   const canonicalLabels = canonical.stops.map((stop) => stop.label);
   const exactSeed = canonical.stops[canonical.metadata.seedIndex].color;

@@ -309,6 +309,34 @@ describe("ramp generation", () => {
     expect(dual.fallbackStops!.every((stop) => isInGamut(stop.color))).toBe(true);
   });
 
+  it("adds sunny highlight shoulders for warm body seeds while preserving the P3 seed", () => {
+    for (const seed of [
+      { hue: 47.604, seedChroma: 0.213, seedLightness: 0.705 },
+      { hue: 70.08, seedChroma: 0.188, seedLightness: 0.769 },
+      { hue: 86.047, seedChroma: 0.184, seedLightness: 0.795 },
+    ] as const) {
+      const solved = solveRamp({
+        ...seed,
+        stopCount: 11,
+        mode: "opinionated",
+        targetGamut: "display-p3",
+      });
+      const top = solved.stops[0].color;
+      const seedStop = solved.stops[solved.metadata.seedIndex].color;
+
+      expect(solved.metadata.exactness).toBe("source-exact");
+      expect(solved.metadata.seedDelta.source).toBeLessThan(1e-6);
+      expect(seedStop.l).toBeCloseTo(seed.seedLightness, 3);
+      expect(seedStop.c).toBeCloseTo(seed.seedChroma, 3);
+      expect(seedStop.h).toBeCloseTo(seed.hue, 3);
+      expect(top.l).toBeGreaterThan(0.975);
+      expect(top.c).toBeGreaterThan(0.01);
+      expect(top.c).toBeLessThan(seed.seedChroma * 0.2);
+      expect(top.h).toBeGreaterThan(seed.hue);
+      expect(circularHueDistance(top.h, seed.hue)).toBeGreaterThan(10);
+    }
+  });
+
   it("solveRamp marks pure ramps as unanchored when they do not preserve the seed", () => {
     const solved = solveRamp({
       hue: 265,
