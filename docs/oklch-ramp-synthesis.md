@@ -36,6 +36,11 @@ and expert ramps are reference corpora. Beauty comes from path design, semantic
 sampling, family identity, and target-gamut choices, not from uniform spacing
 alone.
 
+Independent review adjustment: build the contract layer before chasing taste.
+Target gamut, exactness metadata, and persisted solve stories should land before
+Tailwind-DNA work. Otherwise the Tailwind v4 comparison will mostly measure
+"sRGB-compressed Tailwind" instead of Tailwind's actual P3-oriented palette.
+
 ## What We Learned
 
 ### Tailwind v4
@@ -150,7 +155,16 @@ The next step is not a rewrite from zero. It is a consolidation.
 
 Default behavior should preserve the input color exactly at one generated stop.
 
-Exactness must be reported, not assumed:
+The seed vocabulary needs to be precise:
+
+```text
+source seed             The color the user supplied or imported.
+promoted swatch seed    The color stored on the canvas before ramp generation.
+target seed             The seed interpreted inside the selected target gamut.
+fallback display color  The mapped color used for a narrower fallback output.
+```
+
+Exactness must be measured and reported, not assumed:
 
 ```text
 source-exact        The OKLCH seed appears exactly in the ramp.
@@ -163,6 +177,19 @@ fallback-mapped     Primary output preserves the seed, but a fallback output
 
 This matters because Tailwind v4 contains vivid body stops that are outside
 sRGB. A P3 output may preserve them; an sRGB fallback cannot.
+
+Today, this distinction is not fully present in the engine. The current
+generation path is effectively sRGB-mapped seed exact: seeds are sanitized to the
+sRGB target before some solves and analyses. vNext should track at least:
+
+```text
+sourceSeedDelta
+targetSeedDelta
+fallbackSeedDelta
+```
+
+That gives the app a truthful way to say "we preserved your P3 brand color, and
+here is the sRGB fallback compromise."
 
 ### 2. Anchor Placement Is Both Perceptual And Semantic
 
@@ -213,6 +240,26 @@ The current `maxChroma` and `clampToGamut` utilities are hardwired to sRGB.
 They should become target-aware before we judge Tailwind-v4 matching too
 harshly.
 
+P3 is not only engine math. It affects:
+
+- rendering: ramp and swatch components should be able to display CSS
+  `oklch()`/P3-capable colors instead of only hex fallbacks,
+- contrast: contrast checks need a declared target/fallback color,
+- export: tokens should distinguish primary P3/OKLCH values from sRGB
+  fallbacks,
+- reports: every comparison should say whether a value is source-exact,
+  target-exact, or fallback-mapped.
+
+The `dual` mode needs an explicit policy:
+
+```text
+mapped-fallback    Solve once for P3, then gamut-map each fallback color.
+separate-fallback  Solve a second sRGB ramp for better sRGB taste.
+```
+
+The first is more faithful to the source. The second may look better in sRGB.
+Wassily should test both, but the metadata must say which one produced a token.
+
 ### 4. Beauty Is Structured Unevenness
 
 Uniform OKLab steps are a great baseline, but Tailwind teaches that production
@@ -235,6 +282,12 @@ sampling schedule    Where labels land on that curve.
 semantic schedule learned from Tailwind's distances and label roles. That lets
 Wassily keep a clean continuous path while allowing Tailwind-like label
 behavior.
+
+This means semantic unevenness needs its own objective. A Tailwind-DNA ramp
+should not be penalized just because the `900 -> 950` jump or a vivid body shelf
+is intentionally larger than its neighbors. The audit should compare the
+observed unevenness to the selected sampling schedule, not always to perfect
+even spacing.
 
 ### 5. Family Identity Beats Hue Constancy
 
@@ -279,47 +332,68 @@ Metrics should flag risk. They should not declare taste solved.
 
 ## Recommended Architecture
 
-### Modes
+### Engine Axes And User-Facing Presets
 
-Wassily should name the behavior users feel:
+The user should see simple presets. The engine should keep the underlying axes
+orthogonal.
+
+Internal axes:
 
 ```text
-seed-exact
+exactnessPolicy     source-exact | target-exact | allow-normalized
+styleProfile        none | tailwind-v4 | radix | flexoki | custom | artist
+targetGamut         srgb | display-p3 | dual
+anchorPolicy        perceptual-budget | reference-faithful | semantic-body
+samplingSchedule    fair | reference-semantic | custom
+fallbackPolicy      mapped-fallback | separate-fallback
+styleStrength       numeric blend between neutral math and style prior
+```
+
+User-facing presets can compose those axes:
+
+```text
+Exact
   Default design-token mode. The seed appears as a real stop. The solver chooses
   the best context around it.
 
-reference-DNA
+Tailwind DNA
   Apply the perceptual shape of a reference corpus such as Tailwind v4, Radix,
   Flexoki, or a user-imported palette. The seed remains exact unless the target
   gamut prevents it.
 
-normalize
+Normalize
   Smooth scale generation where the input describes intent but may move. Useful
   for exploration, not the default for brand tokens.
 
-artist
+Artist
   Expressive RampenSau/fettepalette-like hue sweeps and curve gestures. Useful
   for illustration, mood, or generative palettes.
 ```
 
-The near-term priority is `seed-exact` plus `reference-DNA`.
+The near-term priority is the `Exact` preset plus the contract layer needed to
+make `Tailwind DNA` honest.
 
 ### Data Model
 
 Add a richer internal solve request:
 
 ```ts
-type RampMode = "seed-exact" | "reference-DNA" | "normalize" | "artist";
+type ExactnessPolicy = "source-exact" | "target-exact" | "allow-normalized";
+type StyleProfile = "none" | "tailwind-v4" | "tailwind-v3" | "radix" | "custom" | "artist";
 type TargetGamut = "srgb" | "display-p3" | "dual";
 type AnchorPolicy = "perceptual-budget" | "reference-faithful" | "semantic-body";
+type SamplingSchedule = "fair" | "reference-semantic" | "custom";
+type FallbackPolicy = "mapped-fallback" | "separate-fallback";
 
 interface RampSolveRequest {
   seed: OklchColor;
   labels: string[];
-  mode: RampMode;
+  exactnessPolicy: ExactnessPolicy;
+  styleProfile: StyleProfile;
   targetGamut: TargetGamut;
   anchorPolicy: AnchorPolicy;
-  referenceProfile?: "tailwind-v4" | "tailwind-v3" | "radix" | "custom";
+  samplingSchedule: SamplingSchedule;
+  fallbackPolicy?: FallbackPolicy;
   styleStrength?: number;
 }
 ```
@@ -335,11 +409,19 @@ interface RampSolveResult {
     seedIndex: number;
     seedLabel: string;
     exactness: "source-exact" | "target-exact" | "target-mapped" | "fallback-mapped";
+    seedDelta: {
+      source: number;
+      target: number;
+      fallback?: number;
+    };
     referenceContributors?: ReferenceContributor[];
     audit: RampAuditSummary;
   };
 }
 ```
+
+This should survive into canvas state and exports. A ramp without its solve
+story is hard to inspect, hard to compare, and hard for the agent to explain.
 
 ### Pipeline
 
@@ -391,7 +473,8 @@ Recommended vNext pipeline:
 
 ## Tailwind-v4 DNA Mode
 
-This should be the first serious upgrade experiment.
+This should be the first serious taste experiment after the target-gamut and
+exactness contract layer exists.
 
 ### Why
 
@@ -486,7 +569,7 @@ This is much better than presenting a ramp as if it simply happened.
 
 ## Implementation Roadmap
 
-### Phase 1: Target Gamut Infrastructure
+### Phase 1: Target Gamut And Exactness Infrastructure
 
 Goal: stop treating sRGB as invisible law.
 
@@ -494,12 +577,37 @@ Goal: stop treating sRGB as invisible law.
 - Support `srgb` first through the current behavior.
 - Add `display-p3` max-chroma and gamut checks.
 - Add occupancy calculations for both targets.
-- Add exactness metadata to solve results and reports.
+- Track source, target, and fallback seed deltas.
+- Add exactness metadata to solve results, reports, canvas state, and exports.
 
 Done when: the Tailwind comparison can say, per stop, whether a color is sRGB
-safe, P3 safe, or mapped.
+safe, P3 safe, source-exact, target-exact, or fallback-mapped.
 
-### Phase 2: Tailwind v4 Reference Profile
+### Phase 2: Solve Result Contract
+
+Goal: persist the solve story instead of returning anonymous stops.
+
+- Add `solveRamp(request): RampSolveResult`.
+- Keep `generateRamp()` as a compatibility wrapper.
+- Store result metadata in ramp state.
+- Thread target gamut, exactness, and audit summaries into exports.
+
+Done when: a generated ramp can explain its seed label, target gamut, exactness,
+fallback behavior, and audit summary without recomputing everything.
+
+### Phase 3: Shared Metrics
+
+Goal: stop scattering comparison math across reports and research prototypes.
+
+- Move label handling, seed deltas, adjacent distances, coefficient of
+  variation, gamut occupancy, and anchor summaries into shared engine modules.
+- Make the Tailwind comparison, research lab, and future DNA prototype use the
+  same metric functions.
+- Add tests around the shared metrics.
+
+Done when: "seed delta" and "occupancy" mean the same thing everywhere.
+
+### Phase 4: Tailwind v4 Reference Profile
 
 Goal: turn Tailwind v4 from a report fixture into a solver prior.
 
@@ -509,9 +617,10 @@ Goal: turn Tailwind v4 from a report fixture into a solver prior.
 - Add tests that keep the parsed profile stable.
 
 Done when: the engine can ask for "Tailwind v4 orange, anchor 500" and receive
-the reference shape as structured data.
+the reference shape, family tags, target-gamut occupancy, and semantic sampling
+schedule as structured data.
 
-### Phase 3: Reference-DNA Prototype
+### Phase 5: Reference-DNA Prototype
 
 Goal: learn quickly before changing the main solver.
 
@@ -523,19 +632,21 @@ Goal: learn quickly before changing the main solver.
 Done when: we can compare `brand-exact-fair`, `continuous-curve`, and
 `tailwind-v4-DNA` for all Tailwind `500` seeds.
 
-### Phase 4: Continuous Curve Integration
+### Phase 6: Continuous Curve Integration
 
 Goal: merge the best of Wassily's geometry with reference-DNA priors.
 
 - Feed Tailwind-v4 reference shape into endpoint, tangent, and shoulder search.
 - Add semantic sampling schedules separate from the continuous curve.
+- Add semantic unevenness scoring so reference schedules are valid targets, not
+  automatic spacing failures.
 - Keep exact seed placement explicit.
 - Preserve monotone lightness and no collapsed adjacent steps.
 
 Done when: Tailwind-DNA visual taste improves without losing Wassily's
 inspectability and exactness.
 
-### Phase 5: Audit Reports
+### Phase 7: Audit Reports
 
 Goal: make taste debuggable.
 
@@ -571,7 +682,13 @@ Done when: a bad ramp tells us why it is bad.
 
 ## Near-Term Build Recommendation
 
-Build the smallest Tailwind-v4 DNA prototype that can answer one question:
+Build the smallest contract layer that can answer one question:
+
+> For a vivid Tailwind v4 `500` color, what exactly is preserved as source,
+> target, and fallback when Wassily generates a ramp in sRGB, P3, and dual mode?
+
+Then build the smallest Tailwind-v4 DNA prototype that can answer the taste
+question:
 
 > If a Tailwind v4 `500` color is the exact seed, can Wassily generate a P3 ramp
 > that keeps that seed at `500`, inherits Tailwind's family shape, and still
