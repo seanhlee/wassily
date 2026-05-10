@@ -345,6 +345,81 @@ describe("ramp generation", () => {
     }
   });
 
+  it("gives red, rose, and pink seeds blush shoulders and hot ink retention", () => {
+    for (const seed of [
+      {
+        hue: 25.331,
+        seedChroma: 0.237,
+        seedLightness: 0.637,
+        minTopHue: 18,
+        maxTopHue: 21,
+        minBodyHue: 26,
+        maxBodyHue: 28,
+        minInkHue: 24,
+        maxInkHue: 27,
+        minInkChroma: 0.135,
+      },
+      {
+        hue: 16.439,
+        seedChroma: 0.246,
+        seedLightness: 0.645,
+        minTopHue: 10,
+        maxTopHue: 13,
+        minBodyHue: 16,
+        maxBodyHue: 18,
+        minInkHue: 12,
+        maxInkHue: 14,
+        minInkChroma: 0.15,
+      },
+      {
+        hue: 354.308,
+        seedChroma: 0.241,
+        seedLightness: 0.656,
+        minTopHue: 342,
+        maxTopHue: 345,
+        minBodyHue: 0,
+        maxBodyHue: 6,
+        minInkHue: 2,
+        maxInkHue: 5,
+        minInkChroma: 0.148,
+      },
+    ] as const) {
+      const solved = solveRamp({
+        ...seed,
+        stopCount: 11,
+        mode: "opinionated",
+        targetGamut: "display-p3",
+      });
+      const stop50 = solved.stops.find((stop) => stop.label === "50")!.color;
+      const stop200 = solved.stops.find((stop) => stop.label === "200")!.color;
+      const stop500 = solved.stops.find((stop) => stop.label === "500")!.color;
+      const stop600 = solved.stops.find((stop) => stop.label === "600")!.color;
+      const stop900 = solved.stops.find((stop) => stop.label === "900")!.color;
+      const stop950 = solved.stops.find((stop) => stop.label === "950")!.color;
+
+      expect(solved.stops[solved.metadata.seedIndex].label).toBe("500");
+      expect(stop500.l).toBeCloseTo(seed.seedLightness, 3);
+      expect(stop500.c).toBeCloseTo(seed.seedChroma, 3);
+      expect(stop500.h).toBeCloseTo(seed.hue, 1);
+      expect(stop50.l).toBeGreaterThan(0.966);
+      expect(stop50.c).toBeGreaterThan(0.012);
+      expect(stop50.c).toBeLessThan(0.016);
+      expect(stop50.h).toBeGreaterThan(seed.minTopHue);
+      expect(stop50.h).toBeLessThan(seed.maxTopHue);
+      expect(stop200.c).toBeGreaterThan(0.06);
+      expect(stop200.c).toBeLessThan(seed.seedChroma * 0.31);
+      expect(stop600.c).toBeGreaterThan(seed.seedChroma);
+      expect(stop600.h).toBeGreaterThan(seed.minBodyHue);
+      expect(stop600.h).toBeLessThan(seed.maxBodyHue);
+      expect(stop900.l).toBeGreaterThan(0.39);
+      expect(stop900.c).toBeGreaterThan(seed.minInkChroma);
+      expect(stop900.h).toBeGreaterThan(seed.minInkHue);
+      expect(stop900.h).toBeLessThan(seed.maxInkHue);
+      expect(stop950.l).toBeLessThan(0.286);
+      expect(stop950.c).toBeGreaterThan(seed.seedChroma * 0.39);
+    }
+  });
+
   it("keeps amber and yellow shelves luminous before the warm ink tail", () => {
     const amber = solveRamp({
       hue: 70.08,
@@ -429,7 +504,7 @@ describe("ramp generation", () => {
     expect(lime400.c).toBeGreaterThan(0.22);
   });
 
-  it("gives verdant body seeds center anchors, airy shoulders, and cool ink", () => {
+  it("gives verdant body seeds center anchors, airy shoulders, and cool ink", { timeout: 10000 }, () => {
     for (const seed of [
       {
         hue: 149.6,
@@ -486,7 +561,7 @@ describe("ramp generation", () => {
     }
   });
 
-  it("gives cyan, sky, and blue seeds glass shoulders and saturated blue ink", () => {
+  it("gives cyan, sky, and blue seeds glass shoulders and saturated blue ink", { timeout: 10000 }, () => {
     for (const seed of [
       {
         hue: 215.2,

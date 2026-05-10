@@ -957,3 +957,52 @@ Interpretation: cool hues taught us that hue curves do not need to be simple
 endpoint interpolation. For sky and blue, beauty comes from a local cyanward
 reflection in the light body and a separate blueward ink shelf after the seed.
 This is another vote for grammar pieces over one magic OKLCH ramp formula.
+
+## Implementation Checkpoint: Blush Body Profile
+
+Date: 2026-05-10
+
+The red / rose / pink corridor tested whether the grammar could handle hot
+colors without borrowing orange's sunny shoulder. The answer is yes, but the
+profile has the opposite rhythm from orange: restraint before the seed,
+retention after the seed.
+
+What changed:
+
+- add `blush-body` as a wrapped hue corridor for pink, rose, and red
+- keep the gate away from fuchsia and orange
+- preserve the semantic `500` body anchor for high-chroma, mid-lightness seeds
+- move `50-200` into pale blush highlights instead of pigment-heavy tints
+- delay light-side chroma so the early shelf stays soft
+- keep `600-900` hot and occupied, avoiding the old dark/desaturated collapse
+- give pink a red wrap after the seed, and rose a late redward `900` accent
+
+Regenerated P3 comparison:
+
+- Pink now anchors at `500`: `50/100/200/300/400/500` are
+  `0.971 0.014 343.2`, `0.942 0.032 343.7`,
+  `0.890 0.067 345.1`, `0.823 0.115 347.4`,
+  `0.723 0.195 350.5`, exact seed `0.656 0.241 354.3`.
+  The dark side wraps red: `600/700/900/950` are
+  `0.595 0.254 0.6`, `0.525 0.229 5.1`,
+  `0.411 0.152 4.1`, `0.283 0.109 2.8`.
+- Rose now anchors at `500`: `50/100/200/300/400/500` are
+  `0.968 0.014 11.2`, `0.934 0.035 12.2`,
+  `0.879 0.068 11.9`, `0.811 0.117 12.5`,
+  `0.714 0.199 14.4`, exact seed `0.645 0.246 16.4`.
+  The retained ink shelf gives `600/700/900/950` as
+  `0.582 0.252 17.7`, `0.510 0.224 16.1`,
+  `0.401 0.155 13.0`, `0.266 0.099 12.6`.
+- Red now anchors at `500`: `50/100/200/300/400/500` are
+  `0.969 0.013 19.0`, `0.934 0.034 20.0`,
+  `0.878 0.066 20.3`, `0.808 0.115 21.1`,
+  `0.707 0.191 23.0`, exact seed `0.637 0.237 25.3`.
+  The body/tail shelf lands close to Tailwind:
+  `600/700/800/900/950` are `0.575 0.245 26.8`,
+  `0.504 0.218 26.7`, `0.441 0.188 26.5`,
+  `0.397 0.142 25.1`, `0.262 0.096 24.8`.
+
+Interpretation: warm families split into at least two grammars. Orange/amber
+want light shoulders that feel like sunlight. Red/rose/pink want blush: pale
+first, hot later. The recurring pattern is not a fixed hue curve; it is a
+family-specific semantic shelf around an exact body seed.

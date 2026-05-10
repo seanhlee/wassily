@@ -282,14 +282,21 @@ ink tail: orange/brown ink with retained chroma
 
 Do not reuse orange's yellow shoulder directly.
 
-Likely profile:
+Implemented profile:
 
 ```text
-light shoulder: blush, not paper
-body shelf: hot chroma retained into body labels
+light shoulder: blush, not paper, with delayed chroma
+body shelf: exact 500 body with restrained 100-200 pigment
 seed anchor: body/action labels are often natural
-ink tail: hot red/magenta ink, avoid muddy maroon collapse
+ink tail: hot retained ink through 600-900, then a controlled 950 drop
 ```
+
+The useful distinction from orange is restraint before intensity. Red, rose,
+and pink lights get better when `50-200` stay pale and high-key instead of
+pulling too much seed pigment upward. After the seed, the opposite is true:
+`600-900` need high occupancy and only a late fall into the `950` ink endpoint.
+Pink also needs a wraparound red turn after the seed, while rose needs a late
+redward accent near `900`.
 
 ### Lime
 

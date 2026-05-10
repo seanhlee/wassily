@@ -43,6 +43,14 @@ interface CoolGlassPrior {
   blueWeight: number;
 }
 
+interface BlushBodyPrior {
+  weight: number;
+  endpoint: OklchColor;
+  redWeight: number;
+  roseWeight: number;
+  pinkWeight: number;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -72,9 +80,46 @@ function mixHue(from: number, to: number, t: number): number {
   return normalizeHue(from + hueDelta(from, to) * clamp(t, 0, 1));
 }
 
+function wrappedRangeGate(
+  hue: number,
+  start: number,
+  end: number,
+  softness: number,
+): number {
+  const normalized = normalizeHue(hue);
+  if (start <= end) {
+    return smoothstep(start - softness, start, normalized) *
+      (1 - smoothstep(end, end + softness, normalized));
+  }
+
+  if (normalized >= start || normalized <= end) return 1;
+  if (normalized > 180) return smoothstep(start - softness, start, normalized);
+  return 1 - smoothstep(end, end + softness, normalized);
+}
+
 function relativeChroma(color: OklchColor, targetGamut: ColorGamut): number {
   const available = maxChroma(color.l, color.h, targetGamut);
   return available > 1e-9 ? color.c / available : 0;
+}
+
+function blushBodyProfileWeight(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): number {
+  const redWeight = clamp(1 - hueDistance(seed.h, 25) / 20, 0, 1);
+  const roseWeight = clamp(1 - hueDistance(seed.h, 14) / 20, 0, 1);
+  const pinkWeight = clamp(1 - hueDistance(seed.h, 354) / 18, 0, 1);
+  const hueWeight = Math.max(redWeight, roseWeight, pinkWeight);
+  const rangeGate = wrappedRangeGate(seed.h, 340, 34, 10);
+  const intensityWeight = Math.max(
+    clamp((relativeChroma(seed, targetGamut) - 0.52) / 0.24, 0, 1),
+    clamp((seed.c - 0.13) / 0.08, 0, 1),
+  );
+  const bodyLightnessWeight =
+    clamp((seed.l - 0.56) / 0.1, 0, 1) *
+    clamp((0.78 - seed.l) / 0.1, 0, 1);
+
+  return Math.min(1, hueWeight * rangeGate * intensityWeight * bodyLightnessWeight * 1.16);
 }
 
 function warmBodyProfileWeight(
@@ -178,6 +223,37 @@ function coolGlassProfileWeight(
     clamp((0.8 - seed.l) / 0.09, 0, 1);
 
   return hueWeight * coolRangeGate * intensityWeight * bodyLightnessWeight;
+}
+
+function blushBodyPrior(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): BlushBodyPrior | null {
+  const weight = blushBodyProfileWeight(seed, targetGamut);
+  if (weight <= 0.02) return null;
+
+  const redWeight = clamp(1 - hueDistance(seed.h, 25) / 20, 0, 1);
+  const roseWeight = clamp(1 - hueDistance(seed.h, 14) / 20, 0, 1);
+  const pinkWeight = clamp(1 - hueDistance(seed.h, 354) / 18, 0, 1);
+  const total = redWeight + roseWeight + pinkWeight || 1;
+  const redShare = redWeight / total;
+  const roseShare = roseWeight / total;
+  const pinkShare = pinkWeight / total;
+  const h = normalizeHue(
+    seed.h - (8.2 * redShare + 4.2 * roseShare + 11.2 * pinkShare),
+  );
+  const l = 0.971 * redShare + 0.969 * roseShare + 0.971 * pinkShare;
+  const seedRatio = 0.055 * redShare + 0.061 * roseShare + 0.058 * pinkShare;
+  const occupancy = 0.74 * redShare + 0.78 * roseShare + 0.62 * pinkShare;
+  const c = Math.min(seed.c * seedRatio, maxChroma(l, h, targetGamut) * occupancy);
+
+  return {
+    weight,
+    redWeight: redShare,
+    roseWeight: roseShare,
+    pinkWeight: pinkShare,
+    endpoint: clampToGamut({ l, c, h }, targetGamut),
+  };
 }
 
 function warmShoulderHue(seedHue: number): number {
@@ -298,6 +374,65 @@ function coolGlassPrior(
     skyWeight: skyShare,
     blueWeight: blueShare,
     endpoint: clampToGamut({ l, c, h }, targetGamut),
+  };
+}
+
+function blushLightColor(
+  seed: OklchColor,
+  prior: BlushBodyPrior,
+  linearProgress: number,
+  seedIndex: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const shelfExponent =
+    seedIndex >= 5
+      ? 1.48
+      : seedIndex <= 3
+      ? 1.36
+      : 1.42;
+  const lateBodyDrop =
+    0.08 *
+    smoothstep(0.68, 0.84, progress) *
+    (1 - smoothstep(0.94, 1, progress));
+  const lightnessProgress = clamp(progress ** shelfExponent + lateBodyDrop, 0, 1);
+  const chromaProgress = clamp(
+    progress ** 1.58 +
+      0.11 *
+        smoothstep(0.62, 0.86, progress) *
+        (1 - smoothstep(0.96, 1, progress)),
+    0,
+    1,
+  );
+  const roseHueDent =
+    prior.roseWeight *
+    2 *
+    smoothstep(0.28, 0.46, progress) *
+    (1 - smoothstep(0.64, 0.9, progress));
+  const hue = normalizeHue(
+    mixHue(prior.endpoint.h, seed.h, progress ** 1.9) - roseHueDent,
+  );
+
+  const color = clampToGamut({
+    l: clamp(
+      lerp(prior.endpoint.l, seed.l, lightnessProgress),
+      0.02,
+      0.995,
+    ),
+    c: Math.max(0, lerp(prior.endpoint.c, seed.c, chromaProgress)),
+    h: hue,
+  }, targetGamut);
+  const lightOccupancyCap =
+    0.78 +
+    0.18 * smoothstep(0.5, 0.84, progress) +
+    0.04 * smoothstep(0.84, 1, progress);
+
+  return {
+    ...color,
+    c: Math.min(
+      color.c,
+      maxChroma(color.l, color.h, targetGamut) * lightOccupancyCap,
+    ),
   };
 }
 
@@ -544,6 +679,75 @@ function coolGlassLightColor(
   };
 }
 
+function blushDarkInkColor(
+  seed: OklchColor,
+  prior: BlushBodyPrior,
+  normalColor: OklchColor,
+  linearProgress: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const tailHueOffset =
+    1.8 * prior.redWeight -
+    5.5 * prior.roseWeight +
+    8.8 * prior.pinkWeight -
+    8 * prior.roseWeight * (1 - prior.redWeight) ** 2;
+  const bodyHueBloom =
+    (1.6 * prior.redWeight + 2.8 * prior.roseWeight + 5.6 * prior.pinkWeight) *
+    smoothstep(0.02, 0.22, progress) *
+    (1 - smoothstep(0.58, 0.9, progress));
+  const tailHue = normalizeHue(seed.h + tailHueOffset);
+  const hue = normalizeHue(
+    mixHue(seed.h, tailHue, smoothstep(0.04, 0.66, progress)) + bodyHueBloom,
+  );
+  const tailLightness =
+    0.258 * prior.redWeight + 0.271 * prior.roseWeight + 0.284 * prior.pinkWeight;
+  const lightnessProgress = clamp(
+    progress ** 1.15 -
+      (0.16 - 0.04 * prior.pinkWeight) *
+        smoothstep(0.5, 0.78, progress) *
+        (1 - smoothstep(0.88, 1, progress)),
+    0,
+    1,
+  );
+  const l = lerp(seed.l, tailLightness, lightnessProgress);
+  const targetTailChroma =
+    0.092 * prior.redWeight + 0.105 * prior.roseWeight + 0.109 * prior.pinkWeight;
+  const hotBodyShelf =
+    smoothstep(0.02, 0.2, progress) *
+    (1 - smoothstep(0.46, 0.82, progress));
+  const inkShelf =
+    smoothstep(0.34, 0.58, progress) *
+    (1 - smoothstep(0.68, 0.96, progress));
+  const roseLateInkShelf =
+    prior.roseWeight *
+    (1 - prior.redWeight) *
+    smoothstep(0.68, 0.78, progress) *
+    (1 - smoothstep(0.86, 0.98, progress));
+  const desiredChroma =
+    lerp(seed.c, targetTailChroma, progress ** 1.22) +
+    (0.038 + 0.006 * prior.pinkWeight) * hotBodyShelf +
+    0.018 * inkShelf +
+    0.035 * roseLateInkShelf;
+  const seedOccupancy = Math.min(relativeChroma(seed, targetGamut) * 1.02, 1);
+  const tailOccupancy =
+    0.78 * prior.redWeight + 0.86 * prior.roseWeight + 0.86 * prior.pinkWeight;
+  const occupancy = Math.min(
+    1,
+    lerp(seedOccupancy, tailOccupancy, progress ** 1.5) +
+      0.13 * hotBodyShelf +
+      0.04 * inkShelf,
+  );
+  const c = Math.min(desiredChroma, maxChroma(l, hue, targetGamut) * occupancy);
+  const target = clampToGamut({ l, c: Math.max(0, c), h: hue }, targetGamut);
+
+  return {
+    l: lerp(normalColor.l, target.l, 0.97),
+    c: target.c,
+    h: target.h,
+  };
+}
+
 function warmDarkInkColor(
   seed: OklchColor,
   prior: WarmBodyPrior,
@@ -720,6 +924,30 @@ function coolGlassDarkInkColor(
   };
 }
 
+function resolveBlushBodyProfile(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): ResolvedSemanticRampProfile | null {
+  const prior = blushBodyPrior(seed, targetGamut);
+  if (!prior) return null;
+
+  return {
+    id: "blush-body",
+    weight: prior.weight,
+    lightColor: (linearProgress, seedIndex) =>
+      blushLightColor(seed, prior, linearProgress, seedIndex, targetGamut),
+    lightBlend: () => prior.weight,
+    darkColor: (normalColor, linearProgress) =>
+      blushDarkInkColor(seed, prior, normalColor, linearProgress, targetGamut),
+    darkBlend: (linearProgress) =>
+      prior.weight * smoothstep(0.02, 0.24, linearProgress),
+    seedIndexPenalty: (seedIndex, lastIndex) => {
+      const bodyIndex = Math.round(lastIndex * 0.5);
+      return prior.weight * 2.15 * Math.abs(seedIndex - bodyIndex);
+    },
+  };
+}
+
 function resolveWarmBodyProfile(
   seed: OklchColor,
   targetGamut: ColorGamut,
@@ -836,6 +1064,7 @@ export function resolveSemanticRampProfiles(
   targetGamut: ColorGamut,
 ): ResolvedSemanticRampProfile[] {
   return [
+    resolveBlushBodyProfile(seed, targetGamut),
     resolveWarmBodyProfile(seed, targetGamut),
     resolveGoldBodyProfile(seed, targetGamut),
     resolveLimeBodyProfile(seed, targetGamut),
