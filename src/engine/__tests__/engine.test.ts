@@ -657,6 +657,8 @@ describe("ramp generation", () => {
         seedLightness: 0.554,
         minTopChroma: 0.002,
         maxTopChroma: 0.004,
+        minHundredChroma: 0.005,
+        maxHundredChroma: 0.007,
         minTailChroma: 0.035,
         maxTailChroma: 0.043,
         maxTailLightness: 0.14,
@@ -667,6 +669,8 @@ describe("ramp generation", () => {
         seedLightness: 0.556,
         minTopChroma: 0,
         maxTopChroma: 0.0001,
+        minHundredChroma: 0,
+        maxHundredChroma: 0.0001,
         minTailChroma: 0,
         maxTailChroma: 0.0001,
         maxTailLightness: 0.15,
@@ -677,6 +681,8 @@ describe("ramp generation", () => {
         seedLightness: 0.553,
         minTopChroma: 0.0003,
         maxTopChroma: 0.0015,
+        minHundredChroma: 0.001,
+        maxHundredChroma: 0.002,
         minTailChroma: 0.002,
         maxTailChroma: 0.005,
         maxTailLightness: 0.15,
@@ -687,6 +693,8 @@ describe("ramp generation", () => {
         seedLightness: 0.542,
         minTopChroma: 0,
         maxTopChroma: 0.0001,
+        minHundredChroma: 0.0035,
+        maxHundredChroma: 0.0055,
         minTailChroma: 0.007,
         maxTailChroma: 0.011,
         maxTailLightness: 0.15,
@@ -697,6 +705,8 @@ describe("ramp generation", () => {
         seedLightness: 0.58,
         minTopChroma: 0.002,
         maxTopChroma: 0.004,
+        minHundredChroma: 0.004,
+        maxHundredChroma: 0.006,
         minTailChroma: 0.004,
         maxTailChroma: 0.007,
         maxTailLightness: 0.16,
@@ -723,6 +733,8 @@ describe("ramp generation", () => {
       expect(stop50.c).toBeGreaterThanOrEqual(seed.minTopChroma);
       expect(stop50.c).toBeLessThan(seed.maxTopChroma);
       expect(stop100.l).toBeGreaterThan(0.96);
+      expect(stop100.c).toBeGreaterThanOrEqual(seed.minHundredChroma);
+      expect(stop100.c).toBeLessThan(seed.maxHundredChroma);
       expect(stop300.l).toBeGreaterThan(0.86);
       expect(stop400.l).toBeGreaterThan(0.7);
       expect(stop950.l).toBeLessThan(seed.maxTailLightness);

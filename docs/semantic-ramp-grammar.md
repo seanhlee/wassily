@@ -373,7 +373,9 @@ The neutral profile is the first grammar where lightness cadence dominates hue
 and chroma. Tailwind-like neutrals are spacious at `50-300`, exact in the
 middle, and much deeper at `800-950` than a fair interpolation wants to be.
 Slate/gray retain cool chroma in the darks; zinc and pure neutral stay quieter;
-stone, taupe, olive, mist, and mauve fade into restrained temperature ink.
+stone, taupe, olive, mist, and mauve fade into restrained temperature ink. The
+`100` stop needs a narrow first-tint emergence: visibly more temperature than
+`50`, but faded back before the `200/300` cadence takes over.
 
 ## Proposed Engine Shape
 

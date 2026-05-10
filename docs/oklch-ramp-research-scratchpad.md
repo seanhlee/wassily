@@ -1056,3 +1056,9 @@ Interpretation: neutral beauty is not "less color." It is temperature plus
 cadence. The same exact-seed contract still applies, but the family grammar has
 to treat `50`, `100`, `800`, `900`, and `950` as concrete UI roles rather than
 points on a fair geometric path.
+
+Polish note: the first pass made the structure right but left some `100`s too
+close to paper. A narrow `100` tint-emergence bump now adds a whisper of chroma
+and, for near-neutrals, a tiny lightness drop centered on the `100` label. The
+bump fades out before `200`, and the neutral profile's `500` anchor preference
+is stronger so the polish cannot move the seed to `600`.

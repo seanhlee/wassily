@@ -489,7 +489,18 @@ function neutralLightColor(
     [0.8, 0.64],
     [1, 1],
   ]);
-  const lightness = lerp(prior.endpoint.l, seed.l, lightnessRatio);
+  const hundredTintBump =
+    smoothstep(0.08, 0.2, progress) *
+    (1 - smoothstep(0.24, 0.36, progress));
+  const nearNeutralTintWeight = Math.max(
+    prior.mauveWeight,
+    prior.oliveWeight,
+    prior.mistWeight,
+    prior.earthWeight,
+  );
+  const lightness =
+    lerp(prior.endpoint.l, seed.l, lightnessRatio) -
+    0.0065 * nearNeutralTintWeight * hundredTintBump;
   const coolBodyLift =
     (0.12 * prior.coolGrayWeight + 0.06 * prior.oliveWeight) *
     smoothstep(0.5, 0.8, progress);
@@ -506,7 +517,10 @@ function neutralLightColor(
       [1, 1],
     ]) +
       coolBodyLift -
-      mutedFade,
+      mutedFade +
+      0.055 *
+        Math.max(nearNeutralTintWeight, prior.coolGrayWeight * 0.55) *
+        hundredTintBump,
     0,
     1,
   );
@@ -1169,7 +1183,7 @@ function resolveNeutralTemperatureProfile(
     darkBlend: () => prior.weight,
     seedIndexPenalty: (seedIndex, lastIndex) => {
       const bodyIndex = Math.round(lastIndex * 0.5);
-      return prior.weight * 2.05 * Math.abs(seedIndex - bodyIndex);
+      return prior.weight * 3.4 * Math.abs(seedIndex - bodyIndex);
     },
   };
 }
