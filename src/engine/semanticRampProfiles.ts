@@ -186,8 +186,17 @@ function goldLightColor(
       : seedIndex <= 3
       ? lerp(3.2, 3.9, prior.goldness)
       : lerp(1.9, 2.45, prior.goldness);
-  const earlyRestraint = smoothstep(0.12, 0.36, progress);
+  const earlyRestraint = smoothstep(
+    lerp(0.12, 0.06, prior.goldness),
+    lerp(0.36, 0.34, prior.goldness),
+    progress,
+  );
   const baseChromaProgress = progress ** lerp(0.82, 0.55, prior.goldness);
+  const earlyShelfBoost =
+    prior.goldness *
+    0.06 *
+    smoothstep(0.12, 0.2, progress) *
+    (1 - smoothstep(0.34, 0.48, progress));
   const shelfBoost =
     lerp(0.3, 0.18, prior.goldness) *
     smoothstep(0.3, 0.62, progress) *
@@ -198,21 +207,39 @@ function goldLightColor(
       restrainedChromaProgress,
       baseChromaProgress + shelfBoost,
       earlyRestraint,
-    ),
+    ) + earlyShelfBoost,
     0,
     1,
   );
   const hueExponent = lerp(3.4, 4.2, prior.goldness);
+  const earlyShelfDrop =
+    prior.goldness *
+    0.012 *
+    smoothstep(0.1, 0.18, progress) *
+    (1 - smoothstep(0.34, 0.52, progress));
+  const earlyOccupancyCapStrength =
+    prior.goldness *
+    smoothstep(0.16, 0.24, progress) *
+    (1 - smoothstep(0.34, 0.48, progress));
 
-  return clampToGamut({
+  const color = clampToGamut({
     l: clamp(
-      lerp(prior.endpoint.l, seed.l, progress ** shelfExponent),
+      lerp(prior.endpoint.l, seed.l, progress ** shelfExponent) - earlyShelfDrop,
       0.02,
       0.995,
     ),
     c: Math.max(0, lerp(prior.endpoint.c, seed.c, chromaProgress)),
     h: mixHue(prior.endpoint.h, seed.h, progress ** hueExponent),
   }, targetGamut);
+  const earlyOccupancyCap = lerp(1.02, 0.84, earlyOccupancyCapStrength);
+
+  return {
+    ...color,
+    c: Math.min(
+      color.c,
+      maxChroma(color.l, color.h, targetGamut) * earlyOccupancyCap,
+    ),
+  };
 }
 
 function warmDarkInkColor(

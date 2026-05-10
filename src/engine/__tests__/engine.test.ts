@@ -367,6 +367,7 @@ describe("ramp generation", () => {
     const amber300 = amber.stops.find((stop) => stop.label === "300")!.color;
     const amber400 = amber.stops.find((stop) => stop.label === "400")!.color;
     const amber950 = amber.stops.find((stop) => stop.label === "950")!.color;
+    const yellow100 = yellow.stops.find((stop) => stop.label === "100")!.color;
     const yellow200 = yellow.stops.find((stop) => stop.label === "200")!.color;
     const yellow300 = yellow.stops.find((stop) => stop.label === "300")!.color;
     const yellow700 = yellow.stops.find((stop) => stop.label === "700")!.color;
@@ -380,6 +381,13 @@ describe("ramp generation", () => {
     expect(amber950.c).toBeGreaterThan(0.075);
     expect(amber950.h).toBeGreaterThan(42);
     expect(amber950.h).toBeLessThan(52);
+    expect(yellow100.l).toBeGreaterThan(0.968);
+    expect(yellow100.l).toBeLessThan(0.976);
+    expect(yellow100.c).toBeGreaterThan(0.068);
+    expect(yellow100.c).toBeLessThan(0.078);
+    expect(yellow100.c / maxChroma(yellow100.l, yellow100.h, "display-p3")).toBeLessThan(
+      0.92,
+    );
     expect(yellow200.h).toBeGreaterThan(100);
     expect(yellow200.c).toBeGreaterThan(0.12);
     expect(yellow300.h).toBeGreaterThan(96);

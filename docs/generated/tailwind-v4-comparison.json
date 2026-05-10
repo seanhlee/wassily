@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-10T00:16:19.424Z",
+  "generatedAt": "2026-05-10T01:46:57.320Z",
   "tailwindVersion": "4.3.0",
   "tailwindThemeUrl": "https://unpkg.com/tailwindcss@4.3.0/theme.css",
   "summary": {
@@ -1795,7 +1795,7 @@
               "hueDrift50To950": -49.803,
               "maxHueFrom500": 25.855,
               "spacingCv": 0.3034,
-              "worstAdjacentRatio": 2.9433,
+              "worstAdjacentRatio": 2.9432,
               "outOfSrgbStops": 0,
               "outOfP3Stops": 0,
               "maxOccupancy": 1.0004
@@ -2037,7 +2037,7 @@
                 "h": 94.789,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.9456
+                "occupancy": 0.9457
               },
               {
                 "label": "300",
@@ -2151,7 +2151,7 @@
               "hueDrift50To950": -49.798,
               "maxHueFrom500": 25.85,
               "spacingCv": 0.2941,
-              "worstAdjacentRatio": 2.7049,
+              "worstAdjacentRatio": 2.7048,
               "outOfSrgbStops": 0,
               "outOfP3Stops": 0,
               "maxOccupancy": 1.0121
@@ -2367,27 +2367,27 @@
               },
               {
                 "label": "100",
-                "css": "oklch(98.3% 0.046 102.202)",
-                "hex": "#FFFBD8",
-                "oklch": "oklch(0.983 0.046 102.2)",
-                "l": 0.9825,
-                "c": 0.0462,
-                "h": 102.202,
+                "css": "oklch(97.2% 0.063 102.211)",
+                "hex": "#FEF8C7",
+                "oklch": "oklch(0.972 0.063 102.2)",
+                "l": 0.9718,
+                "c": 0.063,
+                "h": 102.211,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 1.003
+                "occupancy": 0.8581
               },
               {
                 "label": "200",
-                "css": "oklch(95.3% 0.112 101.333)",
-                "hex": "#FFF298",
-                "oklch": "oklch(0.953 0.112 101.3)",
-                "l": 0.9525,
-                "c": 0.1123,
+                "css": "oklch(95.2% 0.113 101.333)",
+                "hex": "#FFF297",
+                "oklch": "oklch(0.952 0.113 101.3)",
+                "l": 0.9522,
+                "c": 0.1131,
                 "h": 101.333,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 1.005
+                "occupancy": 1.0053
               },
               {
                 "label": "300",
@@ -2500,11 +2500,11 @@
               "h950": 54.897,
               "hueDrift50To950": -47.365,
               "maxHueFrom500": 30.324,
-              "spacingCv": 0.2957,
-              "worstAdjacentRatio": 4.9464,
+              "spacingCv": 0.2643,
+              "worstAdjacentRatio": 2.7601,
               "outOfSrgbStops": 0,
               "outOfP3Stops": 0,
-              "maxOccupancy": 1.005
+              "maxOccupancy": 1.0053
             }
           },
           "contract": {
@@ -2546,27 +2546,27 @@
               },
               {
                 "label": "100",
-                "css": "oklch(98.3% 0.052 102.201)",
-                "hex": "#FFFBD3",
-                "oklch": "oklch(0.983 0.052 102.2)",
-                "l": 0.9825,
-                "c": 0.052,
-                "h": 102.201,
-                "inSrgb": false,
+                "css": "oklch(97.2% 0.071 102.210)",
+                "hex": "#FFF8C1",
+                "oklch": "oklch(0.972 0.071 102.2)",
+                "l": 0.9718,
+                "c": 0.0711,
+                "h": 102.21,
+                "inSrgb": true,
                 "inP3": true,
-                "occupancy": 1.0092
+                "occupancy": 0.8582
               },
               {
                 "label": "200",
-                "css": "oklch(95.3% 0.130 101.333)",
-                "hex": "#FFF287",
-                "oklch": "oklch(0.953 0.130 101.3)",
-                "l": 0.9525,
-                "c": 0.1296,
+                "css": "oklch(95.2% 0.131 101.333)",
+                "hex": "#FFF286",
+                "oklch": "oklch(0.952 0.131 101.3)",
+                "l": 0.9522,
+                "c": 0.1306,
                 "h": 101.333,
                 "inSrgb": false,
                 "inP3": true,
-                "occupancy": 0.9992
+                "occupancy": 1.0006
               },
               {
                 "label": "300",
@@ -2679,11 +2679,11 @@
               "h950": 54.897,
               "hueDrift50To950": -47.363,
               "maxHueFrom500": 30.323,
-              "spacingCv": 0.2812,
-              "worstAdjacentRatio": 4.5252,
-              "outOfSrgbStops": 8,
+              "spacingCv": 0.2386,
+              "worstAdjacentRatio": 2.5244,
+              "outOfSrgbStops": 7,
               "outOfP3Stops": 0,
-              "maxOccupancy": 1.0092
+              "maxOccupancy": 1.0006
             }
           },
           "contract": {
@@ -2723,27 +2723,27 @@
               },
               {
                 "label": "100",
-                "css": "oklch(98.3% 0.046 102.201)",
-                "hex": "#FFFBD8",
-                "oklch": "oklch(0.983 0.046 102.2)",
-                "l": 0.9825,
-                "c": 0.0463,
-                "h": 102.201,
+                "css": "oklch(97.2% 0.071 102.210)",
+                "hex": "#FFF8C1",
+                "oklch": "oklch(0.972 0.071 102.2)",
+                "l": 0.9718,
+                "c": 0.0711,
+                "h": 102.21,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 1.0055
+                "occupancy": 0.9677
               },
               {
                 "label": "200",
-                "css": "oklch(95.3% 0.112 101.333)",
-                "hex": "#FFF298",
-                "oklch": "oklch(0.953 0.112 101.3)",
-                "l": 0.9525,
-                "c": 0.1124,
+                "css": "oklch(95.2% 0.113 101.333)",
+                "hex": "#FFF297",
+                "oklch": "oklch(0.952 0.113 101.3)",
+                "l": 0.9522,
+                "c": 0.1132,
                 "h": 101.333,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 1.0061
+                "occupancy": 1.0066
               },
               {
                 "label": "300",
@@ -2856,8 +2856,8 @@
               "h950": 54.897,
               "hueDrift50To950": -47.363,
               "maxHueFrom500": 30.323,
-              "spacingCv": 0.3077,
-              "worstAdjacentRatio": 5.6488,
+              "spacingCv": 0.2725,
+              "worstAdjacentRatio": 2.6297,
               "outOfSrgbStops": 0,
               "outOfP3Stops": 0,
               "maxOccupancy": 1.0071

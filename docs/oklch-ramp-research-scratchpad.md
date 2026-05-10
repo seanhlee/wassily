@@ -717,3 +717,38 @@ Regenerated P3 comparison:
 Interpretation: this is a better split of family stories. Orange keeps its hot
 sun-to-ink path; amber/yellow now read more like lit gold material and less like
 orange math stretched over yellow.
+
+## Implementation Checkpoint: Yellow Early Shelf
+
+Date: 2026-05-09
+
+Visual review found that the first gold-body pass improved amber/yellow overall
+but missed yellow `100`: it became lightness-correct while riding too hard on
+the local P3 cusp.
+
+The fix was not "more color everywhere." It was a narrower rule:
+
+- let yellow `100` rise to Tailwind-like chroma earlier than the generic curve
+- drop the early shelf lightness slightly so it is not paper-white
+- cap early local-gamut occupancy around the `100` region so it stays luminous
+  instead of neon
+- relax that cap before `200` so the gold body shelf can still bloom
+
+Regenerated P3 comparison:
+
+- Yellow `100` now sits at `0.972 0.071 102.2`, almost exactly against
+  Tailwind's `0.973 0.071 103.2`.
+- The prior overcooked version was closer to `0.972 0.083 102.2` and had local
+  occupancy around `1.01`.
+- Orange and amber stayed effectively unchanged.
+
+Interpretation: yellow lights want a shoulder-to-shelf transition, not a global
+chroma pump. Local gamut occupancy is the right control surface for preventing
+P3 yellows from becoming electric at the top while still allowing rich `200/300`
+body color.
+
+Reusable principle: for cusp-heavy hues, especially yellow and likely lime,
+beauty is often governed by local gamut occupancy rather than absolute chroma.
+P3 gives the engine more usable chroma, but the top of the ramp still needs a
+semantic ceiling. The move is "occupy enough of the cusp to read luminous, then
+back off before the swatch reads fluorescent."

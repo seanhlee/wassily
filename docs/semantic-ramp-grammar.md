@@ -238,6 +238,8 @@ Requirements:
 - preserve the seed exactly when it is inside the target gamut
 - report source, target, and fallback seed deltas
 - use target-gamut occupancy when deciding chroma
+- for cusp-heavy lights, cap local occupancy semantically instead of treating
+  the P3 boundary as an automatic beauty target
 - map or solve fallbacks explicitly
 - never hide that a fallback is a compromise
 
@@ -270,7 +272,8 @@ Likely profile:
 
 ```text
 light shoulder: luminous yellow sunlight
-body shelf: strong chroma shelf, less seed-hue literalism
+early shelf: Tailwind-like chroma, capped below full cusp occupancy
+body shelf: strong chroma bloom after 100, less seed-hue literalism
 seed anchor: perceptual in Exact, 500-biased in Tailwind DNA
 ink tail: orange/brown ink with retained chroma
 ```
