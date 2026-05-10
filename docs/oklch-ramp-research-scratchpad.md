@@ -791,3 +791,124 @@ part of the beauty, not just a reporting detail. For body lime, the center label
 lets the top stay airy without starving the `200-400` shelf. For edge lime, the
 old non-500 anchor remains important because the seed may already live near the
 highlight cusp.
+
+## Agent Cartography Round: Remaining Families
+
+Date: 2026-05-10
+
+After orange, gold/yellow, and lime, the useful levers are clear enough to send
+parallel diagnosis passes across the remaining corridors. Agents are asked to
+map terrain, not edit the engine.
+
+Corridors:
+
+- green / emerald / teal
+- cyan / sky / blue
+- indigo / violet / purple
+- fuchsia / pink / rose / red
+- neutrals / slate / gray / zinc / neutral / stone
+
+Shared diagnostic template:
+
+- Tailwind vs Wassily P3 deltas at key role stops
+- visual/taste diagnosis
+- implicated levers: anchor policy, light shoulder, body shelf, local
+  occupancy, hue path, ink tail, sampling schedule
+- proposed family grammar
+- proposed regression assertions
+- risks to neighboring families
+
+Synthesis rule: look for the smallest transferable grammar piece, then implement
+one corridor at a time with visual review. Agents can identify likely levers;
+the main thread keeps the scalpel so the global palette stays coherent.
+
+### Agent Synthesis
+
+The reports agree on a larger pattern: Wassily's generic solver is now
+trustworthy as geometry, but remaining Tailwind gaps are mostly semantic label
+rhythm. The biggest repeated failure is "too fair": the ramps are smoother than
+Tailwind, so `100-300` often become too dark and too chromatic while body or ink
+roles lose their intentionally uneven shape.
+
+Common findings:
+
+- Green / emerald / teal, cyan / sky, and indigo all show anchor or label-rhythm
+  issues. Exact seeds are preserved, but the semantic body often wants `500`.
+- Pink / rose / red already anchor correctly; their miss is blushier lights,
+  delayed chroma, and a hotter tail with a larger `900 -> 950` jump.
+- Violet / purple anchor correctly but bloom too early in the lights and lose
+  the Tailwind `600/700` body plateau.
+- Neutrals are a separate class: no gamut drama, but the light side is far too
+  dark and the `950` endpoint is far too light. They need a temperature-vector
+  grammar, not chromatic hue rotation.
+
+Proposed implementation order:
+
+1. `verdant-body` for green / emerald / teal.
+   This is the closest cousin to the successful `lime-body` work: center-label
+   anchor preference, airy botanical/glass shoulder, restrained top occupancy,
+   and a cooler ink tail. Gate it away from lime and cyan.
+2. `cyan-glass` / `sky-glass`, then a separate `blue-body`.
+   Cyan and sky share the verdant anchor pathology but need much bluer glass
+   and ink behavior. Blue already anchors at `500`; it mostly needs a stronger
+   post-seed body/tail bloom.
+3. Red corridor profiles.
+   Keep anchor policy alone. Tune blush shoulder, delayed light chroma, hot
+   `600/700` body retention, and a deliberate `900 -> 950` dark jump.
+4. Purple corridor profiles.
+   Indigo needs a local `500` anchor preference; violet/purple need airy lights
+   and a `600` peak/plateau without bleeding into fuchsia.
+5. Neutral temperature profile.
+   Highest UI payoff but broadest blast radius. Build as a dedicated neutral
+   axis with strong protections for pure neutral, warm/cool neutral research
+   seeds, and muted chromatic colors.
+
+Cross-corridor guardrails:
+
+- Do not add a global "prefer 500" rule. Anchor preference must remain local to
+  family profiles.
+- Keep local occupancy as the anti-glare control for cusp/highlight colors.
+- Treat `900 -> 950` as a semantic UI role jump, not a smoothing failure.
+- For neutrals, use OKLab temperature vectors rather than hue-angle heuristics.
+
+## Implementation Checkpoint: Verdant Body Profile
+
+Date: 2026-05-10
+
+The green / emerald / teal corridor validated the agent synthesis. These
+families had the same structural failure as lime before its profile: exact seeds
+were preserved, but Tailwind's semantic `500` body color had slid to Wassily
+`400`. That made `50-300` too dark/heavy and made the dark side too same-hue.
+
+What changed:
+
+- add `verdant-body` as a corridor profile, internally blending green, emerald,
+  and teal behavior
+- keep the hue gate away from `lime-body` and the future cyan profile
+- prefer the `500` body label for high-chroma, mid-lightness verdant seeds
+- bend lights toward airy botanical/glass highlights
+- restrain top occupancy without starving the `300-500` body
+- turn the tail cooler, with stronger cool ink for emerald/teal than green
+- reshape dark lightness so `900 -> 950` reads more like an intentional UI jump
+
+Regenerated P3 comparison:
+
+- Green now anchors at `500` and sits close through the whole visible ramp:
+  `50/100/200/300/400/500` are `0.981 0.020 155.4`,
+  `0.961 0.042 155.5`, `0.922 0.091 155.6`,
+  `0.867 0.163 154.0`, `0.801 0.211 150.7`,
+  exact seed `0.723 0.219 149.6`.
+- Emerald now anchors at `500`: `50/100/200/300/400/500` are
+  `0.976 0.025 166.0`, `0.950 0.048 166.5`,
+  `0.906 0.081 166.8`, `0.847 0.135 165.8`,
+  `0.777 0.170 163.3`, exact seed `0.696 0.170 162.5`.
+- Teal now anchors at `500`: `50/100/200/300/400/500` are
+  `0.982 0.016 181.1`, `0.953 0.048 181.1`,
+  `0.906 0.081 181.1`, `0.847 0.127 181.5`,
+  `0.779 0.148 182.2`, exact seed `0.704 0.140 182.5`.
+- Lime stayed unchanged and cyan stayed on its existing path.
+
+Interpretation: `verdant-body` is the first multi-family corridor profile that
+feels justified. The shared grammar is real, but the profile still needs local
+shape controls: green wants a leafy `500` peak, emerald wants a mintier body
+shelf and cool ink, and teal wants sea-glass lights with a stronger blue tail.

@@ -28,6 +28,13 @@ interface LimeBodyPrior {
   endpoint: OklchColor;
 }
 
+interface VerdantBodyPrior {
+  weight: number;
+  endpoint: OklchColor;
+  tealness: number;
+  emeraldness: number;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -118,6 +125,27 @@ function limeBodyProfileWeight(
   return hueWeight * limeRangeGate * intensityWeight * bodyLightnessWeight;
 }
 
+function verdantBodyProfileWeight(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): number {
+  const hue = normalizeHue(seed.h);
+  const greenWeight = clamp(1 - hueDistance(seed.h, 150) / 24, 0, 1);
+  const emeraldWeight = clamp(1 - hueDistance(seed.h, 163) / 22, 0, 1);
+  const tealWeight = clamp(1 - hueDistance(seed.h, 182) / 20, 0, 1);
+  const hueWeight = Math.max(greenWeight, emeraldWeight, tealWeight);
+  const verdantRangeGate = smoothstep(140, 150, hue) * (1 - smoothstep(190, 202, hue));
+  const intensityWeight = Math.max(
+    clamp((relativeChroma(seed, targetGamut) - 0.5) / 0.26, 0, 1),
+    clamp((seed.c - 0.1) / 0.08, 0, 1),
+  );
+  const bodyLightnessWeight =
+    clamp((seed.l - 0.6) / 0.11, 0, 1) *
+    clamp((0.84 - seed.l) / 0.09, 0, 1);
+
+  return hueWeight * verdantRangeGate * intensityWeight * bodyLightnessWeight;
+}
+
 function warmShoulderHue(seedHue: number): number {
   const hue = normalizeHue(seedHue);
   if (hue <= 50) return 74;
@@ -181,6 +209,31 @@ function limeBodyPrior(
 
   return {
     weight,
+    endpoint: clampToGamut({ l, c, h }, targetGamut),
+  };
+}
+
+function verdantBodyPrior(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): VerdantBodyPrior | null {
+  const weight = verdantBodyProfileWeight(seed, targetGamut);
+  if (weight <= 0.02) return null;
+
+  const hue = normalizeHue(seed.h);
+  const tealness = smoothstep(162, 184, hue);
+  const emeraldness = clamp(1 - hueDistance(seed.h, 163) / 16, 0, 1);
+  const shoulderHueOffset = lerp(6.4, -1.6, tealness) - emeraldness * 1.1;
+  const h = normalizeHue(seed.h + shoulderHueOffset);
+  const l = 0.982 - emeraldness * 0.003 + tealness * 0.002;
+  const seedRatio = 0.084 + emeraldness * 0.038 + tealness * 0.014;
+  const occupancy = 0.62 + emeraldness * 0.04 - tealness * 0.02;
+  const c = Math.min(seed.c * seedRatio, maxChroma(l, h, targetGamut) * occupancy);
+
+  return {
+    weight,
+    tealness,
+    emeraldness,
     endpoint: clampToGamut({ l, c, h }, targetGamut),
   };
 }
@@ -321,6 +374,53 @@ function limeLightColor(
   };
 }
 
+function verdantLightColor(
+  seed: OklchColor,
+  prior: VerdantBodyPrior,
+  linearProgress: number,
+  seedIndex: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const shelfExponent =
+    seedIndex >= 5
+      ? lerp(1.62, 1.45, prior.tealness)
+      : seedIndex <= 3
+      ? lerp(1.48, 1.36, prior.tealness)
+      : lerp(1.55, 1.42, prior.tealness);
+  const baseChromaProgress = progress ** lerp(1.16, 0.78, prior.tealness);
+  const bodyShelfBoost =
+    (lerp(0.18, 0.28, prior.tealness) + prior.emeraldness * 0.08) *
+    smoothstep(0.3, 0.68, progress) *
+    (1 - smoothstep(0.92, 1, progress));
+  const chromaProgress = clamp(baseChromaProgress + bodyShelfBoost, 0, 1.08);
+  const color = clampToGamut({
+    l: clamp(
+      lerp(prior.endpoint.l, seed.l, progress ** shelfExponent),
+      0.02,
+      0.995,
+    ),
+    c: Math.max(0, lerp(prior.endpoint.c, seed.c, chromaProgress)),
+    h: mixHue(
+      prior.endpoint.h,
+      seed.h,
+      smoothstep(0.42, 0.94, progress),
+    ),
+  }, targetGamut);
+  const lightOccupancyCap =
+    lerp(0.64, 0.68, prior.tealness) +
+    0.16 * smoothstep(0.56, 0.86, progress) +
+    0.05 * smoothstep(0.84, 1, progress);
+
+  return {
+    ...color,
+    c: Math.min(
+      color.c,
+      maxChroma(color.l, color.h, targetGamut) * lightOccupancyCap,
+    ),
+  };
+}
+
 function warmDarkInkColor(
   seed: OklchColor,
   prior: WarmBodyPrior,
@@ -399,6 +499,51 @@ function goldDarkInkColor(
   };
 }
 
+function verdantDarkInkColor(
+  seed: OklchColor,
+  prior: VerdantBodyPrior,
+  normalColor: OklchColor,
+  linearProgress: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const tailCoolness = Math.max(prior.tealness, prior.emeraldness * 0.94);
+  const hueOffset = lerp(3.6, 10.2, tailCoolness);
+  const tailHue = normalizeHue(seed.h + hueOffset);
+  const hue = mixHue(
+    seed.h,
+    tailHue,
+    smoothstep(0.22, 0.96, progress),
+  );
+  const tailLightness = lerp(0.265, 0.277, prior.tealness) - prior.emeraldness * 0.004;
+  const lightnessProgress = clamp(
+    progress ** lerp(0.95, 0.82, prior.tealness) -
+      lerp(0.09, 0.07, prior.tealness) *
+        smoothstep(0.52, 0.84, progress) *
+        (1 - smoothstep(0.9, 1, progress)),
+    0,
+    1,
+  );
+  const l = lerp(seed.l, tailLightness, lightnessProgress);
+  const tailRatio = lerp(0.3, 0.33, prior.tealness);
+  const occupancy = lerp(
+    Math.min(relativeChroma(seed, targetGamut) * 0.98, 1),
+    lerp(0.7, 0.73, prior.tealness),
+    progress ** 1.15,
+  );
+  const c = Math.min(
+    lerp(seed.c, seed.c * tailRatio, progress ** 0.95),
+    maxChroma(l, hue, targetGamut) * occupancy,
+  );
+  const target = clampToGamut({ l, c: Math.max(0, c), h: hue }, targetGamut);
+
+  return {
+    l: lerp(normalColor.l, target.l, 0.96),
+    c: target.c,
+    h: target.h,
+  };
+}
+
 function resolveWarmBodyProfile(
   seed: OklchColor,
   targetGamut: ColorGamut,
@@ -461,6 +606,30 @@ function resolveLimeBodyProfile(
   };
 }
 
+function resolveVerdantBodyProfile(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): ResolvedSemanticRampProfile | null {
+  const prior = verdantBodyPrior(seed, targetGamut);
+  if (!prior) return null;
+
+  return {
+    id: "verdant-body",
+    weight: prior.weight,
+    lightColor: (linearProgress, seedIndex) =>
+      verdantLightColor(seed, prior, linearProgress, seedIndex, targetGamut),
+    lightBlend: () => prior.weight,
+    darkColor: (normalColor, linearProgress) =>
+      verdantDarkInkColor(seed, prior, normalColor, linearProgress, targetGamut),
+    darkBlend: (linearProgress) =>
+      prior.weight * smoothstep(0.02, 0.2, linearProgress),
+    seedIndexPenalty: (seedIndex, lastIndex) => {
+      const bodyIndex = Math.round(lastIndex * 0.5);
+      return prior.weight * 2.2 * Math.abs(seedIndex - bodyIndex);
+    },
+  };
+}
+
 export function resolveSemanticRampProfiles(
   seed: OklchColor,
   targetGamut: ColorGamut,
@@ -469,6 +638,7 @@ export function resolveSemanticRampProfiles(
     resolveWarmBodyProfile(seed, targetGamut),
     resolveGoldBodyProfile(seed, targetGamut),
     resolveLimeBodyProfile(seed, targetGamut),
+    resolveVerdantBodyProfile(seed, targetGamut),
   ].filter(
     (profile): profile is ResolvedSemanticRampProfile => profile !== null,
   );

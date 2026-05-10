@@ -429,6 +429,63 @@ describe("ramp generation", () => {
     expect(lime400.c).toBeGreaterThan(0.22);
   });
 
+  it("gives verdant body seeds center anchors, airy shoulders, and cool ink", () => {
+    for (const seed of [
+      {
+        hue: 149.6,
+        seedChroma: 0.219,
+        seedLightness: 0.723,
+        minTopChroma: 0.016,
+        maxTopChroma: 0.026,
+        minBodyChroma: 0.2,
+        minTailHueShift: 3,
+      },
+      {
+        hue: 162.5,
+        seedChroma: 0.17,
+        seedLightness: 0.696,
+        minTopChroma: 0.018,
+        maxTopChroma: 0.03,
+        minBodyChroma: 0.155,
+        minTailHueShift: 7,
+      },
+      {
+        hue: 182.5,
+        seedChroma: 0.14,
+        seedLightness: 0.704,
+        minTopChroma: 0.012,
+        maxTopChroma: 0.022,
+        minBodyChroma: 0.14,
+        minTailHueShift: 8,
+      },
+    ] as const) {
+      const solved = solveRamp({
+        ...seed,
+        stopCount: 11,
+        mode: "opinionated",
+        targetGamut: "display-p3",
+      });
+      const stop50 = solved.stops.find((stop) => stop.label === "50")!.color;
+      const stop400 = solved.stops.find((stop) => stop.label === "400")!.color;
+      const stop500 = solved.stops.find((stop) => stop.label === "500")!.color;
+      const stop950 = solved.stops.find((stop) => stop.label === "950")!.color;
+
+      expect(solved.stops[solved.metadata.seedIndex].label).toBe("500");
+      expect(stop500.l).toBeCloseTo(seed.seedLightness, 3);
+      expect(stop500.c).toBeCloseTo(seed.seedChroma, 3);
+      expect(stop500.h).toBeCloseTo(seed.hue, 1);
+      expect(stop50.l).toBeGreaterThan(0.975);
+      expect(stop50.c).toBeGreaterThan(seed.minTopChroma);
+      expect(stop50.c).toBeLessThan(seed.maxTopChroma);
+      expect(stop400.c).toBeGreaterThan(seed.minBodyChroma);
+      const tailHueShift = ((((stop950.h - seed.hue) % 360) + 540) % 360) - 180;
+      expect(tailHueShift).toBeGreaterThan(seed.minTailHueShift);
+      expect(stop950.c / maxChroma(stop950.l, stop950.h, "display-p3")).toBeLessThan(
+        0.76,
+      );
+    }
+  });
+
   it("solveRamp marks pure ramps as unanchored when they do not preserve the seed", () => {
     const solved = solveRamp({
       hue: 265,

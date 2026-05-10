@@ -291,17 +291,30 @@ seed anchor: body/action labels are often natural
 ink tail: hot red/magenta ink, avoid muddy maroon collapse
 ```
 
-### Lime / Green
+### Lime
 
 Avoid radioactive lights and dead olive shadows.
 
-Likely profile:
+Implemented profile:
 
 ```text
 light shoulder: botanical/yellow-green light, carefully restrained
 body shelf: center-label bloom, enough chroma to feel leafy
 seed anchor: body lime wants 500; edge lime may still need non-500 anchors
 ink tail: living green/teal ink, avoid gray-brown mud
+```
+
+### Green / Emerald / Teal
+
+Avoid heavy green lights and dead same-hue shadows.
+
+Implemented profile:
+
+```text
+light shoulder: airy botanical/glass highlight, not same-hue paper
+body shelf: 500-centered verdant body, with green peak at 500 and teal/emerald near-400 shoulders
+seed anchor: body greens want 500; edge greens remain free
+ink tail: cooler living ink, stronger cool turn for emerald/teal than green
 ```
 
 ### Cyan / Sky / Blue
