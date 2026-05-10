@@ -1006,3 +1006,53 @@ Interpretation: warm families split into at least two grammars. Orange/amber
 want light shoulders that feel like sunlight. Red/rose/pink want blush: pale
 first, hot later. The recurring pattern is not a fixed hue curve; it is a
 family-specific semantic shelf around an exact body seed.
+
+## Implementation Checkpoint: Neutral Temperature Profile
+
+Date: 2026-05-10
+
+The neutral / near-neutral pass confirmed that not every family is about chroma
+bloom. Neutrals are mostly a contrast-cadence problem: the old exact-seed ramp
+was technically fair, but `50-300` were far too dark and `800-950` were far too
+light for UI surfaces, borders, and text.
+
+What changed:
+
+- add `neutral-temperature` for low-chroma mid-body seeds
+- use explicit lightness keyframes instead of an even interpolation
+- preserve exact `500` anchors for slate, gray, zinc, neutral, stone, and the
+  derived near-neutrals
+- keep pure neutral genuinely achromatic
+- keep slate/gray darks chromatic enough to read as cool ink
+- let zinc, stone, mauve, olive, mist, and taupe fade into quieter temperature
+  ink at `950`
+- keep the profile gated by chroma/relative-chroma so saturated families remain
+  untouched
+
+Regenerated P3 comparison:
+
+- Slate now matches the UI cadence: `50/100/200/300/400/500` are
+  `0.985 0.003 249.8`, `0.968 0.005 250.7`,
+  `0.925 0.010 252.0`, `0.869 0.019 254.6`,
+  `0.709 0.038 257.9`, exact seed `0.554 0.046 257.4`.
+  The tail now reaches real cool ink:
+  `700/800/900/950` are `0.369 0.044 257.5`,
+  `0.268 0.040 259.3`, `0.205 0.040 262.1`,
+  `0.133 0.039 263.5`.
+- Pure neutral stays pure: `50/100/200/300/400/500` are
+  `0.985`, `0.968`, `0.925`, `0.869`, `0.710`,
+  exact seed `0.556`, all with zero chroma. `950` lands at `0.146`.
+- Stone now has the right paper-to-ink cadence:
+  `50/100/200/300/400/500` are `0.985 0.001 62.7`,
+  `0.968 0.001 62.2`, `0.925 0.003 61.4`,
+  `0.868 0.005 60.4`, `0.709 0.009 59.3`,
+  exact seed `0.553 0.013 58.1`. `950` is
+  `0.147 0.003 56.3`.
+- Olive and mauve validate the bridge behavior. Olive is nearly on-reference
+  across the ramp, ending at `0.154 0.006 107.3`; mauve keeps a soft top and
+  fades to `0.146 0.009 325.4`.
+
+Interpretation: neutral beauty is not "less color." It is temperature plus
+cadence. The same exact-seed contract still applies, but the family grammar has
+to treat `50`, `100`, `800`, `900`, and `950` as concrete UI roles rather than
+points on a fair geometric path.

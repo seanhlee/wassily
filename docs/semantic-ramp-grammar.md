@@ -360,14 +360,20 @@ ink tail: saturated violet ink, avoid neutral charcoal
 
 Neutral identity is temperature and restraint.
 
-Likely profile:
+Implemented profile:
 
 ```text
-light shoulder: paper/bone/slate, very low chroma
-body shelf: smooth temperature retention
-seed anchor: mostly perceptual budget
-ink tail: controlled chroma, temperature-preserving
+light shoulder: airy paper/bone/slate, with almost no chroma
+body shelf: explicit UI cadence, not an even interpolation
+seed anchor: exact 500 body for neutral families and near-neutrals
+ink tail: deep 950 ink with temperature-specific chroma retention
 ```
+
+The neutral profile is the first grammar where lightness cadence dominates hue
+and chroma. Tailwind-like neutrals are spacious at `50-300`, exact in the
+middle, and much deeper at `800-950` than a fair interpolation wants to be.
+Slate/gray retain cool chroma in the darks; zinc and pure neutral stay quieter;
+stone, taupe, olive, mist, and mauve fade into restrained temperature ink.
 
 ## Proposed Engine Shape
 

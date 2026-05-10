@@ -649,6 +649,88 @@ describe("ramp generation", () => {
     }
   });
 
+  it("gives neutral and near-neutral seeds temperature-aware paper and ink", { timeout: 15000 }, () => {
+    for (const seed of [
+      {
+        hue: 257.417,
+        seedChroma: 0.046,
+        seedLightness: 0.554,
+        minTopChroma: 0.002,
+        maxTopChroma: 0.004,
+        minTailChroma: 0.035,
+        maxTailChroma: 0.043,
+        maxTailLightness: 0.14,
+      },
+      {
+        hue: 0,
+        seedChroma: 0,
+        seedLightness: 0.556,
+        minTopChroma: 0,
+        maxTopChroma: 0.0001,
+        minTailChroma: 0,
+        maxTailChroma: 0.0001,
+        maxTailLightness: 0.15,
+      },
+      {
+        hue: 58.071,
+        seedChroma: 0.013,
+        seedLightness: 0.553,
+        minTopChroma: 0.0003,
+        maxTopChroma: 0.0015,
+        minTailChroma: 0.002,
+        maxTailChroma: 0.005,
+        maxTailLightness: 0.15,
+      },
+      {
+        hue: 322.5,
+        seedChroma: 0.034,
+        seedLightness: 0.542,
+        minTopChroma: 0,
+        maxTopChroma: 0.0001,
+        minTailChroma: 0.007,
+        maxTailChroma: 0.011,
+        maxTailLightness: 0.15,
+      },
+      {
+        hue: 107.3,
+        seedChroma: 0.031,
+        seedLightness: 0.58,
+        minTopChroma: 0.002,
+        maxTopChroma: 0.004,
+        minTailChroma: 0.004,
+        maxTailChroma: 0.007,
+        maxTailLightness: 0.16,
+      },
+    ] as const) {
+      const solved = solveRamp({
+        ...seed,
+        stopCount: 11,
+        mode: "opinionated",
+        targetGamut: "display-p3",
+      });
+      const stop50 = solved.stops.find((stop) => stop.label === "50")!.color;
+      const stop100 = solved.stops.find((stop) => stop.label === "100")!.color;
+      const stop300 = solved.stops.find((stop) => stop.label === "300")!.color;
+      const stop400 = solved.stops.find((stop) => stop.label === "400")!.color;
+      const stop500 = solved.stops.find((stop) => stop.label === "500")!.color;
+      const stop950 = solved.stops.find((stop) => stop.label === "950")!.color;
+
+      expect(solved.stops[solved.metadata.seedIndex].label).toBe("500");
+      expect(stop500.l).toBeCloseTo(seed.seedLightness, 3);
+      expect(stop500.c).toBeCloseTo(seed.seedChroma, 3);
+      expect(stop500.h).toBeCloseTo(seed.hue, 1);
+      expect(stop50.l).toBeGreaterThan(0.982);
+      expect(stop50.c).toBeGreaterThanOrEqual(seed.minTopChroma);
+      expect(stop50.c).toBeLessThan(seed.maxTopChroma);
+      expect(stop100.l).toBeGreaterThan(0.96);
+      expect(stop300.l).toBeGreaterThan(0.86);
+      expect(stop400.l).toBeGreaterThan(0.7);
+      expect(stop950.l).toBeLessThan(seed.maxTailLightness);
+      expect(stop950.c).toBeGreaterThanOrEqual(seed.minTailChroma);
+      expect(stop950.c).toBeLessThan(seed.maxTailChroma);
+    }
+  });
+
   it("solveRamp marks pure ramps as unanchored when they do not preserve the seed", () => {
     const solved = solveRamp({
       hue: 265,
