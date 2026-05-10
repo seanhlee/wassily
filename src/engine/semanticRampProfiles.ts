@@ -43,6 +43,15 @@ interface CoolGlassPrior {
   blueWeight: number;
 }
 
+interface VioletBodyPrior {
+  weight: number;
+  endpoint: OklchColor;
+  indigoWeight: number;
+  violetWeight: number;
+  purpleWeight: number;
+  fuchsiaWeight: number;
+}
+
 interface BlushBodyPrior {
   weight: number;
   endpoint: OklchColor;
@@ -264,6 +273,36 @@ function coolGlassProfileWeight(
   return hueWeight * coolRangeGate * intensityWeight * bodyLightnessWeight;
 }
 
+function violetBodyProfileWeight(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): number {
+  const hue = normalizeHue(seed.h);
+  const indigoWeight = clamp(1 - hueDistance(seed.h, 277) / 20, 0, 1);
+  const violetWeight = clamp(1 - hueDistance(seed.h, 293) / 18, 0, 1);
+  const purpleWeight = clamp(1 - hueDistance(seed.h, 305) / 19, 0, 1);
+  const fuchsiaWeight = clamp(1 - hueDistance(seed.h, 322) / 21, 0, 1);
+  const hueWeight = Math.max(
+    indigoWeight,
+    violetWeight,
+    purpleWeight,
+    fuchsiaWeight,
+  );
+  const violetRangeGate = smoothstep(266, 276, hue) * (1 - smoothstep(334, 344, hue));
+  const intensityWeight = Math.max(
+    clamp((relativeChroma(seed, targetGamut) - 0.5) / 0.26, 0, 1),
+    clamp((seed.c - 0.12) / 0.08, 0, 1),
+  );
+  const bodyLightnessWeight =
+    clamp((seed.l - 0.52) / 0.1, 0, 1) *
+    clamp((0.74 - seed.l) / 0.1, 0, 1);
+
+  return Math.min(
+    1,
+    hueWeight * violetRangeGate * intensityWeight * bodyLightnessWeight * 1.12,
+  );
+}
+
 function neutralTemperaturePrior(
   seed: OklchColor,
   targetGamut: ColorGamut,
@@ -470,6 +509,56 @@ function coolGlassPrior(
     cyanWeight: cyanShare,
     skyWeight: skyShare,
     blueWeight: blueShare,
+    endpoint: clampToGamut({ l, c, h }, targetGamut),
+  };
+}
+
+function violetBodyPrior(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): VioletBodyPrior | null {
+  const weight = violetBodyProfileWeight(seed, targetGamut);
+  if (weight <= 0.02) return null;
+
+  const indigoWeight = clamp(1 - hueDistance(seed.h, 277) / 20, 0, 1);
+  const violetWeight = clamp(1 - hueDistance(seed.h, 293) / 18, 0, 1);
+  const purpleWeight = clamp(1 - hueDistance(seed.h, 305) / 19, 0, 1);
+  const fuchsiaWeight = clamp(1 - hueDistance(seed.h, 322) / 21, 0, 1);
+  const total = indigoWeight + violetWeight + purpleWeight + fuchsiaWeight || 1;
+  const indigoShare = indigoWeight / total;
+  const violetShare = violetWeight / total;
+  const purpleShare = purpleWeight / total;
+  const fuchsiaShare = fuchsiaWeight / total;
+  const h = normalizeHue(
+    seed.h -
+      4.8 * indigoShare +
+      1.2 * violetShare +
+      4.2 * purpleShare -
+      2 * fuchsiaShare,
+  );
+  const l =
+    0.962 * indigoShare +
+    0.969 * violetShare +
+    0.977 * purpleShare +
+    0.977 * fuchsiaShare;
+  const seedRatio =
+    0.078 * indigoShare +
+    0.064 * violetShare +
+    0.054 * purpleShare +
+    0.058 * fuchsiaShare;
+  const occupancy =
+    0.9 * indigoShare +
+    0.9 * violetShare +
+    0.88 * purpleShare +
+    0.9 * fuchsiaShare;
+  const c = Math.min(seed.c * seedRatio, maxChroma(l, h, targetGamut) * occupancy);
+
+  return {
+    weight,
+    indigoWeight: indigoShare,
+    violetWeight: violetShare,
+    purpleWeight: purpleShare,
+    fuchsiaWeight: fuchsiaShare,
     endpoint: clampToGamut({ l, c, h }, targetGamut),
   };
 }
@@ -842,6 +931,53 @@ function coolGlassLightColor(
   };
 }
 
+function violetLightColor(
+  seed: OklchColor,
+  prior: VioletBodyPrior,
+  linearProgress: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const lightnessProgress = sampleKeyframes(progress, [
+    [0, 0],
+    [0.2, 0.08],
+    [0.4, 0.23],
+    [0.6, 0.46],
+    [0.8, 0.76],
+    [1, 1],
+  ]);
+  const chromaProgress = sampleKeyframes(progress, [
+    [0, 0],
+    [0.2, 0.068],
+    [0.4, 0.2],
+    [0.6, 0.43],
+    [0.8, 0.76],
+    [1, 1],
+  ]);
+  const hue = mixHue(
+    prior.endpoint.h,
+    seed.h,
+    smoothstep(0.34, 0.94, progress),
+  );
+  const color = clampToGamut({
+    l: clamp(lerp(prior.endpoint.l, seed.l, lightnessProgress), 0.02, 0.995),
+    c: Math.max(0, lerp(prior.endpoint.c, seed.c, chromaProgress)),
+    h: hue,
+  }, targetGamut);
+  const lightOccupancyCap =
+    0.92 +
+    0.06 * smoothstep(0.42, 0.78, progress) -
+    0.04 * prior.fuchsiaWeight * (1 - smoothstep(0.72, 1, progress));
+
+  return {
+    ...color,
+    c: Math.min(
+      color.c,
+      maxChroma(color.l, color.h, targetGamut) * lightOccupancyCap,
+    ),
+  };
+}
+
 function neutralDarkInkColor(
   seed: OklchColor,
   prior: NeutralTemperaturePrior,
@@ -1165,6 +1301,127 @@ function coolGlassDarkInkColor(
   };
 }
 
+function violetDarkInkColor(
+  seed: OklchColor,
+  prior: VioletBodyPrior,
+  normalColor: OklchColor,
+  linearProgress: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const tailHueOffset =
+    4.2 * prior.indigoWeight -
+    1.4 * prior.violetWeight -
+    1.1 * prior.purpleWeight +
+    3.6 * prior.fuchsiaWeight;
+  const hue = mixHue(
+    seed.h,
+    normalizeHue(seed.h + tailHueOffset),
+    smoothstep(0.08, 0.88, progress),
+  );
+  const tailLightness =
+    0.257 * prior.indigoWeight +
+    0.283 * prior.violetWeight +
+    0.291 * prior.purpleWeight +
+    0.293 * prior.fuchsiaWeight;
+  const lightnessProgress = sampleKeyframes(progress, [
+    [0, 0],
+    [0.2, 0.2],
+    [0.4, 0.38],
+    [0.6, 0.56],
+    [0.8, 0.72],
+    [1, 1],
+  ]);
+  const chromaRatio = sampleKeyframes(progress, [
+    [0, 1],
+    [
+      0.2,
+      1.13 * prior.indigoWeight +
+        1.13 * prior.violetWeight +
+        1.09 * prior.purpleWeight +
+        0.99 * prior.fuchsiaWeight,
+    ],
+    [
+      0.4,
+      1.03 * prior.indigoWeight +
+        1.08 * prior.violetWeight +
+        1 * prior.purpleWeight +
+        0.86 * prior.fuchsiaWeight,
+    ],
+    [
+      0.6,
+      0.84 * prior.indigoWeight +
+        0.93 * prior.violetWeight +
+        0.82 * prior.purpleWeight +
+        0.72 * prior.fuchsiaWeight,
+    ],
+    [
+      0.8,
+      0.62 * prior.indigoWeight +
+        0.76 * prior.violetWeight +
+        0.66 * prior.purpleWeight +
+        0.58 * prior.fuchsiaWeight,
+    ],
+    [
+      1,
+      0.39 * prior.indigoWeight +
+        0.56 * prior.violetWeight +
+        0.56 * prior.purpleWeight +
+        0.46 * prior.fuchsiaWeight,
+    ],
+  ]);
+  const occupancy = sampleKeyframes(progress, [
+    [0, Math.min(relativeChroma(seed, targetGamut) * 0.98, 1)],
+    [
+      0.2,
+      0.9 * prior.indigoWeight +
+        0.94 * prior.violetWeight +
+        0.94 * prior.purpleWeight +
+        0.97 * prior.fuchsiaWeight,
+    ],
+    [
+      0.4,
+      0.86 * prior.indigoWeight +
+        0.96 * prior.violetWeight +
+        0.97 * prior.purpleWeight +
+        0.96 * prior.fuchsiaWeight,
+    ],
+    [
+      0.6,
+      0.79 * prior.indigoWeight +
+        0.94 * prior.violetWeight +
+        0.91 * prior.purpleWeight +
+        0.92 * prior.fuchsiaWeight,
+    ],
+    [
+      0.8,
+      0.65 * prior.indigoWeight +
+        0.87 * prior.violetWeight +
+        0.85 * prior.purpleWeight +
+        0.84 * prior.fuchsiaWeight,
+    ],
+    [
+      1,
+      0.58 * prior.indigoWeight +
+        0.86 * prior.violetWeight +
+        0.94 * prior.purpleWeight +
+        0.91 * prior.fuchsiaWeight,
+    ],
+  ]);
+  const l = lerp(seed.l, tailLightness, lightnessProgress);
+  const c = Math.min(
+    seed.c * chromaRatio,
+    maxChroma(l, hue, targetGamut) * occupancy,
+  );
+  const target = clampToGamut({ l, c: Math.max(0, c), h: hue }, targetGamut);
+
+  return {
+    l: lerp(normalColor.l, target.l, 0.97),
+    c: target.c,
+    h: target.h,
+  };
+}
+
 function resolveNeutralTemperatureProfile(
   seed: OklchColor,
   targetGamut: ColorGamut,
@@ -1323,6 +1580,30 @@ function resolveCoolGlassProfile(
   };
 }
 
+function resolveVioletBodyProfile(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): ResolvedSemanticRampProfile | null {
+  const prior = violetBodyPrior(seed, targetGamut);
+  if (!prior) return null;
+
+  return {
+    id: "violet-body",
+    weight: prior.weight,
+    lightColor: (linearProgress) =>
+      violetLightColor(seed, prior, linearProgress, targetGamut),
+    lightBlend: () => prior.weight,
+    darkColor: (normalColor, linearProgress) =>
+      violetDarkInkColor(seed, prior, normalColor, linearProgress, targetGamut),
+    darkBlend: (linearProgress) =>
+      prior.weight * smoothstep(0.02, 0.18, linearProgress),
+    seedIndexPenalty: (seedIndex, lastIndex) => {
+      const bodyIndex = Math.round(lastIndex * 0.5);
+      return prior.weight * 2.45 * Math.abs(seedIndex - bodyIndex);
+    },
+  };
+}
+
 export function resolveSemanticRampProfiles(
   seed: OklchColor,
   targetGamut: ColorGamut,
@@ -1335,6 +1616,7 @@ export function resolveSemanticRampProfiles(
     resolveLimeBodyProfile(seed, targetGamut),
     resolveVerdantBodyProfile(seed, targetGamut),
     resolveCoolGlassProfile(seed, targetGamut),
+    resolveVioletBodyProfile(seed, targetGamut),
   ].filter(
     (profile): profile is ResolvedSemanticRampProfile => profile !== null,
   );

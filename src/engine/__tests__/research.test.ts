@@ -4,6 +4,7 @@ import {
   CURATED_FAMILY_PROFILE_FITS,
   CURATED_REFERENCE_CORPUS,
 } from "../familyProfiles";
+import { solveBrandExactFairRamp } from "../brandExactFairingSolver";
 import { generateRamp } from "../ramp";
 import {
   RESEARCH_SEEDS,
@@ -160,7 +161,12 @@ describe("research harness", () => {
     for (const seedId of hardSeedIds) {
       const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
       const v6 = evaluateSeedRun(seed, { engine: "v6" }).analysis;
-      const fair = evaluateSeedRun(seed, { engine: "brand-exact-fair" }).analysis;
+      const fair = analyzeRamp(
+        solveBrandExactFairRamp(researchSeedToRampConfig(seed), {
+          semanticProfiles: false,
+        }).stops,
+        seed,
+      );
 
       expect(fair.seedDelta).toBeLessThan(1e-6);
       expect(fair.lightRamp.lightness.nonIncreasing).toBe(true);

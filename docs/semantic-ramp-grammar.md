@@ -347,14 +347,21 @@ endpoint.
 
 Protect both ends: pale highlights can die, darks can over-blacken.
 
-Likely profile:
+Implemented profile:
 
 ```text
-light shoulder: airy cool/lavender presence
-body shelf: rich chroma near seed, avoid gray lavender
-seed anchor: often lower than warm colors
-ink tail: saturated violet ink, avoid neutral charcoal
+light shoulder: airy lavender/indigo presence, with delayed chroma bloom
+body shelf: exact 500 seed, then a 600/700 chroma shelf instead of immediate fade
+seed anchor: local 500 preference, especially for indigo
+ink tail: saturated violet/magenta ink, avoid neutral charcoal
 ```
+
+The shared failure was "too fair" in both directions. Linear light-side chroma
+made `100/200` too pigmented and too dark, while the dark side faded directly
+from seed to ink. The `violet-body` profile uses a high, low-chroma endpoint,
+label-shaped lightness/chroma keyframes, and family-specific dark ratios:
+indigo keeps a cleaner blue-violet tail, violet/purple get a true 600 peak, and
+fuchsia keeps magenta heat without forcing every stop to full occupancy.
 
 ### Neutrals
 

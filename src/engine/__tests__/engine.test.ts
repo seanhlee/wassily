@@ -649,6 +649,104 @@ describe("ramp generation", () => {
     }
   });
 
+  it("gives indigo, violet, purple, and fuchsia seeds airy lights and violet ink shelves", { timeout: 10000 }, () => {
+    for (const seed of [
+      {
+        hue: 277.117,
+        seedChroma: 0.233,
+        seedLightness: 0.585,
+        minTopLightness: 0.958,
+        minTopChroma: 0.014,
+        maxTopChroma: 0.019,
+        maxHundredChroma: 0.04,
+        minTwoHundredLightness: 0.85,
+        minPeakRatio: 0.98,
+        minSevenHundredChroma: 0.22,
+        minNineHundredLightness: 0.33,
+        minTailChroma: 0.1,
+        maxTailChroma: 0.11,
+      },
+      {
+        hue: 292.717,
+        seedChroma: 0.25,
+        seedLightness: 0.606,
+        minTopLightness: 0.966,
+        minTopChroma: 0.014,
+        maxTopChroma: 0.017,
+        maxHundredChroma: 0.036,
+        minTwoHundredLightness: 0.875,
+        minPeakRatio: 1.04,
+        minSevenHundredChroma: 0.25,
+        minNineHundredLightness: 0.36,
+        minTailChroma: 0.13,
+        maxTailChroma: 0.14,
+      },
+      {
+        hue: 303.9,
+        seedChroma: 0.265,
+        seedLightness: 0.627,
+        minTopLightness: 0.972,
+        minTopChroma: 0.013,
+        maxTopChroma: 0.016,
+        maxHundredChroma: 0.035,
+        minTwoHundredLightness: 0.89,
+        minPeakRatio: 1.04,
+        minSevenHundredChroma: 0.25,
+        minNineHundredLightness: 0.37,
+        minTailChroma: 0.14,
+        maxTailChroma: 0.15,
+      },
+      {
+        hue: 322.15,
+        seedChroma: 0.295,
+        seedLightness: 0.667,
+        minTopLightness: 0.97,
+        minTopChroma: 0.016,
+        maxTopChroma: 0.019,
+        maxHundredChroma: 0.045,
+        minTwoHundredLightness: 0.89,
+        minPeakRatio: 0.94,
+        minSevenHundredChroma: 0.24,
+        minNineHundredLightness: 0.38,
+        minTailChroma: 0.13,
+        maxTailChroma: 0.14,
+      },
+    ] as const) {
+      const solved = solveRamp({
+        ...seed,
+        stopCount: 11,
+        mode: "opinionated",
+        targetGamut: "display-p3",
+      });
+      const stop50 = solved.stops.find((stop) => stop.label === "50")!.color;
+      const stop100 = solved.stops.find((stop) => stop.label === "100")!.color;
+      const stop200 = solved.stops.find((stop) => stop.label === "200")!.color;
+      const stop400 = solved.stops.find((stop) => stop.label === "400")!.color;
+      const stop500 = solved.stops.find((stop) => stop.label === "500")!.color;
+      const stop600 = solved.stops.find((stop) => stop.label === "600")!.color;
+      const stop700 = solved.stops.find((stop) => stop.label === "700")!.color;
+      const stop900 = solved.stops.find((stop) => stop.label === "900")!.color;
+      const stop950 = solved.stops.find((stop) => stop.label === "950")!.color;
+
+      expect(solved.stops[solved.metadata.seedIndex].label).toBe("500");
+      expect(stop500.l).toBeCloseTo(seed.seedLightness, 3);
+      expect(stop500.c).toBeCloseTo(seed.seedChroma, 3);
+      expect(stop500.h).toBeCloseTo(seed.hue, 1);
+      expect(stop50.l).toBeGreaterThan(seed.minTopLightness);
+      expect(stop50.c).toBeGreaterThan(seed.minTopChroma);
+      expect(stop50.c).toBeLessThan(seed.maxTopChroma);
+      expect(stop100.c).toBeLessThan(seed.maxHundredChroma);
+      expect(stop200.l).toBeGreaterThan(seed.minTwoHundredLightness);
+      expect(stop200.c).toBeLessThan(seed.seedChroma * 0.34);
+      expect(stop400.c).toBeGreaterThan(seed.seedChroma * 0.74);
+      expect(stop600.c).toBeGreaterThan(seed.seedChroma * seed.minPeakRatio);
+      expect(stop700.c).toBeGreaterThan(seed.minSevenHundredChroma);
+      expect(stop900.l).toBeGreaterThan(seed.minNineHundredLightness);
+      expect(stop950.c).toBeGreaterThan(seed.minTailChroma);
+      expect(stop950.c).toBeLessThan(seed.maxTailChroma);
+    }
+  });
+
   it("gives neutral and near-neutral seeds temperature-aware paper and ink", { timeout: 15000 }, () => {
     for (const seed of [
       {

@@ -1062,3 +1062,34 @@ close to paper. A narrow `100` tint-emergence bump now adds a whisper of chroma
 and, for near-neutrals, a tiny lightness drop centered on the `100` label. The
 bump fades out before `200`, and the neutral profile's `500` anchor preference
 is stronger so the polish cannot move the seed to `600`.
+
+## Violet Corridor Pass
+
+Indigo / violet / purple / fuchsia confirmed the same larger grammar we saw in
+the warm and green passes: beauty comes from label roles, not from an even line
+through OKLCH. The generic fair ramp was doing two wrong-but-understandable
+things:
+
+- treating indigo as a `600` anchor because the geometry looked smoother there
+- letting light-side chroma arrive linearly, which made `100/200` dark and
+  over-pigmented while still leaving the `50` endpoint under-colored
+- fading the dark side directly from seed to ink, losing Tailwind's saturated
+  `600/700` violet plateau
+
+The `violet-body` profile fixes those as a corridor:
+
+- local `500` anchor preference, with indigo pulled back into the body label
+- high lavender/indigo endpoint plus delayed light chroma keyframes
+- dark-side chroma ratios with a `600` peak for indigo/violet/purple and a
+  warmer magenta shelf for fuchsia
+
+Early comparison read:
+
+- Indigo now lands almost exactly on Tailwind's `300-800` cadence, with `950`
+  intentionally a bit more colorful than Tailwind.
+- Violet is within about `0.01` L/C across most stops; the remaining gap is
+  mostly a slightly less saturated `700-900`.
+- Purple is the cleanest match so far: the profile almost overlays Tailwind
+  from `50` through `950`.
+- Fuchsia is much better in the lights and body; `900/950` stay just a touch
+  darker and less chromatic, but the family shape feels coherent.
