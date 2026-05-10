@@ -9,6 +9,7 @@ language we can use to extrapolate orange's progress across the system.
 
 Related docs:
 
+- [ramp-gamut-contract.md](./ramp-gamut-contract.md)
 - [oklch-ramp-research-scratchpad.md](./oklch-ramp-research-scratchpad.md)
 - [oklch-ramp-synthesis.md](./oklch-ramp-synthesis.md)
 - [generated/tailwind-v4-comparison.html](./generated/tailwind-v4-comparison.html)
@@ -538,6 +539,9 @@ this family." They are mostly boundary and policy questions:
 
 This is the moment to stop adding isolated taste patches and make the gamut
 contract explicit.
+
+The durable contract now lives in
+[ramp-gamut-contract.md](./ramp-gamut-contract.md).
 
 Working recommendation:
 

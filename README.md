@@ -50,9 +50,12 @@ npm run research:extraction
 
 ## Ramp Research
 
-The current ramp research direction is documented in `docs/ramp-research-v5.md`. The app-facing opinionated solver is `brand-exact-fair`: it starts from v6's seed-constrained semantic path, then fairs the final visible ramp around the exact seed with adjacent OKLab distance as the primary truth.
+The current ramp research direction is documented in `docs/ramp-research-v5.md`, with the P3/sRGB product contract in `docs/ramp-gamut-contract.md`. The app-facing opinionated solver is `brand-exact-fair`: it starts from v6's seed-constrained semantic path, then fairs the final visible ramp around the exact seed with adjacent OKLab distance as the primary truth.
 
 Important: the fairing pass is the locked app-facing algorithm for this ship, not a declaration that ramp research is over. Treat v6 as the base research scaffold and keep judging output quality visually.
+
+Default ramps use the dual gamut contract: Display P3 is the canonical visible
+solve, while sRGB is an explicit fallback for hex and compatibility exports.
 
 - `npm run research:lab` builds the focused side-by-side lab at `docs/generated/research-lab.html`.
 - `npm run research:gauntlet` builds the broader stress matrix at `docs/generated/research-gauntlet.html`.
