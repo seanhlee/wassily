@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-10T01:46:57.320Z",
+  "generatedAt": "2026-05-10T11:42:39.450Z",
   "tailwindVersion": "4.3.0",
   "tailwindThemeUrl": "https://unpkg.com/tailwindcss@4.3.0/theme.css",
   "summary": {
@@ -10,16 +10,15 @@
     "tailwindOutOfP3500Count": 0,
     "wassily": {
       "srgb": {
-        "non500AnchorCount": 9,
+        "non500AnchorCount": 8,
         "averageSeedDelta": 0.00835,
         "largestSeedDelta": {
           "family": "lime",
           "delta": 0.02364
         },
         "anchorCounts": {
-          "300": 1,
           "400": 6,
-          "500": 17,
+          "500": 18,
           "600": 2
         },
         "exactnessCounts": {
@@ -28,16 +27,15 @@
         }
       },
       "p3": {
-        "non500AnchorCount": 8,
+        "non500AnchorCount": 7,
         "averageSeedDelta": 0,
         "largestSeedDelta": {
           "family": "red",
           "delta": 0
         },
         "anchorCounts": {
-          "300": 1,
           "400": 6,
-          "500": 18,
+          "500": 19,
           "600": 1
         },
         "exactnessCounts": {
@@ -45,16 +43,15 @@
         }
       },
       "dualFallback": {
-        "non500AnchorCount": 8,
+        "non500AnchorCount": 7,
         "averageSeedDelta": 0.00835,
         "largestSeedDelta": {
           "family": "lime",
           "delta": 0.02364
         },
         "anchorCounts": {
-          "300": 1,
           "400": 6,
-          "500": 18,
+          "500": 19,
           "600": 1
         },
         "exactnessCounts": {
@@ -3063,42 +3060,66 @@
             "swatches": [
               {
                 "label": "50",
-                "css": "oklch(95.8% 0.049 129.650)",
-                "hex": "#E7F8D6",
-                "oklch": "oklch(0.958 0.049 129.7)",
-                "l": 0.958,
-                "c": 0.0488,
-                "h": 129.65,
+                "css": "oklch(98.5% 0.028 121.031)",
+                "hex": "#F7FDE8",
+                "oklch": "oklch(0.985 0.028 121.0)",
+                "l": 0.9847,
+                "c": 0.0282,
+                "h": 121.031,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.5
+                "occupancy": 0.6813
               },
               {
                 "label": "100",
-                "css": "oklch(89.5% 0.102 130.468)",
-                "hex": "#C5EBA3",
-                "oklch": "oklch(0.895 0.102 130.5)",
-                "l": 0.8947,
-                "c": 0.1023,
-                "h": 130.468,
+                "css": "oklch(97.0% 0.059 122.896)",
+                "hex": "#EDFCD1",
+                "oklch": "oklch(0.970 0.059 122.9)",
+                "l": 0.9698,
+                "c": 0.0587,
+                "h": 122.896,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.4225
+                "occupancy": 0.7151
               },
               {
                 "label": "200",
-                "css": "oklch(83.1% 0.156 130.725)",
-                "hex": "#A4DC6A",
-                "oklch": "oklch(0.831 0.156 130.7)",
-                "l": 0.8313,
-                "c": 0.1558,
-                "h": 130.725,
+                "css": "oklch(93.8% 0.110 124.792)",
+                "hex": "#DAF8A5",
+                "oklch": "oklch(0.938 0.110 124.8)",
+                "l": 0.9381,
+                "c": 0.1104,
+                "h": 124.792,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.6903
+                "occupancy": 0.6094
               },
               {
                 "label": "300",
+                "css": "oklch(89.3% 0.174 126.777)",
+                "hex": "#BDF067",
+                "oklch": "oklch(0.893 0.174 126.8)",
+                "l": 0.893,
+                "c": 0.1739,
+                "h": 126.777,
+                "inSrgb": true,
+                "inP3": true,
+                "occupancy": 0.7598
+              },
+              {
+                "label": "400",
+                "css": "oklch(83.6% 0.213 128.814)",
+                "hex": "#9EE222",
+                "oklch": "oklch(0.836 0.213 128.8)",
+                "l": 0.836,
+                "c": 0.213,
+                "h": 128.814,
+                "inSrgb": true,
+                "inP3": true,
+                "occupancy": 0.9636
+              },
+              {
+                "label": "500",
                 "css": "oklch(76.8% 0.209 130.850)",
                 "hex": "#83CC00",
                 "oklch": "oklch(0.768 0.209 130.9)",
@@ -3110,76 +3131,52 @@
                 "occupancy": 0.9999
               },
               {
-                "label": "400",
-                "css": "oklch(69.7% 0.188 130.850)",
-                "hex": "#73B307",
-                "oklch": "oklch(0.697 0.188 130.9)",
-                "l": 0.6972,
-                "c": 0.1884,
-                "h": 130.85,
-                "inSrgb": true,
-                "inP3": true,
-                "occupancy": 0.9922
-              },
-              {
-                "label": "500",
-                "css": "oklch(62.6% 0.167 130.850)",
-                "hex": "#639B0C",
-                "oklch": "oklch(0.626 0.167 130.9)",
-                "l": 0.6264,
-                "c": 0.1674,
-                "h": 130.85,
-                "inSrgb": true,
-                "inP3": true,
-                "occupancy": 0.9827
-              },
-              {
                 "label": "600",
-                "css": "oklch(55.6% 0.146 130.850)",
-                "hex": "#54830E",
-                "oklch": "oklch(0.556 0.146 130.9)",
-                "l": 0.5556,
-                "c": 0.1464,
+                "css": "oklch(66.9% 0.180 130.850)",
+                "hex": "#6CAA0A",
+                "oklch": "oklch(0.669 0.180 130.9)",
+                "l": 0.6689,
+                "c": 0.18,
                 "h": 130.85,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.9706
+                "occupancy": 0.9886
               },
               {
                 "label": "700",
-                "css": "oklch(48.5% 0.125 130.850)",
-                "hex": "#456C0E",
-                "oklch": "oklch(0.485 0.125 130.9)",
-                "l": 0.4848,
-                "c": 0.1254,
+                "css": "oklch(57.0% 0.151 130.850)",
+                "hex": "#57880E",
+                "oklch": "oklch(0.570 0.151 130.9)",
+                "l": 0.5697,
+                "c": 0.1506,
                 "h": 130.85,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.9494
+                "occupancy": 0.9733
               },
               {
                 "label": "800",
-                "css": "oklch(41.4% 0.104 130.850)",
-                "hex": "#37560D",
-                "oklch": "oklch(0.414 0.104 130.9)",
-                "l": 0.414,
-                "c": 0.1043,
+                "css": "oklch(47.1% 0.121 130.850)",
+                "hex": "#42680E",
+                "oklch": "oklch(0.471 0.121 130.9)",
+                "l": 0.4706,
+                "c": 0.1212,
                 "h": 130.85,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.9276
+                "occupancy": 0.9456
               },
               {
                 "label": "900",
-                "css": "oklch(34.3% 0.083 130.850)",
-                "hex": "#29410B",
-                "oklch": "oklch(0.343 0.083 130.9)",
-                "l": 0.3432,
-                "c": 0.0833,
+                "css": "oklch(37.1% 0.092 130.850)",
+                "hex": "#2E490C",
+                "oklch": "oklch(0.371 0.092 130.9)",
+                "l": 0.3715,
+                "c": 0.0917,
                 "h": 130.85,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.8965
+                "occupancy": 0.9104
               },
               {
                 "label": "950",
@@ -3195,21 +3192,21 @@
               }
             ],
             "metrics": {
-              "peakChromaLabel": "300",
-              "peakChroma": 0.2094,
-              "l50": 0.958,
-              "l500": 0.6264,
+              "peakChromaLabel": "400",
+              "peakChroma": 0.213,
+              "l50": 0.9847,
+              "l500": 0.768,
               "l950": 0.2724,
-              "c50": 0.0488,
-              "c500": 0.1674,
+              "c50": 0.0282,
+              "c500": 0.2094,
               "c950": 0.0623,
-              "h50": 129.65,
+              "h50": 121.031,
               "h500": 130.85,
               "h950": 130.85,
-              "hueDrift50To950": 1.2,
-              "maxHueFrom500": 1.2,
-              "spacingCv": 0.0542,
-              "worstAdjacentRatio": 1.1227,
+              "hueDrift50To950": 9.819,
+              "maxHueFrom500": 9.819,
+              "spacingCv": 0.2808,
+              "worstAdjacentRatio": 3.0502,
               "outOfSrgbStops": 0,
               "outOfP3Stops": 0,
               "maxOccupancy": 0.9999
@@ -3220,19 +3217,17 @@
             "fallbackGamut": null,
             "fallbackPolicy": "none",
             "exactness": "target-mapped",
-            "seedLabel": "300",
+            "seedLabel": "500",
             "sourceSeedDelta": 0.02364,
             "targetSeedDelta": 0,
             "fallbackSeedDelta": null
           },
-          "anchorLabel": "300",
+          "anchorLabel": "500",
           "seedDelta": 0.02364,
           "notes": [
             "Tailwind 500 is outside sRGB; Wassily currently compresses to sRGB.",
             "Contract: source seed maps to sRGB target (source d=0.024, target d=0.000).",
-            "Wassily's reported seed anchor is 300, not 500.",
-            "Row anchor is visibly away from the Tailwind 500 source seed (d=0.024).",
-            "Peak chroma shifts from Tailwind 400 to Wassily sRGB 300."
+            "Row anchor is visibly away from the Tailwind 500 source seed (d=0.024)."
           ]
         },
         "p3": {
@@ -3242,42 +3237,66 @@
             "swatches": [
               {
                 "label": "50",
-                "css": "oklch(95.8% 0.053 129.707)",
-                "hex": "#E6F9D4",
-                "oklch": "oklch(0.958 0.053 129.7)",
-                "l": 0.958,
-                "c": 0.0526,
-                "h": 129.707,
+                "css": "oklch(98.5% 0.031 121.013)",
+                "hex": "#F7FEE7",
+                "oklch": "oklch(0.985 0.031 121.0)",
+                "l": 0.9847,
+                "c": 0.0313,
+                "h": 121.013,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.4915
+                "occupancy": 0.7032
               },
               {
                 "label": "100",
-                "css": "oklch(89.5% 0.113 130.494)",
-                "hex": "#C3EC9C",
-                "oklch": "oklch(0.895 0.113 130.5)",
-                "l": 0.8947,
-                "c": 0.1127,
-                "h": 130.494,
+                "css": "oklch(97.0% 0.064 122.905)",
+                "hex": "#EDFDCE",
+                "oklch": "oklch(0.970 0.064 122.9)",
+                "l": 0.9698,
+                "c": 0.0636,
+                "h": 122.905,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.3975
+                "occupancy": 0.7135
               },
               {
                 "label": "200",
-                "css": "oklch(83.1% 0.173 130.734)",
-                "hex": "#A0DE5C",
-                "oklch": "oklch(0.831 0.173 130.7)",
-                "l": 0.8313,
-                "c": 0.1729,
-                "h": 130.734,
+                "css": "oklch(93.8% 0.123 124.791)",
+                "hex": "#D8F99D",
+                "oklch": "oklch(0.938 0.123 124.8)",
+                "l": 0.9381,
+                "c": 0.1229,
+                "h": 124.791,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.6546
+                "occupancy": 0.6192
               },
               {
                 "label": "300",
+                "css": "oklch(89.3% 0.199 126.773)",
+                "hex": "#B9F34C",
+                "oklch": "oklch(0.893 0.199 126.8)",
+                "l": 0.893,
+                "c": 0.1991,
+                "h": 126.773,
+                "inSrgb": true,
+                "inP3": true,
+                "occupancy": 0.743
+              },
+              {
+                "label": "400",
+                "css": "oklch(83.6% 0.239 128.813)",
+                "hex": "#98E400",
+                "oklch": "oklch(0.836 0.239 128.8)",
+                "l": 0.836,
+                "c": 0.239,
+                "h": 128.813,
+                "inSrgb": false,
+                "inP3": true,
+                "occupancy": 0.9243
+              },
+              {
+                "label": "500",
                 "css": "oklch(76.8% 0.233 130.850)",
                 "hex": "#7CCF00",
                 "oklch": "oklch(0.768 0.233 130.9)",
@@ -3289,76 +3308,52 @@
                 "occupancy": 0.9528
               },
               {
-                "label": "400",
-                "css": "oklch(69.7% 0.210 130.850)",
-                "hex": "#6DB500",
-                "oklch": "oklch(0.697 0.210 130.9)",
-                "l": 0.697,
-                "c": 0.21,
-                "h": 130.85,
-                "inSrgb": false,
-                "inP3": true,
-                "occupancy": 0.9466
-              },
-              {
-                "label": "500",
-                "css": "oklch(62.6% 0.187 130.850)",
-                "hex": "#5E9D00",
-                "oklch": "oklch(0.626 0.187 130.9)",
-                "l": 0.6259,
-                "c": 0.1871,
-                "h": 130.85,
-                "inSrgb": false,
-                "inP3": true,
-                "occupancy": 0.9389
-              },
-              {
                 "label": "600",
-                "css": "oklch(55.5% 0.164 130.850)",
-                "hex": "#4F8500",
-                "oklch": "oklch(0.555 0.164 130.9)",
-                "l": 0.5549,
-                "c": 0.1641,
+                "css": "oklch(66.9% 0.201 130.850)",
+                "hex": "#67AB00",
+                "oklch": "oklch(0.669 0.201 130.9)",
+                "l": 0.6685,
+                "c": 0.2008,
                 "h": 130.85,
                 "inSrgb": false,
                 "inP3": true,
-                "occupancy": 0.9293
+                "occupancy": 0.9417
               },
               {
                 "label": "700",
-                "css": "oklch(48.4% 0.141 130.850)",
-                "hex": "#416D00",
-                "oklch": "oklch(0.484 0.141 130.9)",
-                "l": 0.4838,
-                "c": 0.1411,
+                "css": "oklch(56.9% 0.169 130.850)",
+                "hex": "#528900",
+                "oklch": "oklch(0.569 0.169 130.9)",
+                "l": 0.5691,
+                "c": 0.1687,
                 "h": 130.85,
                 "inSrgb": false,
                 "inP3": true,
-                "occupancy": 0.9168
+                "occupancy": 0.9306
               },
               {
                 "label": "800",
-                "css": "oklch(41.3% 0.118 130.850)",
-                "hex": "#335700",
-                "oklch": "oklch(0.413 0.118 130.9)",
-                "l": 0.4128,
-                "c": 0.1181,
+                "css": "oklch(47.0% 0.137 130.850)",
+                "hex": "#3E6900",
+                "oklch": "oklch(0.470 0.137 130.9)",
+                "l": 0.4696,
+                "c": 0.1365,
                 "h": 130.85,
                 "inSrgb": false,
                 "inP3": true,
-                "occupancy": 0.9001
+                "occupancy": 0.9148
               },
               {
                 "label": "900",
-                "css": "oklch(34.2% 0.095 130.850)",
-                "hex": "#264200",
-                "oklch": "oklch(0.342 0.095 130.9)",
-                "l": 0.3418,
-                "c": 0.0952,
+                "css": "oklch(37.0% 0.104 130.850)",
+                "hex": "#2B4A00",
+                "oklch": "oklch(0.370 0.104 130.9)",
+                "l": 0.3702,
+                "c": 0.1043,
                 "h": 130.85,
                 "inSrgb": false,
                 "inP3": true,
-                "occupancy": 0.8763
+                "occupancy": 0.8846
               },
               {
                 "label": "950",
@@ -3374,22 +3369,22 @@
               }
             ],
             "metrics": {
-              "peakChromaLabel": "300",
-              "peakChroma": 0.233,
-              "l50": 0.958,
-              "l500": 0.6259,
+              "peakChromaLabel": "400",
+              "peakChroma": 0.239,
+              "l50": 0.9847,
+              "l500": 0.768,
               "l950": 0.2707,
-              "c50": 0.0526,
-              "c500": 0.1871,
+              "c50": 0.0313,
+              "c500": 0.233,
               "c950": 0.0722,
-              "h50": 129.707,
+              "h50": 121.013,
               "h500": 130.85,
               "h950": 130.85,
-              "hueDrift50To950": 1.143,
-              "maxHueFrom500": 1.143,
-              "spacingCv": 0.074,
-              "worstAdjacentRatio": 1.1697,
-              "outOfSrgbStops": 7,
+              "hueDrift50To950": 9.837,
+              "maxHueFrom500": 9.837,
+              "spacingCv": 0.2665,
+              "worstAdjacentRatio": 2.9431,
+              "outOfSrgbStops": 6,
               "outOfP3Stops": 0,
               "maxOccupancy": 0.9528
             }
@@ -3399,17 +3394,15 @@
             "fallbackGamut": null,
             "fallbackPolicy": "none",
             "exactness": "source-exact",
-            "seedLabel": "300",
+            "seedLabel": "500",
             "sourceSeedDelta": 0,
             "targetSeedDelta": 0,
             "fallbackSeedDelta": null
           },
-          "anchorLabel": "300",
+          "anchorLabel": "500",
           "seedDelta": 0,
           "notes": [
-            "P3 target preserves the Tailwind 500 source seed exactly.",
-            "Wassily's reported seed anchor is 300, not 500.",
-            "Peak chroma shifts from Tailwind 400 to Wassily P3 target 300."
+            "P3 target preserves the Tailwind 500 source seed exactly."
           ]
         },
         "dualFallback": {
@@ -3419,42 +3412,66 @@
             "swatches": [
               {
                 "label": "50",
-                "css": "oklch(95.8% 0.053 129.707)",
-                "hex": "#E6F9D4",
-                "oklch": "oklch(0.958 0.053 129.7)",
-                "l": 0.958,
-                "c": 0.0526,
-                "h": 129.707,
+                "css": "oklch(98.5% 0.031 121.013)",
+                "hex": "#F7FEE7",
+                "oklch": "oklch(0.985 0.031 121.0)",
+                "l": 0.9847,
+                "c": 0.0313,
+                "h": 121.013,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.5387
+                "occupancy": 0.7562
               },
               {
                 "label": "100",
-                "css": "oklch(89.5% 0.113 130.494)",
-                "hex": "#C3EC9C",
-                "oklch": "oklch(0.895 0.113 130.5)",
-                "l": 0.8947,
-                "c": 0.1127,
-                "h": 130.494,
+                "css": "oklch(97.0% 0.064 122.905)",
+                "hex": "#EDFDCE",
+                "oklch": "oklch(0.970 0.064 122.9)",
+                "l": 0.9698,
+                "c": 0.0636,
+                "h": 122.905,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.4655
+                "occupancy": 0.7747
               },
               {
                 "label": "200",
-                "css": "oklch(83.1% 0.173 130.734)",
-                "hex": "#A0DE5C",
-                "oklch": "oklch(0.831 0.173 130.7)",
-                "l": 0.8313,
-                "c": 0.1729,
-                "h": 130.734,
+                "css": "oklch(93.8% 0.123 124.791)",
+                "hex": "#D8F99D",
+                "oklch": "oklch(0.938 0.123 124.8)",
+                "l": 0.9381,
+                "c": 0.1229,
+                "h": 124.791,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 0.7656
+                "occupancy": 0.6779
               },
               {
                 "label": "300",
+                "css": "oklch(89.3% 0.199 126.773)",
+                "hex": "#B9F34C",
+                "oklch": "oklch(0.893 0.199 126.8)",
+                "l": 0.893,
+                "c": 0.1991,
+                "h": 126.773,
+                "inSrgb": true,
+                "inP3": true,
+                "occupancy": 0.8698
+              },
+              {
+                "label": "400",
+                "css": "oklch(83.6% 0.221 128.813)",
+                "hex": "#9CE300",
+                "oklch": "oklch(0.836 0.221 128.8)",
+                "l": 0.836,
+                "c": 0.2211,
+                "h": 128.813,
+                "inSrgb": true,
+                "inP3": true,
+                "occupancy": 1
+              },
+              {
+                "label": "500",
                 "css": "oklch(76.8% 0.209 130.850)",
                 "hex": "#83CC00",
                 "oklch": "oklch(0.768 0.209 130.9)",
@@ -3466,76 +3483,52 @@
                 "occupancy": 0.9999
               },
               {
-                "label": "400",
-                "css": "oklch(69.7% 0.190 130.850)",
-                "hex": "#72B300",
-                "oklch": "oklch(0.697 0.190 130.9)",
-                "l": 0.697,
-                "c": 0.19,
-                "h": 130.85,
-                "inSrgb": true,
-                "inP3": true,
-                "occupancy": 1.0008
-              },
-              {
-                "label": "500",
-                "css": "oklch(62.6% 0.171 130.850)",
-                "hex": "#629B00",
-                "oklch": "oklch(0.626 0.171 130.9)",
-                "l": 0.6259,
-                "c": 0.1706,
-                "h": 130.85,
-                "inSrgb": true,
-                "inP3": true,
-                "occupancy": 1.0018
-              },
-              {
                 "label": "600",
-                "css": "oklch(55.5% 0.151 130.850)",
-                "hex": "#528300",
-                "oklch": "oklch(0.555 0.151 130.9)",
-                "l": 0.5549,
-                "c": 0.1513,
+                "css": "oklch(66.9% 0.182 130.850)",
+                "hex": "#6CAA00",
+                "oklch": "oklch(0.669 0.182 130.9)",
+                "l": 0.6685,
+                "c": 0.1823,
                 "h": 130.85,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 1.0032
+                "occupancy": 1.0012
               },
               {
                 "label": "700",
-                "css": "oklch(48.4% 0.132 130.850)",
-                "hex": "#436D00",
-                "oklch": "oklch(0.484 0.132 130.9)",
-                "l": 0.4838,
-                "c": 0.1319,
+                "css": "oklch(56.9% 0.155 130.850)",
+                "hex": "#558800",
+                "oklch": "oklch(0.569 0.155 130.9)",
+                "l": 0.5691,
+                "c": 0.1551,
                 "h": 130.85,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 1.005
+                "occupancy": 1.0028
               },
               {
                 "label": "800",
-                "css": "oklch(41.3% 0.113 130.850)",
-                "hex": "#355700",
-                "oklch": "oklch(0.413 0.113 130.9)",
-                "l": 0.4128,
-                "c": 0.1125,
+                "css": "oklch(47.0% 0.128 130.850)",
+                "hex": "#406800",
+                "oklch": "oklch(0.470 0.128 130.9)",
+                "l": 0.4696,
+                "c": 0.128,
                 "h": 130.85,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 1.0003
+                "occupancy": 1.0053
               },
               {
                 "label": "900",
-                "css": "oklch(34.2% 0.093 130.850)",
-                "hex": "#274100",
-                "oklch": "oklch(0.342 0.093 130.9)",
-                "l": 0.3418,
-                "c": 0.0932,
+                "css": "oklch(37.0% 0.101 130.850)",
+                "hex": "#2C4A00",
+                "oklch": "oklch(0.370 0.101 130.9)",
+                "l": 0.3702,
+                "c": 0.1009,
                 "h": 130.85,
                 "inSrgb": true,
                 "inP3": true,
-                "occupancy": 1.0021
+                "occupancy": 1.0013
               },
               {
                 "label": "950",
@@ -3551,24 +3544,24 @@
               }
             ],
             "metrics": {
-              "peakChromaLabel": "300",
-              "peakChroma": 0.2094,
-              "l50": 0.958,
-              "l500": 0.6259,
+              "peakChromaLabel": "400",
+              "peakChroma": 0.2211,
+              "l50": 0.9847,
+              "l500": 0.768,
               "l950": 0.2707,
-              "c50": 0.0526,
-              "c500": 0.1706,
+              "c50": 0.0313,
+              "c500": 0.2094,
               "c950": 0.0722,
-              "h50": 129.707,
+              "h50": 121.013,
               "h500": 130.85,
               "h950": 130.85,
-              "hueDrift50To950": 1.143,
-              "maxHueFrom500": 1.143,
-              "spacingCv": 0.0719,
-              "worstAdjacentRatio": 1.1948,
+              "hueDrift50To950": 9.837,
+              "maxHueFrom500": 9.837,
+              "spacingCv": 0.2721,
+              "worstAdjacentRatio": 2.9148,
               "outOfSrgbStops": 0,
               "outOfP3Stops": 0,
-              "maxOccupancy": 1.005
+              "maxOccupancy": 1.0053
             }
           },
           "contract": {
@@ -3576,18 +3569,16 @@
             "fallbackGamut": "srgb",
             "fallbackPolicy": "map-target-to-srgb",
             "exactness": "source-exact",
-            "seedLabel": "300",
+            "seedLabel": "500",
             "sourceSeedDelta": 0,
             "targetSeedDelta": 0,
             "fallbackSeedDelta": 0
           },
-          "anchorLabel": "300",
+          "anchorLabel": "500",
           "seedDelta": 0.02364,
           "notes": [
             "Dual fallback is sRGB mapped from the P3 target ramp, not separately solved.",
-            "Wassily's reported seed anchor is 300, not 500.",
-            "Row anchor is visibly away from the Tailwind 500 source seed (d=0.024).",
-            "Peak chroma shifts from Tailwind 400 to Dual sRGB fallback 300."
+            "Row anchor is visibly away from the Tailwind 500 source seed (d=0.024)."
           ]
         }
       }

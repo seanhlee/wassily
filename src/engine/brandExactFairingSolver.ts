@@ -6,7 +6,10 @@ import {
   toLabVector,
   type LabVector,
 } from "./pathGeometry";
-import { resolveSemanticRampProfiles } from "./semanticRampProfiles";
+import {
+  resolveSemanticRampProfiles,
+  type ResolvedSemanticRampProfile,
+} from "./semanticRampProfiles";
 import { solveV6ResearchRamp, type V6SolveResult } from "./v6ResearchSolver";
 
 function clamp01(value: number, min = 0.02, max = 0.98): number {
@@ -126,16 +129,12 @@ function fairVisibleStops(
   seedIndex: number,
   lightEase: number,
   targetGamut: ColorGamut,
-  options: BrandExactFairingOptions,
+  semanticProfiles: readonly ResolvedSemanticRampProfile[],
 ): RampStop[] {
   const lastIndex = baseStops.length - 1;
   const lightEndpoint = toLabVector(baseStops[0].color);
   const darkEndpoint = toLabVector(baseStops[lastIndex].color);
   const seedLab = toLabVector(exactSeed);
-  const semanticProfiles =
-    options.semanticProfiles === false
-      ? []
-      : resolveSemanticRampProfiles(exactSeed, targetGamut);
 
   return baseStops.map((stop, index) => {
     let color: OklchColor;
@@ -194,6 +193,18 @@ function scoreCandidate(stops: readonly RampStop[], seedIndex: number): number {
   );
 }
 
+function semanticSeedIndexPenalty(
+  profiles: readonly ResolvedSemanticRampProfile[],
+  seedIndex: number,
+  lastIndex: number,
+): number {
+  return profiles.reduce(
+    (penalty, profile) =>
+      penalty + (profile.seedIndexPenalty?.(seedIndex, lastIndex) ?? 0),
+    0,
+  );
+}
+
 export function solveBrandExactFairRamp(
   config: RampConfig,
   options: BrandExactFairingOptions = {},
@@ -205,6 +216,10 @@ export function solveBrandExactFairRamp(
     c: config.seedChroma ?? 0.12,
     h: config.hue,
   };
+  const semanticProfiles =
+    options.semanticProfiles === false
+      ? []
+      : resolveSemanticRampProfiles(exactSeed, targetGamut);
 
   let bestStops = base.stops;
   let bestSeedIndex = base.metadata.seedIndex;
@@ -233,9 +248,11 @@ export function solveBrandExactFairRamp(
         seedIndex,
         lightEase,
         targetGamut,
-        options,
+        semanticProfiles,
       );
-      const score = scoreCandidate(candidate, seedIndex);
+      const score =
+        scoreCandidate(candidate, seedIndex) +
+        semanticSeedIndexPenalty(semanticProfiles, seedIndex, lastIndex);
       if (score < bestScore) {
         bestStops = candidate;
         bestSeedIndex = seedIndex;

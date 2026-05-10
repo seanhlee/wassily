@@ -395,6 +395,40 @@ describe("ramp generation", () => {
     expect(yellow700.h).toBeGreaterThan(62);
   });
 
+  it("gives lime body seeds a center anchor and restrained botanical lights", () => {
+    const lime = solveRamp({
+      hue: 130.8,
+      seedChroma: 0.233,
+      seedLightness: 0.768,
+      stopCount: 11,
+      mode: "opinionated",
+      targetGamut: "display-p3",
+    });
+
+    const lime50 = lime.stops.find((stop) => stop.label === "50")!.color;
+    const lime100 = lime.stops.find((stop) => stop.label === "100")!.color;
+    const lime200 = lime.stops.find((stop) => stop.label === "200")!.color;
+    const lime300 = lime.stops.find((stop) => stop.label === "300")!.color;
+    const lime400 = lime.stops.find((stop) => stop.label === "400")!.color;
+    const lime500 = lime.stops.find((stop) => stop.label === "500")!;
+
+    expect(lime.stops[lime.metadata.seedIndex].label).toBe("500");
+    expect(lime500.color.l).toBeCloseTo(0.768, 3);
+    expect(lime500.color.c).toBeCloseTo(0.233, 3);
+    expect(lime500.color.h).toBeCloseTo(130.8, 1);
+    expect(lime50.l).toBeGreaterThan(0.98);
+    expect(lime50.c).toBeGreaterThan(0.025);
+    expect(lime50.c).toBeLessThan(0.04);
+    expect(lime50.h).toBeGreaterThan(118);
+    expect(lime50.h).toBeLessThan(123);
+    expect(lime100.c / maxChroma(lime100.l, lime100.h, "display-p3")).toBeLessThan(
+      0.78,
+    );
+    expect(lime200.c).toBeGreaterThan(0.115);
+    expect(lime300.c).toBeGreaterThan(0.18);
+    expect(lime400.c).toBeGreaterThan(0.22);
+  });
+
   it("solveRamp marks pure ramps as unanchored when they do not preserve the seed", () => {
     const solved = solveRamp({
       hue: 265,

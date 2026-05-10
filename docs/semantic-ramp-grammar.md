@@ -299,8 +299,8 @@ Likely profile:
 
 ```text
 light shoulder: botanical/yellow-green light, carefully restrained
-body shelf: preserve freshness without neon glare
-seed anchor: often high-lightness seeds need non-500 anchors
+body shelf: center-label bloom, enough chroma to feel leafy
+seed anchor: body lime wants 500; edge lime may still need non-500 anchors
 ink tail: living green/teal ink, avoid gray-brown mud
 ```
 
@@ -396,7 +396,9 @@ Status: implemented as `src/engine/semanticRampProfiles.ts`. The first resolved
 profile was `warm-body`, which owns the light shoulder, body shelf, and ink-tail
 behavior discovered through the P3 orange pass. A second `gold-body` profile now
 handles amber/yellow so those families can hold luminous hue and shelf chroma
-longer before moving into an ochre/bronze tail. `brandExactFairingSolver.ts`
+longer before moving into an ochre/bronze tail. A third `lime-body` profile
+handles mid-body lime seeds with a botanical light shoulder, a center-label
+anchor preference, and a stronger `200-400` body bloom. `brandExactFairingSolver.ts`
 applies resolved profiles generically instead of knowing family-specific math.
 
 ### Step 2: Add Profile Blending

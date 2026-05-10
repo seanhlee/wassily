@@ -8,6 +8,7 @@ export interface ResolvedSemanticRampProfile {
   lightBlend(linearProgress: number): number;
   darkColor(normalColor: OklchColor, linearProgress: number): OklchColor;
   darkBlend(linearProgress: number): number;
+  seedIndexPenalty?(seedIndex: number, lastIndex: number): number;
 }
 
 interface WarmBodyPrior {
@@ -20,6 +21,11 @@ interface GoldBodyPrior {
   weight: number;
   endpoint: OklchColor;
   goldness: number;
+}
+
+interface LimeBodyPrior {
+  weight: number;
+  endpoint: OklchColor;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -94,6 +100,24 @@ function goldBodyProfileWeight(
   return hueWeight * goldRangeGate * intensityWeight * bodyLightnessWeight;
 }
 
+function limeBodyProfileWeight(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): number {
+  const hue = normalizeHue(seed.h);
+  const hueWeight = clamp(1 - hueDistance(seed.h, 130) / 18, 0, 1);
+  const limeRangeGate = smoothstep(108, 118, hue) * (1 - smoothstep(138, 148, hue));
+  const intensityWeight = Math.max(
+    clamp((relativeChroma(seed, targetGamut) - 0.52) / 0.28, 0, 1),
+    clamp((seed.c - 0.12) / 0.08, 0, 1),
+  );
+  const bodyLightnessWeight =
+    clamp((seed.l - 0.64) / 0.1, 0, 1) *
+    clamp((0.88 - seed.l) / 0.09, 0, 1);
+
+  return hueWeight * limeRangeGate * intensityWeight * bodyLightnessWeight;
+}
+
 function warmShoulderHue(seedHue: number): number {
   const hue = normalizeHue(seedHue);
   if (hue <= 50) return 74;
@@ -140,6 +164,23 @@ function goldBodyPrior(
   return {
     weight,
     goldness,
+    endpoint: clampToGamut({ l, c, h }, targetGamut),
+  };
+}
+
+function limeBodyPrior(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): LimeBodyPrior | null {
+  const weight = limeBodyProfileWeight(seed, targetGamut);
+  if (weight <= 0.02) return null;
+
+  const h = lerp(118, 121, smoothstep(120, 136, normalizeHue(seed.h)));
+  const l = 0.986;
+  const c = Math.min(seed.c * 0.13, maxChroma(l, h, targetGamut) * 0.76);
+
+  return {
+    weight,
     endpoint: clampToGamut({ l, c, h }, targetGamut),
   };
 }
@@ -238,6 +279,44 @@ function goldLightColor(
     c: Math.min(
       color.c,
       maxChroma(color.l, color.h, targetGamut) * earlyOccupancyCap,
+    ),
+  };
+}
+
+function limeLightColor(
+  seed: OklchColor,
+  prior: LimeBodyPrior,
+  linearProgress: number,
+  seedIndex: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const shelfExponent = seedIndex >= 5 ? 1.72 : seedIndex <= 3 ? 1.48 : 1.62;
+  const baseChromaProgress = progress ** 1.05;
+  const bodyShelfBoost =
+    0.26 *
+    smoothstep(0.28, 0.62, progress) *
+    (1 - smoothstep(0.92, 1, progress));
+  const chromaProgress = clamp(baseChromaProgress + bodyShelfBoost, 0, 1.04);
+  const color = clampToGamut({
+    l: clamp(
+      lerp(prior.endpoint.l, seed.l, progress ** shelfExponent),
+      0.02,
+      0.995,
+    ),
+    c: Math.max(0, lerp(prior.endpoint.c, seed.c, chromaProgress)),
+    h: mixHue(prior.endpoint.h, seed.h, progress),
+  }, targetGamut);
+  const lightOccupancyCap =
+    0.76 +
+    0.24 * smoothstep(0.58, 0.86, progress) +
+    0.04 * smoothstep(0.86, 1, progress);
+
+  return {
+    ...color,
+    c: Math.min(
+      color.c,
+      maxChroma(color.l, color.h, targetGamut) * lightOccupancyCap,
     ),
   };
 }
@@ -360,6 +439,28 @@ function resolveGoldBodyProfile(
   };
 }
 
+function resolveLimeBodyProfile(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): ResolvedSemanticRampProfile | null {
+  const prior = limeBodyPrior(seed, targetGamut);
+  if (!prior) return null;
+
+  return {
+    id: "lime-body",
+    weight: prior.weight,
+    lightColor: (linearProgress, seedIndex) =>
+      limeLightColor(seed, prior, linearProgress, seedIndex, targetGamut),
+    lightBlend: () => prior.weight,
+    darkColor: (normalColor) => normalColor,
+    darkBlend: () => 0,
+    seedIndexPenalty: (seedIndex, lastIndex) => {
+      const bodyIndex = Math.round(lastIndex * 0.5);
+      return prior.weight * 2.1 * Math.abs(seedIndex - bodyIndex);
+    },
+  };
+}
+
 export function resolveSemanticRampProfiles(
   seed: OklchColor,
   targetGamut: ColorGamut,
@@ -367,6 +468,7 @@ export function resolveSemanticRampProfiles(
   return [
     resolveWarmBodyProfile(seed, targetGamut),
     resolveGoldBodyProfile(seed, targetGamut),
+    resolveLimeBodyProfile(seed, targetGamut),
   ].filter(
     (profile): profile is ResolvedSemanticRampProfile => profile !== null,
   );

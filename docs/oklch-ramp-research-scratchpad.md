@@ -752,3 +752,42 @@ beauty is often governed by local gamut occupancy rather than absolute chroma.
 P3 gives the engine more usable chroma, but the top of the ramp still needs a
 semantic ceiling. The move is "occupy enough of the cusp to read luminous, then
 back off before the swatch reads fluorescent."
+
+## Implementation Checkpoint: Lime Body Profile
+
+Date: 2026-05-10
+
+Lime confirmed that the yellow occupancy lesson transfers, but not by copying
+yellow's grammar directly. The first profile pass improved lime's lights but
+kept the exact seed at `400`, which made the ramp read like a compressed
+perceptual solve instead of a semantic UI family. The stronger move was to give
+mid-body lime its own center-label anchor preference.
+
+What changed:
+
+- add `lime-body` as a narrow profile for high-chroma, mid-lightness lime seeds
+- keep very high-lightness edge lime seeds on the existing edge-anchor path
+- bend the light shoulder toward botanical yellow-green rather than same-hue
+  paper
+- cap the upper lights below full cusp occupancy
+- let `200-400` bloom back into a fresh leafy body shelf
+- add a profile-level seed-index penalty so this family can prefer the `500`
+  body label without forcing that rule onto orange/yellow
+
+Regenerated P3 comparison:
+
+- Lime now anchors at `500` instead of `300/400`.
+- Lime `50/100/200`: `0.985 0.031 121.0`,
+  `0.970 0.064 122.9`, `0.938 0.123 124.8`.
+- Lime `300/400/500`: `0.893 0.199 126.8`,
+  `0.836 0.239 128.8`, exact seed `0.768 0.233 130.8`.
+- Tailwind v4 for the same stops is `0.986 0.031 120.8`,
+  `0.967 0.067 122.3`, `0.938 0.127 124.3`,
+  `0.897 0.196 126.7`, `0.841 0.238 128.8`,
+  `0.768 0.233 130.8`.
+
+Interpretation: lime is the first clear case where semantic anchor policy is
+part of the beauty, not just a reporting detail. For body lime, the center label
+lets the top stay airy without starving the `200-400` shelf. For edge lime, the
+old non-500 anchor remains important because the seed may already live near the
+highlight cusp.
