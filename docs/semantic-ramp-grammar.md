@@ -390,10 +390,11 @@ same output, cleaner ownership
 ```
 
 Status: implemented as `src/engine/semanticRampProfiles.ts`. The first resolved
-profile is `warm-body`, which owns the light shoulder, body shelf, and ink-tail
-behavior discovered through the P3 orange pass. `brandExactFairingSolver.ts`
-now applies resolved profiles generically instead of knowing orange-specific
-math.
+profile was `warm-body`, which owns the light shoulder, body shelf, and ink-tail
+behavior discovered through the P3 orange pass. A second `gold-body` profile now
+handles amber/yellow so those families can hold luminous hue and shelf chroma
+longer before moving into an ochre/bronze tail. `brandExactFairingSolver.ts`
+applies resolved profiles generically instead of knowing family-specific math.
 
 ### Step 2: Add Profile Blending
 

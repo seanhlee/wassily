@@ -690,3 +690,30 @@ Interpretation: this feels closer to "same beauty language, Wassily accent."
 The next open taste question is whether amber/yellow should receive a
 Tailwind-DNA body-shelf profile that intentionally prioritizes the `500` label,
 or whether Wassily should keep choosing the seed's perceptual anchor.
+
+## Implementation Checkpoint: Gold Body Profile
+
+Date: 2026-05-09
+
+After the orange profile extraction, amber/yellow still read a little muddy
+because they were inheriting too much of orange's earth-turning behavior. The
+new `gold-body` semantic profile separates amber/yellow from `warm-body`:
+
+- `warm-body` now mostly owns orange/red-orange
+- `gold-body` owns amber/yellow
+- gold lights keep luminous yellow hue longer
+- `200-400` build chroma more confidently before returning to the seed
+- the dark tail becomes ochre/bronze, with yellow holding gold longer before
+  warming down
+
+Regenerated P3 comparison:
+
+- Amber `200/300/400` moved to `0.924 0.112 94.8`,
+  `0.878 0.180 91.4`, `0.826 0.188 83.8`.
+- Yellow `200/300` moved to `0.953 0.130 101.3`,
+  `0.892 0.184 97.3`.
+- Orange stayed effectively unchanged.
+
+Interpretation: this is a better split of family stories. Orange keeps its hot
+sun-to-ink path; amber/yellow now read more like lit gold material and less like
+orange math stretched over yellow.

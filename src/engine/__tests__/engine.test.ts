@@ -345,6 +345,48 @@ describe("ramp generation", () => {
     }
   });
 
+  it("keeps amber and yellow shelves luminous before the warm ink tail", () => {
+    const amber = solveRamp({
+      hue: 70.08,
+      seedChroma: 0.188,
+      seedLightness: 0.769,
+      stopCount: 11,
+      mode: "opinionated",
+      targetGamut: "display-p3",
+    });
+    const yellow = solveRamp({
+      hue: 86.047,
+      seedChroma: 0.184,
+      seedLightness: 0.795,
+      stopCount: 11,
+      mode: "opinionated",
+      targetGamut: "display-p3",
+    });
+
+    const amber200 = amber.stops.find((stop) => stop.label === "200")!.color;
+    const amber300 = amber.stops.find((stop) => stop.label === "300")!.color;
+    const amber400 = amber.stops.find((stop) => stop.label === "400")!.color;
+    const amber950 = amber.stops.find((stop) => stop.label === "950")!.color;
+    const yellow200 = yellow.stops.find((stop) => stop.label === "200")!.color;
+    const yellow300 = yellow.stops.find((stop) => stop.label === "300")!.color;
+    const yellow700 = yellow.stops.find((stop) => stop.label === "700")!.color;
+
+    expect(amber200.h).toBeGreaterThan(93);
+    expect(amber200.c).toBeGreaterThan(0.105);
+    expect(amber300.h).toBeGreaterThan(89);
+    expect(amber300.c).toBeGreaterThan(0.16);
+    expect(amber400.h).toBeGreaterThan(80);
+    expect(amber400.c).toBeGreaterThan(0.18);
+    expect(amber950.c).toBeGreaterThan(0.075);
+    expect(amber950.h).toBeGreaterThan(42);
+    expect(amber950.h).toBeLessThan(52);
+    expect(yellow200.h).toBeGreaterThan(100);
+    expect(yellow200.c).toBeGreaterThan(0.12);
+    expect(yellow300.h).toBeGreaterThan(96);
+    expect(yellow300.c).toBeGreaterThan(0.17);
+    expect(yellow700.h).toBeGreaterThan(62);
+  });
+
   it("solveRamp marks pure ramps as unanchored when they do not preserve the seed", () => {
     const solved = solveRamp({
       hue: 265,
