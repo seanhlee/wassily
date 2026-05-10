@@ -480,6 +480,22 @@ export function Canvas() {
         return null;
       };
 
+      const getSelectedSrgbColor = () => {
+        if (!selectedObj) return null;
+        if (selectedObj.type === "swatch") {
+          return clampToGamut((selectedObj as Swatch).color);
+        }
+        if (selectedObj.type === "ramp") {
+          const ramp = selectedObj as Ramp;
+          const fallbackStops = ramp.fallbackStops ?? ramp.stops;
+          const anchor =
+            fallbackStops.find((s) => s.label === "500") ||
+            fallbackStops[Math.floor(fallbackStops.length / 2)];
+          return state.lightMode ? anchor.darkColor : anchor.color;
+        }
+        return null;
+      };
+
       switch (key) {
         case "d":
           if (!e.metaKey && !e.ctrlKey && !e.repeat) toggleLightMode();
@@ -498,7 +514,7 @@ export function Canvas() {
 
         case "c": {
           if (e.metaKey || e.ctrlKey || e.repeat) break;
-          const colorC = getSelectedColor();
+          const colorC = getSelectedSrgbColor();
           if (colorC) {
             const value = toHex(colorC);
             navigator.clipboard.writeText(value).catch(() => {});

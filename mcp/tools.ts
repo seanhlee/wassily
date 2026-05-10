@@ -12,8 +12,9 @@ import {
   purifyColor,
   parseColor,
   toHex,
+  clampToGamut,
   isInGamut,
-  generateRamp,
+  solveRamp,
   nameForHue,
   checkContrast,
   harmonizePair,
@@ -31,6 +32,7 @@ import type {
   StopPreset,
   Action,
   ReferenceImage,
+  TargetGamut,
 } from "../src/types/index.js";
 
 // ---- Helpers ----
@@ -70,6 +72,14 @@ function formatOklch(c: OklchColor): string {
   return `oklch(${c.l.toFixed(3)} ${c.c.toFixed(3)} ${c.h.toFixed(1)})`;
 }
 
+function colorForSrgbExport(color: OklchColor): OklchColor {
+  return clampToGamut(color);
+}
+
+function hexForSrgbExport(color: OklchColor): string {
+  return toHex(colorForSrgbExport(color));
+}
+
 function json(data: unknown): { content: { type: "text"; text: string }[] } {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
 }
@@ -82,14 +92,25 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function stopToRecord(stop: RampStop) {
+function stopToRecord(stop: RampStop, fallbackStop?: RampStop) {
+  const lightSrgb = fallbackStop?.color ?? colorForSrgbExport(stop.color);
+  const darkSrgb = fallbackStop?.darkColor ?? colorForSrgbExport(stop.darkColor);
+
   return {
     index: stop.index,
     label: stop.label,
-    hex: toHex(stop.color),
-    darkHex: toHex(stop.darkColor),
+    hex: toHex(lightSrgb),
+    darkHex: toHex(darkSrgb),
     oklch: formatOklch(stop.color),
     darkOklch: formatOklch(stop.darkColor),
+    ...(fallbackStop === undefined
+      ? {}
+      : {
+          fallbackHex: toHex(fallbackStop.color),
+          fallbackDarkHex: toHex(fallbackStop.darkColor),
+          fallbackOklch: formatOklch(fallbackStop.color),
+          fallbackDarkOklch: formatOklch(fallbackStop.darkColor),
+        }),
     l: +stop.color.l.toFixed(3),
     c: +stop.color.c.toFixed(3),
     h: +stop.color.h.toFixed(1),
@@ -133,13 +154,14 @@ function generateProperties(ramps: Ramp[]): ColorProperty[] {
   const props: ColorProperty[] = [];
   for (const ramp of ramps) {
     for (const stop of ramp.stops) {
+      const fallbackStop = ramp.fallbackStops?.[stop.index];
       props.push({
         rampName: ramp.name.toLowerCase().replace(/\s+/g, "-"),
         stopLabel: stop.label,
         lightOklch: formatOklch(stop.color),
         darkOklch: formatOklch(stop.darkColor),
-        lightHex: toHex(stop.color),
-        darkHex: toHex(stop.darkColor),
+        lightHex: toHex(fallbackStop?.color ?? colorForSrgbExport(stop.color)),
+        darkHex: toHex(fallbackStop?.darkColor ?? colorForSrgbExport(stop.darkColor)),
       });
     }
   }
@@ -221,8 +243,13 @@ function formatFigma(ramps: Ramp[]): object {
         { name: "Dark", modeId: "dark" },
       ],
       variables: ramp.stops.map((stop) => {
-        const lightRgb = hexToRgbFloat(toHex(stop.color));
-        const darkRgb = hexToRgbFloat(toHex(stop.darkColor));
+        const fallbackStop = ramp.fallbackStops?.[stop.index];
+        const lightRgb = hexToRgbFloat(
+          toHex(fallbackStop?.color ?? colorForSrgbExport(stop.color)),
+        );
+        const darkRgb = hexToRgbFloat(
+          toHex(fallbackStop?.darkColor ?? colorForSrgbExport(stop.darkColor)),
+        );
         return {
           name: `${name}/${stop.label}`,
           type: "COLOR",
@@ -382,7 +409,7 @@ export function buildRampSuiteActions(
       id: swatch.id,
       name: swatch.name,
       input: swatch.input,
-      hex: toHex(swatch.color),
+      hex: hexForSrgbExport(swatch.color),
       oklch: formatOklch(swatch.color),
       inGamut: isInGamut(swatch.color),
       position: swatch.position,
@@ -557,7 +584,7 @@ export function registerTools(server: McpServer): void {
 
       const result = purify(parsed);
       return json({
-        hex: toHex(result.purified),
+        hex: hexForSrgbExport(result.purified),
         oklch: formatOklch(result.purified),
         l: +result.purified.l.toFixed(3),
         c: +result.purified.c.toFixed(3),
@@ -565,7 +592,7 @@ export function registerTools(server: McpServer): void {
         chromaGain: +result.chromaGain.toFixed(3),
         lightnessShift: +result.lightnessShift.toFixed(3),
         original: {
-          hex: toHex(result.original),
+          hex: hexForSrgbExport(result.original),
           oklch: formatOklch(result.original),
         },
       });
@@ -582,7 +609,7 @@ export function registerTools(server: McpServer): void {
       if (!parsed) return error(`Could not parse color: "${color}"`);
 
       return json({
-        hex: toHex(parsed),
+        hex: hexForSrgbExport(parsed),
         oklch: formatOklch(parsed),
         l: +parsed.l.toFixed(3),
         c: +parsed.c.toFixed(3),
@@ -622,14 +649,20 @@ export function registerTools(server: McpServer): void {
         .max(1)
         .optional()
         .describe("Seed lightness (0-1). Used to calibrate chroma curve. Omit for default."),
+      target_gamut: z
+        .enum(["dual", "display-p3", "srgb"])
+        .default("dual")
+        .describe("Generation contract. 'dual' solves in Display P3 and includes sRGB fallback metadata."),
     },
-    async ({ hue, stop_count, mode, seed_chroma, seed_lightness }) => {
-      const stops = generateRamp({
+    async ({ hue, stop_count, mode, seed_chroma, seed_lightness, target_gamut }) => {
+      const targetGamut = target_gamut as TargetGamut;
+      const solved = solveRamp({
         hue,
         stopCount: stop_count,
         mode,
         seedChroma: seed_chroma,
         seedLightness: seed_lightness,
+        targetGamut,
       });
 
       return json({
@@ -637,7 +670,15 @@ export function registerTools(server: McpServer): void {
         name: nameForHue(hue),
         stopCount: stop_count,
         mode,
-        stops: stops.map(stopToRecord),
+        targetGamut: solved.metadata.targetGamut,
+        fallbackGamut: solved.metadata.fallbackGamut ?? null,
+        fallbackPolicy: solved.metadata.fallbackPolicy,
+        exactness: solved.metadata.exactness,
+        seedDelta: solved.metadata.seedDelta,
+        stops: solved.stops.map((stop, index) =>
+          stopToRecord(stop, solved.fallbackStops?.[index]),
+        ),
+        fallbackStops: solved.fallbackStops?.map((stop) => stopToRecord(stop)),
       });
     },
   );
@@ -669,12 +710,12 @@ export function registerTools(server: McpServer): void {
           passesAALarge: result.passesAALarge,
         },
         color_a: {
-          hex: toHex(a),
+          hex: hexForSrgbExport(a),
           vsWhite: aVsWhite,
           vsBlack: aVsBlack,
         },
         color_b: {
-          hex: toHex(b),
+          hex: hexForSrgbExport(b),
           vsWhite: bVsWhite,
           vsBlack: bVsBlack,
         },
@@ -760,7 +801,7 @@ export function registerTools(server: McpServer): void {
         },
         swatches: swatches.map((s) => ({
           id: s.id,
-          hex: toHex(s.color),
+          hex: hexForSrgbExport(s.color),
           oklch: formatOklch(s.color),
           name: s.name ?? nameForHue(s.color.h),
           locked: s.locked ?? false,
@@ -771,11 +812,14 @@ export function registerTools(server: McpServer): void {
           name: r.name,
           customName: r.customName ?? false,
           seedHue: r.seedHue,
+          targetGamut: r.targetGamut,
+          fallbackPolicy: r.solveMetadata?.fallbackPolicy,
+          exactness: r.solveMetadata?.exactness,
           stopCount: r.stopCount,
           mode: r.mode,
           locked: r.locked ?? false,
           position: r.position,
-          stops: r.stops.map(stopToRecord),
+          stops: r.stops.map((stop) => stopToRecord(stop, r.fallbackStops?.[stop.index])),
         })),
       });
     },
@@ -848,7 +892,7 @@ export function registerTools(server: McpServer): void {
       for (const ramp of ramps) {
         for (const stop of ramp.stops) {
           colors.push({
-            hex: toHex(stop.color),
+            hex: hexForSrgbExport(stop.color),
             name: `${ramp.name}/${stop.label}`,
             color: stop.color,
           });
@@ -996,7 +1040,7 @@ export function registerTools(server: McpServer): void {
 
       return json({
         id,
-        hex: parsedColor ? toHex(parsedColor) : "(random — purified on canvas)",
+        hex: parsedColor ? hexForSrgbExport(parsedColor) : "(random - purified on canvas)",
         oklch: parsedColor ? formatOklch(parsedColor) : "(random)",
         position,
       });
@@ -1057,7 +1101,7 @@ export function registerTools(server: McpServer): void {
         preserveColors: preserve_colors,
         created: swatches.map((s, index) => ({
           id: s.id,
-          hex: toHex(reportedColors[index]),
+          hex: hexForSrgbExport(reportedColors[index]),
           oklch: formatOklch(reportedColors[index]),
           inGamut: isInGamut(reportedColors[index]),
           position: s.position,
@@ -1214,7 +1258,7 @@ export function registerTools(server: McpServer): void {
       const state = await fetchLiveState();
       if (state && state.objects[id] && state.objects[id].type === "swatch") {
         const old = (state.objects[id] as Swatch).color;
-        oldInfo = { hex: toHex(old), oklch: formatOklch(old) };
+        oldInfo = { hex: hexForSrgbExport(old), oklch: formatOklch(old) };
       }
 
       const action: Action = { type: "UPDATE_SWATCH_COLOR", id, color: purified };
@@ -1224,7 +1268,7 @@ export function registerTools(server: McpServer): void {
       return json({
         id,
         old: oldInfo ?? null,
-        new: { hex: toHex(purified), oklch: formatOklch(purified) },
+        new: { hex: hexForSrgbExport(purified), oklch: formatOklch(purified) },
       });
     },
   );

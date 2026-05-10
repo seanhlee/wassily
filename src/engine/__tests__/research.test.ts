@@ -101,6 +101,7 @@ describe("research harness", () => {
     expect(config.seedLightness).toBe(seed.color.l);
     expect(config.stopCount).toBe(11);
     expect(config.mode).toBe("opinionated");
+    expect(config.targetGamut).toBe("dual");
   });
 
   it("evaluates a seed with finite metrics and exact seed placement", () => {
@@ -111,7 +112,7 @@ describe("research harness", () => {
     expect(analysis.seedDelta).toBeLessThan(1e-6);
     expect(analysis.targetSeedDelta).toBe(analysis.seedDelta);
     expect(analysis.sourceSeedDelta).toBeLessThan(1e-6);
-    expect(analysis.fallbackSeedDelta).toBeNull();
+    expect(analysis.fallbackSeedDelta).toBeLessThan(1e-6);
     expect(analysis.labels).toHaveLength(11);
     expect(analysis.lightRamp.adjacentDistance.mean).toBeGreaterThan(0);
     expect(Number.isFinite(analysis.lightRamp.adjacentDistance.variance)).toBe(true);

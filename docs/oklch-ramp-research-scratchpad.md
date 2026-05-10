@@ -1093,3 +1093,78 @@ Early comparison read:
   from `50` through `950`.
 - Fuchsia is much better in the lights and body; `900/950` stay just a touch
   darker and less chromatic, but the family shape feels coherent.
+
+## Whole-Board Coherence Pass
+
+Date: 2026-05-10
+
+Stepping back after the violet corridor, the board finally feels like one
+system. The important shift is that the profiles now cover the spectrum as a
+set of family grammars, not as isolated hacks:
+
+- `warm-body`: orange sunlight, warm ink
+- `gold-body`: amber/yellow sunlight, ochre/bronze tail
+- `lime-body`: botanical lights with a center body anchor
+- `verdant-body`: green/emerald/teal body shelf and cool ink
+- `cool-glass`: cyan/sky/blue glass lights and saturated blue ink
+- `blush-body`: red/rose/pink blush lights and hot tail
+- `neutral-temperature`: temperature plus cadence, not chroma bloom
+- `violet-body`: airy lavender lights and a violet 600/700 ink shelf
+
+Current comparison metrics:
+
+- P3 source-exact families: `26/26`
+- P3 anchors: `25` at `500`, `1` at `400`
+- the sole non-`500` P3 anchor is yellow
+- Tailwind v4 `500`s outside sRGB but inside P3: `14/26`
+- sRGB average seed delta: `0.00835`, largest at lime: `0.02364`
+- dual fallback preserves P3 exactness while reporting the mapped sRGB fallback
+
+Largest remaining P3 residuals are concentrated rather than systemic:
+
+- yellow `500` and `400` remain the main anchor/cadence question
+- orange `600` is still less chromatic than Tailwind's body shelf
+- lime `700-900` is a little structurally different from Tailwind
+- indigo `950` is intentionally more colorful than Tailwind
+
+Boundary audit:
+
+- amber -> yellow is sharp because yellow is still the one `400` anchor
+- lime -> green and green -> emerald show real family grammar transitions
+- blue -> indigo improved dramatically, but it is still a profile handoff
+- purple -> fuchsia and pink -> rose are small-but-visible heat transitions
+- neutral hue deltas are numerically noisy because chroma is tiny; cadence and
+  temperature are better signals there
+
+Interpretation: this is a good stopping point for family taste work. More
+patching now risks overfitting the Tailwind board. The healthier next phase is
+contract work: make P3, sRGB, and dual export semantics completely explicit.
+
+Working recommendation for that phase:
+
+```text
+canonical solve: display-p3
+compatibility solve: srgb
+default serious export: dual, P3 first with audited sRGB fallback
+```
+
+This fits the research. Tailwind v4's high-chroma body seeds are often already
+outside sRGB, but they are inside P3. If Wassily claims seed exactness while
+defaulting to sRGB-only thinking, it has to edit the seed first. P3 lets the
+source color remain the contract; sRGB becomes a fallback artifact with its own
+metadata, not a hidden compromise.
+
+Implementation checkpoint:
+
+- `RampConfig` now defaults to `targetGamut: "dual"`.
+- default app ramps solve in Display P3 and carry `fallbackStops`,
+  `targetGamut`, and solve metadata on the ramp object.
+- canvas swatches render from CSS OKLCH, preserving P3 color where the display
+  can show it.
+- context-menu hex exports use the sRGB fallback when a dual ramp has one.
+- research analysis is target-aware, so seed exactness is measured against the
+  active target contract instead of assuming sRGB.
+- the continuous-curve research prototype now threads the solving gamut through
+  its endpoint search, occupancy math, compression, cache key, and dark variants.
+- Vitest runs files serially because the solver research suites can otherwise
+  pass all assertions while timing out during parallel worker result reporting.

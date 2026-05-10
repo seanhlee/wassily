@@ -966,7 +966,11 @@ describe("marker cleanup cascades", () => {
     expect(img.extraction!.markers).toHaveLength(1);
     expect(img.extraction!.markers[0].swatchId).toBe("ext_2");
     // The promoted id is now a ramp.
-    expect((result.objects["ext_1"] as Ramp).type).toBe("ramp");
+    const ramp = result.objects["ext_1"] as Ramp;
+    expect(ramp.type).toBe("ramp");
+    expect(ramp.targetGamut).toBe("dual");
+    expect(ramp.solveMetadata?.exactness).toBe("source-exact");
+    expect(ramp.fallbackStops).toHaveLength(ramp.stops.length);
   });
 
   it("DUPLICATE_SELECTED on an image with extraction yields a marker-free duplicate", () => {

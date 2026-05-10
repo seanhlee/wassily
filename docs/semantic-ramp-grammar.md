@@ -511,13 +511,62 @@ Prefer:
 - visual reports plus metrics
 - clear explanations of why a ramp behaves the way it does
 
+## Whole-Board Checkpoint
+
+Status after warm, gold, lime, verdant, cool-glass, blush, neutral-temperature,
+and violet-body profiles: the board is now coherent enough to treat family
+tuning as mostly complete for this research phase.
+
+Current generated Tailwind v4 comparison:
+
+- P3: all 26 families are source-exact.
+- P3 anchors: 25 families anchor at `500`; yellow remains the one `400`
+  anchor.
+- sRGB: 14 Tailwind v4 `500` seeds are outside sRGB but inside P3, so sRGB
+  necessarily maps the source seed for those families.
+- dual fallback: keeps the P3 source-exact contract while reporting the mapped
+  sRGB fallback.
+
+The remaining board-level nits are no longer "the system does not understand
+this family." They are mostly boundary and policy questions:
+
+- yellow is still the main non-`500` anchor and lightness-cadence outlier
+- amber/yellow and lime/green are the sharpest warm/cusp transitions
+- blue/indigo, purple/fuchsia, and pink/rose are profile-boundary watchpoints
+- low-chroma hue deltas in neutrals are less meaningful than temperature,
+  cadence, and chroma restraint
+
+This is the moment to stop adding isolated taste patches and make the gamut
+contract explicit.
+
+Working recommendation:
+
+```text
+P3 solve = canonical Wassily color truth
+sRGB solve = compatibility target
+dual export = P3 first, with audited sRGB fallback
+```
+
+The reason is simple: Tailwind v4's own `500` seeds are now broadly P3-native.
+If Wassily optimizes only for sRGB, it silently edits many seed colors before
+the ramp even begins. P3 lets the seed contract stay honest; sRGB remains
+essential, but as a visible fallback/export concern rather than the primary
+beauty constraint.
+
+Implementation note: this is now the app contract. `RampConfig` defaults to
+`targetGamut: "dual"`, which solves the visible ramp in Display P3 and attaches
+mapped sRGB fallback stops. Canvas swatches render from canonical CSS OKLCH;
+hex copy/export paths are treated as sRGB fallback output. Research analysis and
+the continuous-curve prototype are target-gamut-aware too, so the comparison
+tools audit the same contract the app uses.
+
 ## Current Takeaway
 
-Orange is the proof point.
+Orange was the proof point. The full board is now the stronger proof.
 
-It shows that Wassily can reach Tailwind-level beauty without giving up what
-makes Wassily distinctive: exact seeds, inspectable metadata, explicit gamut
-contracts, and a solver that can explain itself.
+Wassily can reach Tailwind-level beauty without giving up what makes Wassily
+distinctive: exact seeds, inspectable metadata, explicit gamut contracts, and a
+solver that can explain itself.
 
-The next move is not to copy orange everywhere. The next move is to make every
-family tell its own story with the same grammar.
+The next move is not more family-by-family mimicry. The next move is to turn the
+P3 / sRGB / dual-fallback behavior into a boring, explicit product contract.

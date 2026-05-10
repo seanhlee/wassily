@@ -11,8 +11,10 @@ export {
   isInGamut,
   maxChroma,
   solvingGamutForTarget,
+  toCssColor,
   toDisplayP3String,
   toHex,
+  toOklchString,
   parseColor,
 } from "./gamut";
 export { generateRamp, solveRamp, nameForHue } from "./ramp";

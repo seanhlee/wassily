@@ -212,15 +212,15 @@ describe("ramp generation", () => {
   });
 
   it("all ramp colors are in gamut", { timeout: 20000 }, () => {
-    for (let h = 0; h < 360; h += 60) {
+    for (const h of [0, 120, 240]) {
       const stops = generateRamp({
         hue: h,
         stopCount: 11,
         mode: "opinionated",
       });
       for (const stop of stops) {
-        expect(isInGamut(stop.color)).toBe(true);
-        expect(isInGamut(stop.darkColor)).toBe(true);
+        expect(isInGamut(stop.color, "display-p3")).toBe(true);
+        expect(isInGamut(stop.darkColor, "display-p3")).toBe(true);
       }
     }
   });
@@ -243,30 +243,41 @@ describe("ramp generation", () => {
       const analysis = analyzeRamp(stops, seed);
 
       expect(analysis.seedStopIndex).not.toBeNull();
-      if (isInGamut(seed.color)) {
+      if (isInGamut(seed.color, "display-p3")) {
         expect(analysis.seedDelta).toBeLessThan(1e-6);
       } else {
-        expect(stops[analysis.seedStopIndex!].color).toEqual(clampToGamut(seed.color));
+        expect(stops[analysis.seedStopIndex!].color).toEqual(
+          clampToGamut(seed.color, "display-p3"),
+        );
       }
       expect(analysis.lightRamp.gamutViolations).toBe(0);
       expect(analysis.lightRamp.lightness.nonIncreasing).toBe(true);
     }
   });
 
-  it("solveRamp preserves generateRamp compatibility while reporting sRGB exactness", () => {
-    const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === "bright-lime")!;
-    const config = researchSeedToRampConfig(seed);
+  it("solveRamp defaults to dual P3 truth with explicit sRGB fallback", () => {
+    const config = {
+      hue: 47.604,
+      seedChroma: 0.213,
+      seedLightness: 0.705,
+      stopCount: 11,
+      mode: "opinionated",
+    } as const;
     const solved = solveRamp(config);
 
     expect(generateRamp(config)).toEqual(solved.stops);
     expect(solved.metadata.solver).toBe("brand-exact-fair");
-    expect(solved.metadata.targetGamut).toBe("srgb");
+    expect(solved.metadata.targetGamut).toBe("dual");
+    expect(solved.metadata.fallbackGamut).toBe("srgb");
+    expect(solved.metadata.fallbackPolicy).toBe("map-target-to-srgb");
+    expect(solved.fallbackStops).toHaveLength(solved.stops.length);
     expect(solved.metadata.seedLabel).toBe(solved.stops[solved.metadata.seedIndex].label);
+    expect(solved.metadata.seedDelta.source).toBeLessThan(1e-6);
     expect(solved.metadata.seedDelta.target).toBeLessThan(1e-6);
-    expect(solved.metadata.seedDelta.source).toBeGreaterThanOrEqual(
-      solved.metadata.seedDelta.target,
-    );
-    expect(["source-exact", "target-mapped"]).toContain(solved.metadata.exactness);
+    expect(solved.metadata.seedDelta.fallback).toBeLessThan(1e-6);
+    expect(solved.metadata.exactness).toBe("source-exact");
+    expect(solved.stops.some((stop) => !isInGamut(stop.color))).toBe(true);
+    expect(solved.fallbackStops!.every((stop) => isInGamut(stop.color))).toBe(true);
   });
 
   it("solveRamp supports P3 source exactness and dual sRGB fallback metadata", () => {

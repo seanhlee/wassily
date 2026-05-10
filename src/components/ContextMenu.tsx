@@ -18,7 +18,7 @@ import type {
   ReferenceImage,
 } from "../types";
 import { FONT, FONT_SIZE } from "../constants";
-import { toHex, toOklchString } from "../engine/gamut";
+import { clampToGamut, toHex, toOklchString } from "../engine/gamut";
 
 // ---- Clipboard helper ----
 // navigator.clipboard.writeText can fail in custom context menus (user gesture
@@ -34,6 +34,26 @@ function copyText(text: string) {
     document.execCommand("copy");
     document.body.removeChild(el);
   });
+}
+
+function colorForSrgbExport(color: { l: number; c: number; h: number }) {
+  return clampToGamut(color);
+}
+
+function stopColorForSrgbExport(ramp: Ramp, stop: RampStop) {
+  return ramp.fallbackStops?.[stop.index]?.color ?? colorForSrgbExport(stop.color);
+}
+
+function rampColorsForSrgbExport(ramp: Ramp, lightMode: boolean): string {
+  return ramp.stops
+    .map((stop) => {
+      const fallbackStop = ramp.fallbackStops?.[stop.index];
+      const color = lightMode
+        ? (fallbackStop?.darkColor ?? colorForSrgbExport(stop.darkColor))
+        : (fallbackStop?.color ?? colorForSrgbExport(stop.color));
+      return toHex(color);
+    })
+    .join("\n");
 }
 
 // ---- Menu context types ----
@@ -287,10 +307,10 @@ export function CanvasContextMenu({
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
                   onClick={() =>
-                    copyText(toHex(ctx.swatch.color))
+                    copyText(toHex(colorForSrgbExport(ctx.swatch.color)))
                   }
                 >
-                  {toHex(ctx.swatch.color)}
+                  sRGB {toHex(colorForSrgbExport(ctx.swatch.color))}
                 </ContextMenu.Item>
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
@@ -341,13 +361,10 @@ export function CanvasContextMenu({
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
                   onClick={() => {
-                    const list = ctx.ramp.stops
-                      .map((s) => toHex(lightMode ? s.darkColor : s.color))
-                      .join("\n");
-                    copyText(list);
+                    copyText(rampColorsForSrgbExport(ctx.ramp, lightMode));
                   }}
                 >
-                  Hex list
+                  sRGB hex list
                 </ContextMenu.Item>
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
@@ -375,11 +392,11 @@ export function CanvasContextMenu({
               <>
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
-                  onClick={() =>
-                    copyText(toHex(ctx.stop.color))
-                  }
+                  onClick={() => {
+                    copyText(toHex(stopColorForSrgbExport(ctx.ramp, ctx.stop)));
+                  }}
                 >
-                  {toHex(ctx.stop.color)}
+                  sRGB {toHex(stopColorForSrgbExport(ctx.ramp, ctx.stop))}
                 </ContextMenu.Item>
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}

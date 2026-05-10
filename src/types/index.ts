@@ -66,6 +66,9 @@ export interface Ramp {
   type: "ramp";
   seedHue: number;
   stops: RampStop[];
+  fallbackStops?: RampStop[];
+  solveMetadata?: RampSolveMetadata;
+  targetGamut?: TargetGamut;
   stopCount: number; // 3, 5, 7, 9, 11, 13, or custom
   position: Point;
   name: string; // auto-generated or custom
@@ -165,7 +168,7 @@ export interface RampConfig {
   hue: number;
   stopCount: StopPreset | number;
   mode: "opinionated" | "pure";
-  /** Target gamut for generation and exactness metadata. Current engine supports sRGB. */
+  /** Target gamut for generation and exactness metadata. Defaults to dual P3 + sRGB fallback. */
   targetGamut?: TargetGamut;
   /** Seed chroma level. If < 0.05, generates a neutral ramp. */
   seedChroma?: number;

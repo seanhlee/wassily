@@ -14,10 +14,11 @@ import type {
   ExtractionMarker,
   ImageExtraction,
   Note,
+  RampConfig,
 } from "../types";
 import { randomPurifiedColor, purifyColor } from "../engine/purify";
 import { maxChroma, clampToGamut, NEUTRAL_CHROMA } from "../engine/gamut";
-import { generateRamp, uniqueRampName } from "../engine/ramp";
+import { solveRamp, uniqueRampName } from "../engine/ramp";
 import type { OklchColor, ReferenceImage, ReferenceImageSource } from "../types";
 import { RAMP_STOP_PRESETS } from "../constants";
 import {
@@ -52,6 +53,34 @@ function genId(): string {
 
 function markerId(): string {
   return `mkr_${nextId++}`;
+}
+
+function solveRampForCanvas(config: RampConfig): Pick<
+  Ramp,
+  "stops" | "fallbackStops" | "solveMetadata" | "targetGamut"
+> {
+  const solved = solveRamp(config);
+  return {
+    stops: solved.stops,
+    ...(solved.fallbackStops === undefined ? {} : { fallbackStops: solved.fallbackStops }),
+    solveMetadata: solved.metadata,
+    targetGamut: solved.metadata.targetGamut,
+  };
+}
+
+function rampSolveConfig(
+  ramp: Ramp,
+  overrides: Partial<RampConfig> = {},
+): RampConfig {
+  return {
+    hue: ramp.seedHue,
+    stopCount: ramp.stopCount,
+    mode: ramp.mode,
+    seedChroma: ramp.seedChroma,
+    seedLightness: ramp.seedLightness,
+    targetGamut: ramp.targetGamut,
+    ...overrides,
+  };
 }
 
 /**
@@ -405,7 +434,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       if (!obj || obj.type !== "swatch") return state;
       const sw = obj as Swatch;
       const newL = Math.max(0.06, Math.min(0.97, sw.color.l + action.dl));
-      const mc = maxChroma(newL, sw.color.h);
+      const mc = maxChroma(newL, sw.color.h, "display-p3");
       const newC = Math.max(0, Math.min(mc, sw.color.c + action.dc));
       return {
         ...state,
@@ -413,7 +442,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
           ...state.objects,
           [action.id]: {
             ...sw,
-            color: clampToGamut({ l: newL, c: newC, h: sw.color.h }),
+            color: clampToGamut({ l: newL, c: newC, h: sw.color.h }, "display-p3"),
           },
         },
       };
@@ -426,12 +455,12 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       if (obj.type === "swatch") {
         const swatch = obj as Swatch;
         const newH = (((swatch.color.h + action.delta) % 360) + 360) % 360;
-        const newC = maxChroma(swatch.color.l, newH);
+        const newC = maxChroma(swatch.color.l, newH, "display-p3");
         const color = clampToGamut({
           l: swatch.color.l,
           c: Math.min(swatch.color.c, newC),
           h: newH,
-        });
+        }, "display-p3");
         return {
           ...state,
           objects: { ...state.objects, [action.id]: { ...swatch, color } },
@@ -441,13 +470,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       if (obj.type === "ramp") {
         const ramp = obj as Ramp;
         const newHue = (((ramp.seedHue + action.delta) % 360) + 360) % 360;
-        const stops = generateRamp({
-          hue: newHue,
-          stopCount: ramp.stopCount,
-          mode: ramp.mode,
-          seedChroma: ramp.seedChroma,
-          seedLightness: ramp.seedLightness,
-        });
+        const solved = solveRampForCanvas(rampSolveConfig(ramp, { hue: newHue }));
         const existingNames = Object.values(state.objects)
           .filter((o): o is Ramp => o.type === "ramp" && o.id !== ramp.id)
           .map((r) => r.name);
@@ -458,7 +481,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
             [action.id]: {
               ...ramp,
               seedHue: newHue,
-              stops,
+              ...solved,
               name: ramp.customName
                 ? ramp.name
                 : uniqueRampName(newHue, existingNames),
@@ -482,7 +505,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
 
       // Pass the seed color's chroma and lightness so the ramp generator
       // can calibrate the chroma curve to flow through the original color.
-      const stops = generateRamp({
+      const solved = solveRampForCanvas({
         hue: swatch.color.h,
         stopCount: action.stopCount,
         mode: "opinionated",
@@ -512,7 +535,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         id: swatch.id,
         type: "ramp",
         seedHue: swatch.color.h,
-        stops,
+        ...solved,
         stopCount: action.stopCount,
         position: swatch.position,
         name,
@@ -563,19 +586,13 @@ function reducer(state: CanvasState, action: Action): CanvasState {
       const newCount = presets[newIdx];
       if (newCount === ramp.stopCount) return state;
 
-      const stops = generateRamp({
-        hue: ramp.seedHue,
-        stopCount: newCount,
-        mode: ramp.mode,
-        seedChroma: ramp.seedChroma,
-        seedLightness: ramp.seedLightness,
-      });
+      const solved = solveRampForCanvas(rampSolveConfig(ramp, { stopCount: newCount }));
 
       return {
         ...state,
         objects: {
           ...state.objects,
-          [action.id]: { ...ramp, stops, stopCount: newCount },
+          [action.id]: { ...ramp, ...solved, stopCount: newCount },
         },
       };
     }
@@ -706,7 +723,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
 
         if (sourceObj.type === "swatch") {
           const swatch = sourceObj as Swatch;
-          const newC = maxChroma(swatch.color.l, adj.newHue);
+          const newC = maxChroma(swatch.color.l, adj.newHue, "display-p3");
           objects[newId] = {
             id: newId,
             type: "swatch",
@@ -714,20 +731,14 @@ function reducer(state: CanvasState, action: Action): CanvasState {
               l: swatch.color.l,
               c: Math.min(swatch.color.c, newC),
               h: adj.newHue,
-            }),
+            }, "display-p3"),
             position: pos,
           };
         }
 
         if (sourceObj.type === "ramp") {
           const ramp = sourceObj as Ramp;
-          const stops = generateRamp({
-            hue: adj.newHue,
-            stopCount: ramp.stopCount,
-            mode: ramp.mode,
-            seedChroma: ramp.seedChroma,
-            seedLightness: ramp.seedLightness,
-          });
+          const solved = solveRampForCanvas(rampSolveConfig(ramp, { hue: adj.newHue }));
           const existingNames = Object.values(objects)
             .filter((o): o is Ramp => o.type === "ramp" && o.id !== ramp.id)
             .map((r) => r.name);
@@ -735,7 +746,7 @@ function reducer(state: CanvasState, action: Action): CanvasState {
             id: newId,
             type: "ramp",
             seedHue: adj.newHue,
-            stops,
+            ...solved,
             stopCount: ramp.stopCount,
             position: pos,
             name: uniqueRampName(adj.newHue, existingNames),

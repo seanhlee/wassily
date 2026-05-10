@@ -9,5 +9,8 @@ export default defineConfig({
   test: {
     globals: true,
     exclude: [...configDefaults.exclude, ".claude/**"],
+    // The solver research suites are CPU-heavy enough that parallel workers can
+    // time out while reporting otherwise-passing results.
+    fileParallelism: false,
   },
 });

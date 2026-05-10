@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Ramp, RampStop } from "../types";
-import { toHex } from "../engine/gamut";
-import { generateRamp } from "../engine/ramp";
+import { clampToGamut, toCssColor, toHex } from "../engine/gamut";
+import { solveRamp } from "../engine/ramp";
 import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
 import { useDrag } from "../hooks/useDrag";
 import { SelectionBrackets, LockIcon } from "./SelectionBrackets";
@@ -9,15 +9,17 @@ import { SelectionBrackets, LockIcon } from "./SelectionBrackets";
 /** Individual stop cell — shows hex value on hover */
 function RampStopCell({
   stop,
+  fallbackStop,
   rampId,
   lightMode,
 }: {
   stop: RampStop;
+  fallbackStop?: RampStop;
   rampId: string;
   lightMode: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
-  const hex = toHex(stop.color);
+  const hex = toHex(fallbackStop?.color ?? clampToGamut(stop.color));
   const textColor = lightMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)";
 
   return (
@@ -32,7 +34,7 @@ function RampStopCell({
         style={{
           width: SWATCH_SIZE,
           height: SWATCH_SIZE,
-          backgroundColor: hex,
+          backgroundColor: toCssColor(stop.color),
         }}
       />
       <div
@@ -88,13 +90,16 @@ export function RampNode({
 }: RampNodeProps) {
   const [hovered, setHovered] = useState(false);
 
-  const displayStops = peekPureMode
-    ? generateRamp({
+  const peekPureSolve = peekPureMode
+    ? solveRamp({
         hue: ramp.seedHue,
         stopCount: ramp.stopCount,
         mode: "pure",
+        targetGamut: ramp.targetGamut,
       })
-    : ramp.stops;
+    : null;
+  const displayStops = peekPureSolve?.stops ?? ramp.stops;
+  const displayFallbackStops = peekPureSolve?.fallbackStops ?? ramp.fallbackStops;
 
   const handleMouseDown = useDrag(
     ramp.id,
@@ -159,10 +164,11 @@ export function RampNode({
       </div>
 
       <div style={{ display: "flex" }}>
-        {displayStops.map((stop) => (
+        {displayStops.map((stop, index) => (
           <RampStopCell
             key={stop.label}
             stop={stop}
+            fallbackStop={displayFallbackStops?.[index]}
             rampId={ramp.id}
             lightMode={lightMode}
           />

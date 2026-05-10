@@ -70,14 +70,15 @@ export function generateRamp(config: RampConfig): RampStop[] {
 export function solveRamp(config: RampConfig): RampSolveResult {
   const { hue, stopCount, mode } = config;
   const targetGamut = normalizeTargetGamut(config.targetGamut);
+  const solveConfig: RampConfig = { ...config, targetGamut };
   const solvingGamut = solvingGamutForTarget(targetGamut);
   if (mode === "opinionated") {
-    const solved = solveBrandExactFairRamp(config);
+    const solved = solveBrandExactFairRamp(solveConfig);
     const fallbackStops = buildFallbackStops(solved.stops, targetGamut);
     return {
       stops: solved.stops,
       ...(fallbackStops === undefined ? {} : { fallbackStops }),
-      metadata: buildRampSolveMetadata(solved.stops, config, {
+      metadata: buildRampSolveMetadata(solved.stops, solveConfig, {
         solver: solved.metadata.solver,
         seedIndex: solved.metadata.seedIndex,
         targetGamut,
@@ -98,7 +99,7 @@ export function solveRamp(config: RampConfig): RampSolveResult {
   return {
     stops,
     ...(fallbackStops === undefined ? {} : { fallbackStops }),
-    metadata: buildRampSolveMetadata(stops, config, {
+    metadata: buildRampSolveMetadata(stops, solveConfig, {
       solver: "pure",
       targetGamut,
     }),

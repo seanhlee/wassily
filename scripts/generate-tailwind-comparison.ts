@@ -1023,7 +1023,7 @@ ${GENERATED_FONT_FACE_CSS}
       <h1>Tailwind v4 vs Wassily</h1>
       <p class="lede">
         Tailwind rows use the full static Tailwind CSS ${data.tailwindVersion} OKLCH palette.
-        Wassily rows are generated from each Tailwind <span class="mono">500</span> seed in three contracts: current sRGB, P3 target, and dual-mode sRGB fallback.
+        Wassily rows are generated from each Tailwind <span class="mono">500</span> seed in three contracts: explicit sRGB, P3 target, and dual-mode sRGB fallback.
         The outlined stop marks Tailwind <span class="mono">500</span> or Wassily's reported seed anchor for that row's target-gamut contract.
       </p>
     </header>

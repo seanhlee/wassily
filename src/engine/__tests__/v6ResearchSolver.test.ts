@@ -17,10 +17,10 @@ describe("v6 research solver", () => {
       const seed = RESEARCH_SEEDS.find((candidate) => candidate.id === seedId)!;
       const solved = solveV6ResearchRamp(researchSeedToRampConfig(seed));
       const analysis = analyzeRamp(solved.stops, seed);
-      const displaySeed = clampToGamut(seed.color);
+      const displaySeed = clampToGamut(seed.color, "display-p3");
 
       expect(analysis.seedStopIndex).not.toBeNull();
-      if (isInGamut(seed.color)) {
+      if (isInGamut(seed.color, "display-p3")) {
         expect(analysis.seedDelta).toBeLessThan(1e-6);
       } else {
         expect(solved.stops[solved.metadata.seedIndex].color).toEqual(displaySeed);
@@ -169,6 +169,7 @@ describe("v6 research solver", () => {
       seedChroma: 0.14,
       stopCount: 11 as const,
       mode: "opinionated" as const,
+      targetGamut: "srgb" as const,
     };
     const rawSeed = {
       l: config.seedLightness,

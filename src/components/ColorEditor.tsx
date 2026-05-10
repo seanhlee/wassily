@@ -253,7 +253,9 @@ function clampChannel(
   color: OklchColor,
 ): number {
   if (channel === "l") return Math.max(0.06, Math.min(0.97, value));
-  if (channel === "c") return Math.max(0, Math.min(maxChroma(color.l, color.h), value));
+  if (channel === "c") {
+    return Math.max(0, Math.min(maxChroma(color.l, color.h, "display-p3"), value));
+  }
   return ((value % 360) + 360) % 360;
 }
 

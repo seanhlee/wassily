@@ -1,7 +1,20 @@
 import { oklab as toOklab } from "culori";
-import type { OklchColor, RampConfig, RampStop, StopPreset } from "../types";
+import type {
+  ColorGamut,
+  OklchColor,
+  RampConfig,
+  RampStop,
+  StopPreset,
+  TargetGamut,
+} from "../types";
 import { contrastRatio, BLACK, WHITE } from "./contrast";
-import { clampToGamut, isInGamut, maxChroma } from "./gamut";
+import {
+  clampToGamut,
+  fallbackGamutForTarget,
+  isInGamut,
+  maxChroma,
+  solvingGamutForTarget,
+} from "./gamut";
 import {
   solveV6ArchetypeRamp,
   solveV6ResearchRamp,
@@ -12,6 +25,7 @@ import {
   solveContinuousCompressedRamp,
   solveContinuousCurveRamp,
 } from "./continuousCurveSolver";
+import { normalizeTargetGamut } from "./rampContract";
 
 export interface ResearchSeed {
   id: string;
@@ -148,6 +162,11 @@ export interface EvaluateSeedOptions {
   stopCount?: StopPreset | number;
   mode?: RampConfig["mode"];
   engine?: ResearchEngine;
+  targetGamut?: TargetGamut;
+}
+
+export interface AnalyzeRampOptions {
+  targetGamut?: TargetGamut;
 }
 
 export type ResearchEngine =
@@ -174,31 +193,48 @@ export function researchSeedToRampConfig(
     seedLightness: seed.color.l,
     stopCount: options.stopCount ?? 11,
     mode: options.mode ?? "opinionated",
+    targetGamut: normalizeTargetGamut(options.targetGamut),
   };
 }
 
 export function analyzeRamp(
   stops: RampStop[],
   seed?: OklchColor | ResearchSeed,
+  options: AnalyzeRampOptions = {},
 ): RampAnalysis {
+  const targetGamut = normalizeTargetGamut(options.targetGamut);
+  const solvingGamut = solvingGamutForTarget(targetGamut);
+  const fallbackGamut = fallbackGamutForTarget(targetGamut);
   const seedColor = seed ? ("color" in seed ? seed.color : seed) : null;
-  const displaySeedColor = seedColor === null ? null : clampToGamut(seedColor);
+  const targetSeedColor =
+    seedColor === null ? null : clampToGamut(seedColor, solvingGamut);
+  const fallbackSeedColor =
+    seedColor === null || fallbackGamut === null
+      ? null
+      : clampToGamut(seedColor, fallbackGamut);
   const seedMeta = seed && "color" in seed ? seed : null;
   const lightColors = stops.map((stop) => stop.color);
   const darkColors = stops.map((stop) => stop.darkColor);
-  const lightRamp = analyzeVariant(lightColors, displaySeedColor);
-  const darkRamp = analyzeVariant(darkColors, displaySeedColor);
+  const lightRamp = analyzeVariant(lightColors, targetSeedColor, solvingGamut);
+  const darkRamp = analyzeVariant(darkColors, targetSeedColor, solvingGamut);
 
   const seedStopIndex =
-    displaySeedColor === null ? null : findNearestColorIndex(lightColors, displaySeedColor);
+    targetSeedColor === null ? null : findNearestColorIndex(lightColors, targetSeedColor);
   const sourceSeedDelta =
     seedColor === null || seedStopIndex === null
       ? null
       : oklabDistance(lightColors[seedStopIndex], seedColor);
   const targetSeedDelta =
-    displaySeedColor === null || seedStopIndex === null
+    targetSeedColor === null || seedStopIndex === null
       ? null
-      : oklabDistance(lightColors[seedStopIndex], displaySeedColor);
+      : oklabDistance(lightColors[seedStopIndex], targetSeedColor);
+  const fallbackSeedDelta =
+    fallbackSeedColor === null || fallbackGamut === null || seedStopIndex === null
+      ? null
+      : oklabDistance(
+          clampToGamut(lightColors[seedStopIndex], fallbackGamut),
+          fallbackSeedColor,
+        );
 
   return {
     seed: seedMeta,
@@ -206,14 +242,14 @@ export function analyzeRamp(
     seedStopIndex,
     sourceSeedDelta,
     targetSeedDelta,
-    fallbackSeedDelta: null,
+    fallbackSeedDelta,
     seedDelta: targetSeedDelta,
     seedPlacementImbalance:
       seedStopIndex === null
         ? null
         : computeSeedPlacementImbalance(lightRamp.adjacentDistance.values, seedStopIndex),
-    endpointLight: analyzeEndpoint(lightColors[0]),
-    endpointDark: analyzeEndpoint(lightColors[lightColors.length - 1]),
+    endpointLight: analyzeEndpoint(lightColors[0], solvingGamut),
+    endpointDark: analyzeEndpoint(lightColors[lightColors.length - 1], solvingGamut),
     lightRamp,
     darkRamp,
   };
@@ -255,7 +291,9 @@ export function evaluateSeedRun(
   return {
     engine,
     stops: solved.stops,
-    analysis: analyzeRamp(solved.stops, seed),
+    analysis: analyzeRamp(solved.stops, seed, {
+      targetGamut: config.targetGamut,
+    }),
     metadata: solved.metadata,
   };
 }
@@ -263,13 +301,14 @@ export function evaluateSeedRun(
 function analyzeVariant(
   colors: OklchColor[],
   seedColor: OklchColor | null,
+  targetGamut: ColorGamut,
 ): RampVariantAnalysis {
   return {
     colors,
     adjacentDistance: computeDistanceStats(colors),
     lightness: computeLightnessStats(colors),
-    gamutPressure: computeGamutPressureStats(colors),
-    gamutViolations: colors.filter((color) => !isInGamut(color)).length,
+    gamutPressure: computeGamutPressureStats(colors, targetGamut),
+    gamutViolations: colors.filter((color) => !isInGamut(color, targetGamut)).length,
     maxHueDriftFromSeed:
       seedColor === null
         ? 0
@@ -277,9 +316,12 @@ function analyzeVariant(
   };
 }
 
-function computeGamutPressureStats(colors: OklchColor[]): GamutPressureStats {
+function computeGamutPressureStats(
+  colors: OklchColor[],
+  targetGamut: ColorGamut,
+): GamutPressureStats {
   const values = colors.map((color) => {
-    const available = maxChroma(color.l, color.h);
+    const available = maxChroma(color.l, color.h, targetGamut);
     return available > 0 ? color.c / available : color.c > 0 ? Infinity : 0;
   });
 
@@ -291,8 +333,8 @@ function computeGamutPressureStats(colors: OklchColor[]): GamutPressureStats {
   };
 }
 
-function analyzeEndpoint(color: OklchColor): EndpointStats {
-  const maxC = maxChroma(color.l, color.h);
+function analyzeEndpoint(color: OklchColor, targetGamut: ColorGamut): EndpointStats {
+  const maxC = maxChroma(color.l, color.h, targetGamut);
   return {
     lightness: color.l,
     chroma: color.c,

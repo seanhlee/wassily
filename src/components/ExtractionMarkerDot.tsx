@@ -1,5 +1,5 @@
 import type { OklchColor } from "../types";
-import { toHex } from "../engine/gamut";
+import { toCssColor } from "../engine/gamut";
 import { adaptiveRingStroke } from "./extractionMarkerStyle";
 
 interface ExtractionMarkerDotProps {
@@ -30,7 +30,7 @@ export function ExtractionMarkerDot({
       style={{ display: "block", pointerEvents: "none", overflow: "visible" }}
       aria-hidden="true"
     >
-      <circle cx={center} cy={center} r={radius} fill={toHex(color)} />
+      <circle cx={center} cy={center} r={radius} fill={toCssColor(color)} />
       <circle
         cx={center}
         cy={center}

@@ -1,6 +1,12 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import type { Swatch, OklchColor } from "../types";
-import { toHex, maxChroma, clampToGamut, parseColor } from "../engine/gamut";
+import {
+  toCssColor,
+  toHex,
+  maxChroma,
+  clampToGamut,
+  parseColor,
+} from "../engine/gamut";
 import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
 import { useDrag } from "../hooks/useDrag";
 import { SelectionBrackets, LockIcon } from "./SelectionBrackets";
@@ -46,7 +52,7 @@ export function SwatchNode({
   highlighted,
   onHover,
 }: SwatchNodeProps) {
-  const hex = toHex(swatch.color);
+  const hex = toHex(clampToGamut(swatch.color));
   const [editing, setEditing] = useState(false);
   const [hexEditing, setHexEditing] = useState(false);
   const [hexEditValue, setHexEditValue] = useState("");
@@ -152,8 +158,11 @@ export function SwatchNode({
     (newHue: number) => {
       if (!onUpdateColor) return;
       const { l, c } = swatch.color;
-      const mc = maxChroma(l, newHue);
-      onUpdateColor(swatch.id, clampToGamut({ l, c: Math.min(c, mc), h: newHue }));
+      const mc = maxChroma(l, newHue, "display-p3");
+      onUpdateColor(
+        swatch.id,
+        clampToGamut({ l, c: Math.min(c, mc), h: newHue }, "display-p3"),
+      );
     },
     [swatch.id, swatch.color, onUpdateColor],
   );
@@ -164,15 +173,15 @@ export function SwatchNode({
       const { l, c, h } = swatch.color;
       let color: OklchColor;
       if (channel === "l") {
-        const mc = maxChroma(newValue, h);
+        const mc = maxChroma(newValue, h, "display-p3");
         color = { l: newValue, c: Math.min(c, mc), h };
       } else if (channel === "c") {
         color = { l, c: newValue, h };
       } else {
-        const mc = maxChroma(l, newValue);
+        const mc = maxChroma(l, newValue, "display-p3");
         color = { l, c: Math.min(c, mc), h: newValue };
       }
-      onUpdateColor(swatch.id, clampToGamut(color));
+      onUpdateColor(swatch.id, clampToGamut(color, "display-p3"));
     },
     [swatch.id, swatch.color, onUpdateColor],
   );
@@ -218,7 +227,7 @@ export function SwatchNode({
         top: swatch.position.y,
         width: SWATCH_SIZE,
         height: SWATCH_SIZE,
-        backgroundColor: hex,
+        backgroundColor: toCssColor(swatch.color),
         cursor: "default",
         zIndex: selected ? 10 : "auto",
       }}

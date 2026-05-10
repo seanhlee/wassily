@@ -1,7 +1,8 @@
 /**
  * Gamut mapping utilities.
  *
- * Generated colors default to sRGB, with optional Display P3 target support.
+ * Generated ramps default to a dual Display P3 target with an explicit sRGB
+ * fallback. Low-level gamut helpers still default to sRGB when called directly.
  * When desired chroma exceeds the boundary, chroma is reduced (never lightness).
  */
 
@@ -138,6 +139,11 @@ export function toHex(color: OklchColor): string {
 /** Format an OklchColor as a CSS oklch() string */
 export function toOklchString(color: OklchColor): string {
   return `oklch(${color.l.toFixed(3)} ${color.c.toFixed(3)} ${color.h.toFixed(1)})`;
+}
+
+/** Format the canonical canvas color. CSS OKLCH can represent Display P3 colors. */
+export function toCssColor(color: OklchColor): string {
+  return toOklchString(color);
 }
 
 /** Format an OklchColor as a CSS display-p3 color string. */

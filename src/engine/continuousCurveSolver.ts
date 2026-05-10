@@ -1,5 +1,5 @@
-import type { OklchColor, RampConfig, RampStop } from "../types";
-import { clampToGamut, maxChroma } from "./gamut";
+import type { ColorGamut, OklchColor, RampConfig, RampStop } from "../types";
+import { clampToGamut, maxChroma, solvingGamutForTarget } from "./gamut";
 import {
   distanceLab,
   labVectorToOklch,
@@ -77,8 +77,8 @@ function normalizeHue(hue: number): number {
   return ((hue % 360) + 360) % 360;
 }
 
-function relativeChroma(color: OklchColor): number {
-  const available = maxChroma(color.l, color.h);
+function relativeChroma(color: OklchColor, targetGamut: ColorGamut): number {
+  const available = maxChroma(color.l, color.h, targetGamut);
   return available > 1e-9 ? color.c / available : 0;
 }
 
@@ -88,17 +88,18 @@ function highestLightnessForVisibleChroma(
   lowerLightness: number,
   occupancy: number,
   targetChroma: number,
+  targetGamut: ColorGamut,
 ): number {
   const lower = clamp(lowerLightness, 0.02, upperLightness);
   const upper = clamp(upperLightness, lower, 0.98);
-  if (maxChroma(upper, hue) * occupancy >= targetChroma) return upper;
-  if (maxChroma(lower, hue) * occupancy < targetChroma) return lower;
+  if (maxChroma(upper, hue, targetGamut) * occupancy >= targetChroma) return upper;
+  if (maxChroma(lower, hue, targetGamut) * occupancy < targetChroma) return lower;
 
   let lo = lower;
   let hi = upper;
   for (let index = 0; index < 18; index++) {
     const mid = (lo + hi) / 2;
-    if (maxChroma(mid, hue) * occupancy >= targetChroma) {
+    if (maxChroma(mid, hue, targetGamut) * occupancy >= targetChroma) {
       lo = mid;
     } else {
       hi = mid;
@@ -113,17 +114,18 @@ function lowestLightnessForVisibleChroma(
   upperLightness: number,
   occupancy: number,
   targetChroma: number,
+  targetGamut: ColorGamut,
 ): number {
   const lower = clamp(lowerLightness, 0.02, upperLightness);
   const upper = clamp(upperLightness, lower, 0.98);
-  if (maxChroma(lower, hue) * occupancy >= targetChroma) return lower;
-  if (maxChroma(upper, hue) * occupancy < targetChroma) return upper;
+  if (maxChroma(lower, hue, targetGamut) * occupancy >= targetChroma) return lower;
+  if (maxChroma(upper, hue, targetGamut) * occupancy < targetChroma) return upper;
 
   let lo = lower;
   let hi = upper;
   for (let index = 0; index < 18; index++) {
     const mid = (lo + hi) / 2;
-    if (maxChroma(mid, hue) * occupancy >= targetChroma) {
+    if (maxChroma(mid, hue, targetGamut) * occupancy >= targetChroma) {
       hi = mid;
     } else {
       lo = mid;
@@ -132,7 +134,7 @@ function lowestLightnessForVisibleChroma(
   return hi;
 }
 
-function warmCuspComponents(seed: OklchColor): {
+function warmCuspComponents(seed: OklchColor, targetGamut: ColorGamut): {
   yellowWeight: number;
   limeWeight: number;
   weight: number;
@@ -141,7 +143,7 @@ function warmCuspComponents(seed: OklchColor): {
   const limeWeight = clamp(1 - hueDistance(seed.h, 121) / 44, 0, 1);
   const hueWeight = Math.max(yellowWeight, limeWeight);
   const lightnessWeight = clamp((seed.l - 0.84) / 0.1, 0, 1);
-  const chromaWeight = clamp((relativeChroma(seed) - 0.68) / 0.26, 0, 1);
+  const chromaWeight = clamp((relativeChroma(seed, targetGamut) - 0.68) / 0.26, 0, 1);
 
   return {
     yellowWeight,
@@ -153,8 +155,9 @@ function warmCuspComponents(seed: OklchColor): {
 function warmCuspHighlightModel(
   seed: OklchColor,
   baseLightEndpoint: OklchColor,
+  targetGamut: ColorGamut,
 ): HighlightEndpointModel | null {
-  const { yellowWeight, limeWeight, weight } = warmCuspComponents(seed);
+  const { yellowWeight, limeWeight, weight } = warmCuspComponents(seed, targetGamut);
   if (weight <= 0.1) return null;
 
   const yellowOnly = yellowWeight * (1 - limeWeight);
@@ -173,11 +176,16 @@ function warmCuspHighlightModel(
 function coolNarrowHighlightModel(
   seed: OklchColor,
   baseLightEndpoint: OklchColor,
+  targetGamut: ColorGamut,
 ): HighlightEndpointModel | null {
   const blueVioletWeight = clamp(1 - hueDistance(seed.h, 265) / 42, 0, 1);
   const depthWeight = clamp((0.68 - seed.l) / 0.24, 0, 1);
-  const chromaWeight = clamp((relativeChroma(seed) - 0.52) / 0.28, 0, 1);
-  const paleEndpointWeight = clamp((0.56 - relativeChroma(baseLightEndpoint)) / 0.18, 0, 1);
+  const chromaWeight = clamp((relativeChroma(seed, targetGamut) - 0.52) / 0.28, 0, 1);
+  const paleEndpointWeight = clamp(
+    (0.56 - relativeChroma(baseLightEndpoint, targetGamut)) / 0.18,
+    0,
+    1,
+  );
   const weight = blueVioletWeight * depthWeight * chromaWeight * paleEndpointWeight;
   if (weight <= 0.1) return null;
   const targetEndpointOccupancy = clamp(0.8 + blueVioletWeight * 0.06, 0.78, 0.88);
@@ -188,6 +196,7 @@ function coolNarrowHighlightModel(
     Math.max(seed.l, 0.92),
     targetEndpointOccupancy,
     targetVisibleChroma,
+    targetGamut,
   );
 
   return {
@@ -200,11 +209,14 @@ function coolNarrowHighlightModel(
   };
 }
 
-function brightCyanHighlightModel(seed: OklchColor): HighlightEndpointModel | null {
+function brightCyanHighlightModel(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): HighlightEndpointModel | null {
   const cyanWeight = clamp(1 - hueDistance(seed.h, 215) / 30, 0, 1);
   if (cyanWeight <= 0.45) return null;
   const lightBodyWeight = clamp((seed.l - 0.66) / 0.14, 0, 1);
-  const chromaWeight = clamp((relativeChroma(seed) - 0.5) / 0.24, 0, 1);
+  const chromaWeight = clamp((relativeChroma(seed, targetGamut) - 0.5) / 0.24, 0, 1);
   const weight = cyanWeight * lightBodyWeight * chromaWeight;
   if (weight <= 0.1) return null;
 
@@ -218,11 +230,14 @@ function brightCyanHighlightModel(seed: OklchColor): HighlightEndpointModel | nu
   };
 }
 
-function warmRedHighlightModel(seed: OklchColor): HighlightEndpointModel | null {
+function warmRedHighlightModel(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): HighlightEndpointModel | null {
   const redWeight = clamp(1 - hueDistance(seed.h, 28) / 24, 0, 1);
   const orangeWeight = clamp(1 - hueDistance(seed.h, 48) / 24, 0, 1);
   const hueWeight = Math.max(redWeight, orangeWeight);
-  const chromaWeight = clamp((relativeChroma(seed) - 0.48) / 0.24, 0, 1);
+  const chromaWeight = clamp((relativeChroma(seed, targetGamut) - 0.48) / 0.24, 0, 1);
   const bodyWeight = clamp((0.86 - seed.l) / 0.22, 0, 1);
   const weight = hueWeight * chromaWeight * bodyWeight;
   if (weight <= 0.1) return null;
@@ -240,12 +255,13 @@ function warmRedHighlightModel(seed: OklchColor): HighlightEndpointModel | null 
 function highlightEndpointModel(
   seed: OklchColor,
   baseLightEndpoint: OklchColor,
+  targetGamut: ColorGamut,
 ): HighlightEndpointModel | null {
   return (
-    warmCuspHighlightModel(seed, baseLightEndpoint) ??
-    brightCyanHighlightModel(seed) ??
-    coolNarrowHighlightModel(seed, baseLightEndpoint) ??
-    warmRedHighlightModel(seed)
+    warmCuspHighlightModel(seed, baseLightEndpoint, targetGamut) ??
+    brightCyanHighlightModel(seed, targetGamut) ??
+    coolNarrowHighlightModel(seed, baseLightEndpoint, targetGamut) ??
+    warmRedHighlightModel(seed, targetGamut)
   );
 }
 
@@ -289,8 +305,12 @@ function rawColorFromLab(lab: LabVector, fallbackHue: number): OklchColor {
   };
 }
 
-function colorFromLab(lab: LabVector, fallbackHue: number): OklchColor {
-  return clampToGamut(rawColorFromLab(lab, fallbackHue));
+function colorFromLab(
+  lab: LabVector,
+  fallbackHue: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  return clampToGamut(rawColorFromLab(lab, fallbackHue), targetGamut);
 }
 
 function labFromColor(color: OklchColor): LabVector {
@@ -301,6 +321,7 @@ function normalizeEndpointLightness(
   endpoint: OklchColor,
   seed: OklchColor,
   side: "light" | "dark",
+  targetGamut: ColorGamut,
 ): LabVector {
   const lab = toLabVector(endpoint);
   const seedLab = toLabVector(seed);
@@ -309,11 +330,11 @@ function normalizeEndpointLightness(
   } else {
     lab.l = Math.min(lab.l, seedLab.l);
   }
-  return labFromColor(colorFromLab(lab, seed.h));
+  return labFromColor(colorFromLab(lab, seed.h, targetGamut));
 }
 
-function gamutPressure(color: OklchColor): number {
-  const available = maxChroma(color.l, color.h);
+function gamutPressure(color: OklchColor, targetGamut: ColorGamut): number {
+  const available = maxChroma(color.l, color.h, targetGamut);
   return available > 1e-9 ? color.c / available : color.c > 0 ? Infinity : 0;
 }
 
@@ -325,10 +346,11 @@ function compressCurveColor(
   point: RawCurvePoint,
   side: "light" | "dark",
   segmentPressure: number,
+  targetGamut: ColorGamut,
 ): OklchColor {
   const softLimit = pressureLimitForSide(side);
   const segmentStrength = smoothstep(softLimit, 1.08, segmentPressure);
-  if (segmentStrength <= 0) return clampToGamut(point.color);
+  if (segmentStrength <= 0) return clampToGamut(point.color, targetGamut);
 
   const seedFade = side === "light" ? 1 - point.t : point.t;
   const endpointWeight = side === "light" ? 1 - point.t : point.t;
@@ -339,7 +361,7 @@ function compressCurveColor(
     (0.35 + pressureWeight * 0.65) *
     seedFade;
 
-  if (localWeight <= 1e-6) return clampToGamut(point.color);
+  if (localWeight <= 1e-6) return clampToGamut(point.color, targetGamut);
 
   const hue = normalizeHue(point.color.h);
   const aquaHighlightWeight =
@@ -352,7 +374,7 @@ function compressCurveColor(
   const lightnessShift = lerp(0.045, 0.07, aquaHighlightWeight) * localWeight;
   let lightness = point.color.l;
 
-  if (maxChroma(lightness, hue) * occupancyCeiling < desiredChroma) {
+  if (maxChroma(lightness, hue, targetGamut) * occupancyCeiling < desiredChroma) {
     lightness =
       side === "light"
         ? highestLightnessForVisibleChroma(
@@ -361,6 +383,7 @@ function compressCurveColor(
             Math.max(0.02, lightness - lightnessShift),
             occupancyCeiling,
             desiredChroma,
+            targetGamut,
           )
         : lowestLightnessForVisibleChroma(
             hue,
@@ -368,19 +391,20 @@ function compressCurveColor(
             Math.min(0.98, lightness + lightnessShift),
             occupancyCeiling,
             desiredChroma,
+            targetGamut,
           );
   }
 
   const chroma = Math.min(
     desiredChroma,
-    maxChroma(lightness, hue) * occupancyCeiling,
+    maxChroma(lightness, hue, targetGamut) * occupancyCeiling,
   );
 
   return clampToGamut({
     l: lightness,
     c: Math.max(0, chroma),
     h: hue,
-  });
+  }, targetGamut);
 }
 
 function finishCurveSamples(colors: readonly OklchColor[]): CurveSample[] {
@@ -406,6 +430,7 @@ function buildSegment(
   fallbackHue: number,
   side: "light" | "dark",
   options: CurveBuildOptions,
+  targetGamut: ColorGamut,
 ): CurveSample[] {
   const rawPoints: RawCurvePoint[] = [];
 
@@ -416,14 +441,14 @@ function buildSegment(
     rawPoints.push({
       lab,
       color,
-      pressure: gamutPressure(color),
+      pressure: gamutPressure(color, targetGamut),
       t,
     });
   }
 
   if (!options.compressGamut) {
     return finishCurveSamples(
-      rawPoints.map((point) => clampToGamut(point.color)),
+      rawPoints.map((point) => clampToGamut(point.color, targetGamut)),
     );
   }
 
@@ -437,7 +462,9 @@ function buildSegment(
   );
 
   return finishCurveSamples(
-    rawPoints.map((point) => compressCurveColor(point, side, segmentPressure)),
+    rawPoints.map((point) =>
+      compressCurveColor(point, side, segmentPressure, targetGamut),
+    ),
   );
 }
 
@@ -448,6 +475,7 @@ function buildCurveGeometry(
   fallbackHue: number,
   seedTangentFactor: number,
   options: CurveBuildOptions,
+  targetGamut: ColorGamut,
 ): Omit<CurveGeometry, "score"> {
   const throughAxis = normalizeLab(subtractLab(darkLab, lightLab));
   const lightDistance = distanceLab(lightLab, seedLab);
@@ -464,6 +492,7 @@ function buildCurveGeometry(
       fallbackHue,
       "light",
       options,
+      targetGamut,
     ),
     darkSegment: buildSegment(
       seedLab,
@@ -473,6 +502,7 @@ function buildCurveGeometry(
       fallbackHue,
       "dark",
       options,
+      targetGamut,
     ),
   };
 }
@@ -481,6 +511,7 @@ function sampleSegment(
   samples: readonly CurveSample[],
   fraction: number,
   fallbackHue: number,
+  targetGamut: ColorGamut,
 ): OklchColor {
   if (samples.length === 0) {
     return { l: 0.62, c: 0, h: fallbackHue };
@@ -488,10 +519,10 @@ function sampleSegment(
 
   const total = samples[samples.length - 1].distance;
   if (total <= 1e-9 || fraction <= 0) {
-    return colorFromLab(samples[0].lab, fallbackHue);
+    return colorFromLab(samples[0].lab, fallbackHue, targetGamut);
   }
   if (fraction >= 1) {
-    return colorFromLab(samples[samples.length - 1].lab, fallbackHue);
+    return colorFromLab(samples[samples.length - 1].lab, fallbackHue, targetGamut);
   }
 
   const target = total * fraction;
@@ -508,6 +539,7 @@ function sampleSegment(
       b: lerp(lower.lab.b, upper.lab.b, t),
     },
     fallbackHue,
+    targetGamut,
   );
 }
 
@@ -554,6 +586,7 @@ function darkModeAdjust(
   c: number,
   h: number,
   t: number,
+  targetGamut: ColorGamut,
 ): OklchColor {
   let darkL = l;
   let darkC = c;
@@ -569,7 +602,7 @@ function darkModeAdjust(
     darkC = c * 1.05;
   }
 
-  return clampToGamut({ l: clamp(darkL, 0.05, 0.98), c: darkC, h });
+  return clampToGamut({ l: clamp(darkL, 0.05, 0.98), c: darkC, h }, targetGamut);
 }
 
 function buildStops(
@@ -578,6 +611,7 @@ function buildStops(
   darkSegment: readonly CurveSample[],
   seed: OklchColor,
   seedIndex: number,
+  targetGamut: ColorGamut,
 ): RampStop[] {
   const lastIndex = labels.length - 1;
   const darkIntervals = lastIndex - seedIndex;
@@ -587,12 +621,13 @@ function buildStops(
     if (index === seedIndex) {
       color = seed;
     } else if (index < seedIndex) {
-      color = sampleSegment(lightSegment, index / seedIndex, seed.h);
+      color = sampleSegment(lightSegment, index / seedIndex, seed.h, targetGamut);
     } else {
       color = sampleSegment(
         darkSegment,
         darkIntervals <= 0 ? 1 : (index - seedIndex) / darkIntervals,
         seed.h,
+        targetGamut,
       );
     }
 
@@ -601,7 +636,7 @@ function buildStops(
       index,
       label,
       color,
-      darkColor: darkModeAdjust(color.l, color.c, color.h, t),
+      darkColor: darkModeAdjust(color.l, color.c, color.h, t, targetGamut),
     };
   });
 }
@@ -622,11 +657,12 @@ function chooseStops(
   darkSegment: readonly CurveSample[],
   seed: OklchColor,
   preferredSeedFraction: number,
+  targetGamut: ColorGamut,
   allowEndpointSeed = false,
 ): { stops: RampStop[]; seedIndex: number; score: number } {
   if (labels.length <= 1) {
     return {
-      stops: buildStops(labels, lightSegment, darkSegment, seed, 0),
+      stops: buildStops(labels, lightSegment, darkSegment, seed, 0, targetGamut),
       seedIndex: 0,
       score: 0,
     };
@@ -641,7 +677,14 @@ function chooseStops(
     interiorMin,
     interiorMax,
   );
-  const stops = buildStops(labels, lightSegment, darkSegment, seed, idealSeedIndex);
+  const stops = buildStops(
+    labels,
+    lightSegment,
+    darkSegment,
+    seed,
+    idealSeedIndex,
+    targetGamut,
+  );
   return {
     stops,
     seedIndex: idealSeedIndex,
@@ -655,6 +698,7 @@ function endpointCandidateColor(
   side: "light" | "dark",
   lightnessOffset: number,
   chromaScale: number,
+  targetGamut: ColorGamut,
 ): OklchColor {
   const lightness =
     side === "light"
@@ -666,16 +710,17 @@ function endpointCandidateColor(
     l: clamp(lightness, 0.02, 0.98),
     c: Math.max(0, base.c * chromaScale),
     h: Number.isFinite(hue) ? hue : seed.h,
-  });
+  }, targetGamut);
 }
 
 function endpointCandidates(
   base: OklchColor,
   seed: OklchColor,
   side: "light" | "dark",
+  targetGamut: ColorGamut,
 ): LabVector[] {
   const highlightModel =
-    side === "light" ? highlightEndpointModel(seed, base) : null;
+    side === "light" ? highlightEndpointModel(seed, base, targetGamut) : null;
   const lightnessOffsets =
     highlightModel
       ? highlightModel.lightnessOffsets
@@ -686,7 +731,7 @@ function endpointCandidates(
     highlightModel
       ? [0.78, 0.9, 1, 1.1]
       : [0.9, 1, 1.1];
-  const candidates = [normalizeEndpointLightness(base, seed, side)];
+  const candidates = [normalizeEndpointLightness(base, seed, side, targetGamut)];
   const keys = new Set(candidates.map((candidate) =>
     `${candidate.l.toFixed(4)}|${candidate.a.toFixed(4)}|${candidate.b.toFixed(4)}`,
   ));
@@ -702,7 +747,7 @@ function endpointCandidates(
       highlightModel.targetEndpointOccupancy - 0.04,
       highlightModel.targetEndpointOccupancy,
       highlightModel.targetEndpointOccupancy + 0.06,
-      relativeChroma(base),
+      relativeChroma(base, targetGamut),
     ];
 
     for (const lightnessOffset of lightnessOffsets) {
@@ -716,9 +761,11 @@ function endpointCandidates(
           const normalizedHue = normalizeHue(hue);
           const color = clampToGamut({
             l: lightness,
-            c: maxChroma(lightness, normalizedHue) * clamp(occupancy, 0.24, 0.76),
+            c:
+              maxChroma(lightness, normalizedHue, targetGamut) *
+              clamp(occupancy, 0.24, 0.76),
             h: normalizedHue,
-          });
+          }, targetGamut);
           const lab = labFromColor(color);
           const key = `${lab.l.toFixed(4)}|${lab.a.toFixed(4)}|${lab.b.toFixed(4)}`;
           if (!keys.has(key)) {
@@ -732,7 +779,14 @@ function endpointCandidates(
     for (const lightnessOffset of lightnessOffsets) {
       for (const chromaScale of chromaScales) {
         const lab = labFromColor(
-          endpointCandidateColor(base, seed, side, lightnessOffset, chromaScale),
+          endpointCandidateColor(
+            base,
+            seed,
+            side,
+            lightnessOffset,
+            chromaScale,
+            targetGamut,
+          ),
         );
         const key = `${lab.l.toFixed(4)}|${lab.a.toFixed(4)}|${lab.b.toFixed(4)}`;
         if (!keys.has(key)) {
@@ -752,6 +806,7 @@ function resolveSeedPlacementPolicy(
   seed: OklchColor,
   baseDarkEndpoint: OklchColor,
   preferredSeedFraction: number,
+  targetGamut: ColorGamut,
 ): SeedPlacementPolicy {
   if (canonicalLabels.length <= 1) {
     return { preferredFraction: 0, allowEndpointSeed: true };
@@ -764,8 +819,18 @@ function resolveSeedPlacementPolicy(
     Math.max(1, lastIndex - 1),
   );
   const seedLab = toLabVector(seed);
-  const lightLab = normalizeEndpointLightness(baseLightEndpoint, seed, "light");
-  const darkLab = normalizeEndpointLightness(baseDarkEndpoint, seed, "dark");
+  const lightLab = normalizeEndpointLightness(
+    baseLightEndpoint,
+    seed,
+    "light",
+    targetGamut,
+  );
+  const darkLab = normalizeEndpointLightness(
+    baseDarkEndpoint,
+    seed,
+    "dark",
+    targetGamut,
+  );
   const lightDistance = distanceLab(lightLab, seedLab);
   const darkDistance = distanceLab(seedLab, darkLab);
   const lightStep = lightDistance / Math.max(1, preferredSeedIndex);
@@ -786,15 +851,16 @@ function resolveSeedPlacementPolicy(
 function highlightEndpointPenalty(
   model: HighlightEndpointModel | null,
   sampledStops: readonly RampStop[],
+  targetGamut: ColorGamut,
 ): number {
   if (!model || sampledStops.length === 0) return 0;
 
   const first = sampledStops[0].color;
   const second = sampledStops[1]?.color ?? first;
   const firstOccupancyDelta =
-    (relativeChroma(first) - model.targetEndpointOccupancy) / 0.08;
+    (relativeChroma(first, targetGamut) - model.targetEndpointOccupancy) / 0.08;
   const secondOccupancyExcess =
-    Math.max(0, relativeChroma(second) - model.targetBridgeOccupancy) / 0.08;
+    Math.max(0, relativeChroma(second, targetGamut) - model.targetBridgeOccupancy) / 0.08;
   const firstLightnessDelta = (first.l - model.targetLightness) / 0.008;
   const firstHueDelta = hueDistance(first.h, model.targetHue) / 6;
 
@@ -815,12 +881,37 @@ function solveCanonicalGeometry(
   seed: OklchColor,
   seedPlacement: SeedPlacementPolicy,
   options: CurveBuildOptions,
+  targetGamut: ColorGamut,
 ): CurveGeometry {
-  const baseLightLab = normalizeEndpointLightness(baseLightEndpoint, seed, "light");
-  const baseDarkLab = normalizeEndpointLightness(baseDarkEndpoint, seed, "dark");
-  const lightHighlightModel = highlightEndpointModel(seed, baseLightEndpoint);
-  const lightCandidates = endpointCandidates(baseLightEndpoint, seed, "light");
-  const darkCandidates = endpointCandidates(baseDarkEndpoint, seed, "dark");
+  const baseLightLab = normalizeEndpointLightness(
+    baseLightEndpoint,
+    seed,
+    "light",
+    targetGamut,
+  );
+  const baseDarkLab = normalizeEndpointLightness(
+    baseDarkEndpoint,
+    seed,
+    "dark",
+    targetGamut,
+  );
+  const lightHighlightModel = highlightEndpointModel(
+    seed,
+    baseLightEndpoint,
+    targetGamut,
+  );
+  const lightCandidates = endpointCandidates(
+    baseLightEndpoint,
+    seed,
+    "light",
+    targetGamut,
+  );
+  const darkCandidates = endpointCandidates(
+    baseDarkEndpoint,
+    seed,
+    "dark",
+    targetGamut,
+  );
   const seedTangentFactors = [0.55, 0.8, 0.95, 1.1] as const;
   let best: CurveGeometry | null = null;
 
@@ -834,6 +925,7 @@ function solveCanonicalGeometry(
           seed.h,
           seedTangentFactor,
           options,
+          targetGamut,
         );
         const sampled = chooseStops(
           canonicalLabels,
@@ -841,6 +933,7 @@ function solveCanonicalGeometry(
           geometry.darkSegment,
           seed,
           seedPlacement.preferredFraction,
+          targetGamut,
           seedPlacement.allowEndpointSeed,
         );
         const endpointDrift =
@@ -849,6 +942,7 @@ function solveCanonicalGeometry(
         const highlightRestraint = highlightEndpointPenalty(
           lightHighlightModel,
           sampled.stops,
+          targetGamut,
         );
         const score =
           sampled.score + endpointDrift * 2.2 + tuningDrift * 0.05 + highlightRestraint;
@@ -865,6 +959,7 @@ function solveCanonicalGeometry(
 
 function cacheKey(config: RampConfig): string {
   return [
+    config.targetGamut ?? "default",
     config.stopCount,
     config.hue.toFixed(3),
     (config.seedChroma ?? -1).toFixed(4),
@@ -880,6 +975,7 @@ function solveContinuousCurveRampWithMode(
   const key = cacheKey(config);
   const cached = cache.get(key);
   if (cached) return cached;
+  const targetGamut = solvingGamutForTarget(config.targetGamut);
 
   const labelSource = solveV6ResearchRamp(config);
   const canonical = solveBrandExactFairRamp(
@@ -899,6 +995,7 @@ function solveContinuousCurveRampWithMode(
     exactSeed,
     darkEndpoint,
     canonical.metadata.seedFraction,
+    targetGamut,
   );
 
   const seedLab = toLabVector(exactSeed);
@@ -912,6 +1009,7 @@ function solveContinuousCurveRampWithMode(
     {
       compressGamut: mode === "continuous-compressed",
     },
+    targetGamut,
   );
   const best = chooseStops(
     labels,
@@ -919,6 +1017,7 @@ function solveContinuousCurveRampWithMode(
     geometry.darkSegment,
     exactSeed,
     seedPlacement.preferredFraction,
+    targetGamut,
     seedPlacement.allowEndpointSeed,
   );
   const lightBudget = geometry.lightSegment[geometry.lightSegment.length - 1].distance;

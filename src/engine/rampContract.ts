@@ -16,6 +16,7 @@ import {
 import { distanceLab, toLabVector } from "./pathGeometry";
 
 const EXACTNESS_EPSILON = 1e-6;
+export const DEFAULT_TARGET_GAMUT: TargetGamut = "dual";
 
 interface BuildRampSolveMetadataOptions {
   solver: string;
@@ -24,11 +25,11 @@ interface BuildRampSolveMetadataOptions {
 }
 
 export function normalizeTargetGamut(targetGamut?: TargetGamut): TargetGamut {
-  return targetGamut ?? "srgb";
+  return targetGamut ?? DEFAULT_TARGET_GAMUT;
 }
 
 export function sourceSeedFromRampConfig(config: RampConfig): OklchColor {
-  const solvingGamut = solvingGamutForTarget(config.targetGamut);
+  const solvingGamut = solvingGamutForTarget(normalizeTargetGamut(config.targetGamut));
   const seedLightness = config.seedLightness ?? 0.62;
   const seedChroma =
     config.seedChroma ?? Math.max(0.08, maxChroma(0.62, config.hue, solvingGamut) * 0.55);
