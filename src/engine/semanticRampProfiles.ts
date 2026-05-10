@@ -35,6 +35,14 @@ interface VerdantBodyPrior {
   emeraldness: number;
 }
 
+interface CoolGlassPrior {
+  weight: number;
+  endpoint: OklchColor;
+  cyanWeight: number;
+  skyWeight: number;
+  blueWeight: number;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -146,6 +154,32 @@ function verdantBodyProfileWeight(
   return hueWeight * verdantRangeGate * intensityWeight * bodyLightnessWeight;
 }
 
+function coolGlassProfileWeight(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): number {
+  const hue = normalizeHue(seed.h);
+  const cyanWeight = clamp(1 - hueDistance(seed.h, 215) / 20, 0, 1);
+  const skyWeight = clamp(1 - hueDistance(seed.h, 237) / 22, 0, 1);
+  const blueWeight = clamp(1 - hueDistance(seed.h, 260) / 20, 0, 1);
+  const hueWeight = Math.max(cyanWeight, skyWeight, blueWeight);
+  const coolRangeGate = smoothstep(202, 212, hue) * (1 - smoothstep(268, 278, hue));
+  const intensityWeight = Math.max(
+    clamp((relativeChroma(seed, targetGamut) - 0.5) / 0.26, 0, 1),
+    clamp((seed.c - 0.1) / 0.08, 0, 1),
+  );
+  const bodyLightnessWeight =
+    clamp(
+      (seed.l - lerp(0.56, 0.54, blueWeight)) /
+        lerp(0.1, 0.06, blueWeight),
+      0,
+      1,
+    ) *
+    clamp((0.8 - seed.l) / 0.09, 0, 1);
+
+  return hueWeight * coolRangeGate * intensityWeight * bodyLightnessWeight;
+}
+
 function warmShoulderHue(seedHue: number): number {
   const hue = normalizeHue(seedHue);
   if (hue <= 50) return 74;
@@ -234,6 +268,35 @@ function verdantBodyPrior(
     weight,
     tealness,
     emeraldness,
+    endpoint: clampToGamut({ l, c, h }, targetGamut),
+  };
+}
+
+function coolGlassPrior(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): CoolGlassPrior | null {
+  const weight = coolGlassProfileWeight(seed, targetGamut);
+  if (weight <= 0.02) return null;
+
+  const cyanWeight = clamp(1 - hueDistance(seed.h, 215) / 20, 0, 1);
+  const skyWeight = clamp(1 - hueDistance(seed.h, 237) / 22, 0, 1);
+  const blueWeight = clamp(1 - hueDistance(seed.h, 260) / 20, 0, 1);
+  const total = cyanWeight + skyWeight + blueWeight || 1;
+  const cyanShare = cyanWeight / total;
+  const skyShare = skyWeight / total;
+  const blueShare = blueWeight / total;
+  const h = normalizeHue(seed.h - (13 * cyanShare + 1 * skyShare + 5 * blueShare));
+  const l = 0.982 * cyanShare + 0.977 * skyShare + 0.97 * blueShare;
+  const seedRatio = 0.13 * cyanShare + 0.078 * skyShare + 0.062 * blueShare;
+  const occupancy = 0.92 * cyanShare + 0.88 * skyShare + 0.86 * blueShare;
+  const c = Math.min(seed.c * seedRatio, maxChroma(l, h, targetGamut) * occupancy);
+
+  return {
+    weight,
+    cyanWeight: cyanShare,
+    skyWeight: skyShare,
+    blueWeight: blueShare,
     endpoint: clampToGamut({ l, c, h }, targetGamut),
   };
 }
@@ -421,6 +484,66 @@ function verdantLightColor(
   };
 }
 
+function coolGlassLightColor(
+  seed: OklchColor,
+  prior: CoolGlassPrior,
+  linearProgress: number,
+  seedIndex: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const shelfExponent =
+    seedIndex >= 5
+      ? 1.4 + prior.blueWeight * 0.16
+      : seedIndex <= 3
+      ? 1.28 + prior.blueWeight * 0.16
+      : 1.34 + prior.blueWeight * 0.16;
+  const baseChromaProgress = progress ** (0.72 + prior.blueWeight * 0.34);
+  const bodyShelfBoost =
+    (0.22 * prior.cyanWeight + 0.18 * prior.skyWeight + 0.04 * prior.blueWeight) *
+    smoothstep(0.28, 0.66, progress) *
+    (1 - smoothstep(0.92, 1, progress));
+  const chromaProgress = clamp(baseChromaProgress + bodyShelfBoost, 0, 1.08);
+  const bodyGlassHueDent =
+    prior.skyWeight *
+      7.2 *
+      smoothstep(0.24, 0.44, progress) *
+      (1 - smoothstep(0.72, 1, progress)) +
+    prior.blueWeight *
+      4.8 *
+      smoothstep(0.44, 0.62, progress) *
+      (1 - smoothstep(0.78, 1, progress));
+  const hue = normalizeHue(
+    mixHue(
+      prior.endpoint.h,
+      seed.h,
+      smoothstep(0.36, 0.94, progress),
+    ) - bodyGlassHueDent,
+  );
+  const color = clampToGamut({
+    l: clamp(
+      lerp(prior.endpoint.l, seed.l, progress ** shelfExponent),
+      0.02,
+      0.995,
+    ),
+    c: Math.max(0, lerp(prior.endpoint.c, seed.c, chromaProgress)),
+    h: hue,
+  }, targetGamut);
+  const lightOccupancyCap =
+    0.92 * prior.cyanWeight +
+    0.9 * prior.skyWeight +
+    0.92 * prior.blueWeight +
+    0.08 * smoothstep(0.52, 0.84, progress);
+
+  return {
+    ...color,
+    c: Math.min(
+      color.c,
+      maxChroma(color.l, color.h, targetGamut) * lightOccupancyCap,
+    ),
+  };
+}
+
 function warmDarkInkColor(
   seed: OklchColor,
   prior: WarmBodyPrior,
@@ -544,6 +667,59 @@ function verdantDarkInkColor(
   };
 }
 
+function coolGlassDarkInkColor(
+  seed: OklchColor,
+  prior: CoolGlassPrior,
+  normalColor: OklchColor,
+  linearProgress: number,
+  targetGamut: ColorGamut,
+): OklchColor {
+  const progress = clamp(linearProgress, 0, 1);
+  const hueOffset =
+    14 * prior.cyanWeight + 6 * prior.skyWeight + 8 * prior.blueWeight;
+  const tailHue = normalizeHue(seed.h + hueOffset);
+  const hue = mixHue(seed.h, tailHue, smoothstep(0, 0.64, progress));
+  const tailLightness =
+    0.302 * prior.cyanWeight + 0.293 * prior.skyWeight + 0.282 * prior.blueWeight;
+  const lightnessProgress = clamp(
+    progress ** (0.88 + prior.blueWeight * 0.18) -
+      0.055 * smoothstep(0.54, 0.84, progress) *
+        (1 - smoothstep(0.9, 1, progress)),
+    0,
+    1,
+  );
+  const l = lerp(seed.l, tailLightness, lightnessProgress);
+  const targetTailChroma =
+    0.056 * prior.cyanWeight + 0.066 * prior.skyWeight + 0.092 * prior.blueWeight;
+  const blueInkShelf =
+    prior.blueWeight *
+    smoothstep(0.34, 0.58, progress) *
+    (1 - smoothstep(0.7, 0.96, progress));
+  const blueBodyBloom =
+    prior.blueWeight *
+    0.07 *
+    smoothstep(0.08, 0.26, progress) *
+    (1 - smoothstep(0.36, 0.66, progress));
+  const desiredChroma =
+    lerp(seed.c, targetTailChroma, progress ** 1.12) +
+    blueBodyBloom +
+    0.05 * blueInkShelf;
+  const seedOccupancy = Math.min(relativeChroma(seed, targetGamut) * 0.98, 1);
+  const tailOccupancy =
+    0.72 * prior.cyanWeight + 0.72 * prior.skyWeight + 0.53 * prior.blueWeight;
+  const occupancy =
+    lerp(seedOccupancy, tailOccupancy, progress ** 1.85) +
+    0.17 * blueInkShelf;
+  const c = Math.min(desiredChroma, maxChroma(l, hue, targetGamut) * occupancy);
+  const target = clampToGamut({ l, c: Math.max(0, c), h: hue }, targetGamut);
+
+  return {
+    l: lerp(normalColor.l, target.l, 0.96),
+    c: target.c,
+    h: target.h,
+  };
+}
+
 function resolveWarmBodyProfile(
   seed: OklchColor,
   targetGamut: ColorGamut,
@@ -630,6 +806,31 @@ function resolveVerdantBodyProfile(
   };
 }
 
+function resolveCoolGlassProfile(
+  seed: OklchColor,
+  targetGamut: ColorGamut,
+): ResolvedSemanticRampProfile | null {
+  const prior = coolGlassPrior(seed, targetGamut);
+  if (!prior) return null;
+
+  return {
+    id: "cool-glass",
+    weight: prior.weight,
+    lightColor: (linearProgress, seedIndex) =>
+      coolGlassLightColor(seed, prior, linearProgress, seedIndex, targetGamut),
+    lightBlend: () => prior.weight,
+    darkColor: (normalColor, linearProgress) =>
+      coolGlassDarkInkColor(seed, prior, normalColor, linearProgress, targetGamut),
+    darkBlend: (linearProgress) =>
+      prior.weight * smoothstep(0.02, 0.22, linearProgress),
+    seedIndexPenalty: (seedIndex, lastIndex) => {
+      const bodyIndex = Math.round(lastIndex * 0.5);
+      const anchorWeight = prior.cyanWeight + prior.skyWeight + prior.blueWeight;
+      return anchorWeight * prior.weight * 2.2 * Math.abs(seedIndex - bodyIndex);
+    },
+  };
+}
+
 export function resolveSemanticRampProfiles(
   seed: OklchColor,
   targetGamut: ColorGamut,
@@ -639,6 +840,7 @@ export function resolveSemanticRampProfiles(
     resolveGoldBodyProfile(seed, targetGamut),
     resolveLimeBodyProfile(seed, targetGamut),
     resolveVerdantBodyProfile(seed, targetGamut),
+    resolveCoolGlassProfile(seed, targetGamut),
   ].filter(
     (profile): profile is ResolvedSemanticRampProfile => profile !== null,
   );

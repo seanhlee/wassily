@@ -321,14 +321,20 @@ ink tail: cooler living ink, stronger cool turn for emerald/teal than green
 
 Highlights should be colored glass, not white paper.
 
-Likely profile:
+Implemented profile:
 
 ```text
-light shoulder: cool glass with visible chroma
-body shelf: stable hue with enough saturation for UI affordance
-seed anchor: depends strongly on seed lightness
-ink tail: deep blue/cyan ink, avoid blackened gray
+light shoulder: cool glass with visible chroma, not same-hue paper
+body shelf: cyan stays clear; sky/blue make a cyanward glass dent at 200-400
+seed anchor: body cyan/sky/blue want 500 when the seed has enough budget
+ink tail: blueward ink, with a saturated blue shelf through 600-900
 ```
+
+The important new lever is that light-side hue is allowed to be non-monotonic.
+Sky and blue get cleaner when `200-400` bend cyanward before returning to the
+exact seed at `500`. Blue also needs a separate post-seed ink shelf: its
+`600-900` stops should stay saturated, then fall cleanly into the `950` ink
+endpoint.
 
 ### Violet / Purple / Fuchsia
 

@@ -912,3 +912,48 @@ Interpretation: `verdant-body` is the first multi-family corridor profile that
 feels justified. The shared grammar is real, but the profile still needs local
 shape controls: green wants a leafy `500` peak, emerald wants a mintier body
 shelf and cool ink, and teal wants sea-glass lights with a stronger blue tail.
+
+## Implementation Checkpoint: Cool Glass Profile
+
+Date: 2026-05-10
+
+The cyan / sky / blue corridor confirmed that the verdant strategy extrapolates,
+but only after adding two cool-family levers that were not obvious from warm
+families.
+
+What changed:
+
+- add `cool-glass` as a corridor profile blending cyan, sky, and blue behavior
+- prefer the semantic `500` body label for high-chroma, mid-lightness cool seeds
+- make the top stop colored glass instead of pale same-hue paper
+- let sky and blue lights bend cyanward through `200-400`, then return to the
+  exact seed at `500`
+- move the dark tail blueward earlier, so `600/700` do not feel same-hue
+- give blue a separate saturated ink shelf through `600-900`, while still
+  landing on a controlled `950`
+
+Regenerated P3 comparison:
+
+- Cyan anchors at `500`: `50/100/200/300/400/500` are
+  `0.980 0.019 203.4`, `0.951 0.052 203.1`,
+  `0.905 0.088 203.1`, `0.849 0.128 207.5`,
+  `0.785 0.150 213.4`, exact seed `0.715 0.143 215.2`.
+  The tail now turns into blue ink: `700/900/950` are
+  `0.531 0.107 224.1`, `0.393 0.075 228.3`,
+  `0.298 0.056 228.3`.
+- Sky anchors at `500` and now has Tailwind's glass dent:
+  `200/300/400/500` are `0.895 0.062 230.0`,
+  `0.834 0.103 229.6`, `0.763 0.156 231.5`,
+  exact seed `0.685 0.169 237.3`. The tail lands at
+  `0.292 0.066 243.2`.
+- Blue anchors at `500` and now carries the body/tail plateau:
+  `300/400/500/600/700/800/900/950` are
+  `0.813 0.098 252.1`, `0.725 0.157 254.4`,
+  exact seed `0.623 0.214 259.8`, `0.560 0.241 261.6`,
+  `0.493 0.244 265.2`, `0.426 0.202 267.7`,
+  `0.370 0.152 267.8`, `0.281 0.092 267.7`.
+
+Interpretation: cool hues taught us that hue curves do not need to be simple
+endpoint interpolation. For sky and blue, beauty comes from a local cyanward
+reflection in the light body and a separate blueward ink shelf after the seed.
+This is another vote for grammar pieces over one magic OKLCH ramp formula.

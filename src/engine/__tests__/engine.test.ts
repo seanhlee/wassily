@@ -486,6 +486,94 @@ describe("ramp generation", () => {
     }
   });
 
+  it("gives cyan, sky, and blue seeds glass shoulders and saturated blue ink", () => {
+    for (const seed of [
+      {
+        hue: 215.2,
+        seedChroma: 0.143,
+        seedLightness: 0.715,
+        minTopLightness: 0.978,
+        minTopChroma: 0.017,
+        maxTopChroma: 0.023,
+        minTopHue: 200,
+        maxTopHue: 206,
+        hueDentLabel: "300",
+        maxHueDent: 209,
+        midTailLabel: "700",
+        minMidTailChroma: 0.102,
+        minTailHueShift: 12,
+        minTailChroma: 0.052,
+        maxTailChroma: 0.06,
+      },
+      {
+        hue: 237.3,
+        seedChroma: 0.169,
+        seedLightness: 0.685,
+        minTopLightness: 0.974,
+        minTopChroma: 0.009,
+        maxTopChroma: 0.015,
+        minTopHue: 234,
+        maxTopHue: 238,
+        hueDentLabel: "300",
+        maxHueDent: 231,
+        midTailLabel: "700",
+        minMidTailChroma: 0.125,
+        minTailHueShift: 5,
+        minTailChroma: 0.062,
+        maxTailChroma: 0.07,
+      },
+      {
+        hue: 259.8,
+        seedChroma: 0.214,
+        seedLightness: 0.623,
+        minTopLightness: 0.967,
+        minTopChroma: 0.011,
+        maxTopChroma: 0.017,
+        minTopHue: 252,
+        maxTopHue: 257,
+        hueDentLabel: "300",
+        maxHueDent: 253,
+        midTailLabel: "800",
+        minMidTailChroma: 0.19,
+        minTailHueShift: 7,
+        minTailChroma: 0.086,
+        maxTailChroma: 0.1,
+      },
+    ] as const) {
+      const solved = solveRamp({
+        ...seed,
+        stopCount: 11,
+        mode: "opinionated",
+        targetGamut: "display-p3",
+      });
+      const stop50 = solved.stops.find((stop) => stop.label === "50")!.color;
+      const stop500 = solved.stops.find((stop) => stop.label === "500")!.color;
+      const hueDentStop = solved.stops.find(
+        (stop) => stop.label === seed.hueDentLabel,
+      )!.color;
+      const midTailStop = solved.stops.find(
+        (stop) => stop.label === seed.midTailLabel,
+      )!.color;
+      const stop950 = solved.stops.find((stop) => stop.label === "950")!.color;
+
+      expect(solved.stops[solved.metadata.seedIndex].label).toBe("500");
+      expect(stop500.l).toBeCloseTo(seed.seedLightness, 3);
+      expect(stop500.c).toBeCloseTo(seed.seedChroma, 3);
+      expect(stop500.h).toBeCloseTo(seed.hue, 1);
+      expect(stop50.l).toBeGreaterThan(seed.minTopLightness);
+      expect(stop50.c).toBeGreaterThan(seed.minTopChroma);
+      expect(stop50.c).toBeLessThan(seed.maxTopChroma);
+      expect(stop50.h).toBeGreaterThan(seed.minTopHue);
+      expect(stop50.h).toBeLessThan(seed.maxTopHue);
+      expect(hueDentStop.h).toBeLessThan(seed.maxHueDent);
+      expect(midTailStop.c).toBeGreaterThan(seed.minMidTailChroma);
+      const tailHueShift = ((((stop950.h - seed.hue) % 360) + 540) % 360) - 180;
+      expect(tailHueShift).toBeGreaterThan(seed.minTailHueShift);
+      expect(stop950.c).toBeGreaterThan(seed.minTailChroma);
+      expect(stop950.c).toBeLessThan(seed.maxTailChroma);
+    }
+  });
+
   it("solveRamp marks pure ramps as unanchored when they do not preserve the seed", () => {
     const solved = solveRamp({
       hue: 265,
@@ -507,9 +595,10 @@ describe("ramp generation", () => {
       const analysis = analyzeRamp(stops, seed);
       const stop50 = stops.find((stop) => stop.label === "50")!;
       const stop950 = stops.find((stop) => stop.label === "950")!;
+      const maxTopLightness = seedId === "cyan" ? 0.965 : 0.96;
 
       expect(stop50.color.l).toBeGreaterThanOrEqual(0.955);
-      expect(stop50.color.l).toBeLessThanOrEqual(0.96);
+      expect(stop50.color.l).toBeLessThanOrEqual(maxTopLightness);
       expect(stop50.color.c).toBeLessThan(seed.color.c * 0.45);
       expect(stop950.color.l).toBeGreaterThan(0.24);
       expect(stop950.color.c).toBeGreaterThan(0.025);
