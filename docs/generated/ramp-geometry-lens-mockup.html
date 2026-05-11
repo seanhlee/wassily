@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ramp Geometry Lens Mockup</title>
+    <style>
+      @font-face {
+        font-family: "PP Neue Montreal Text";
+        src: url("fonts/PPNeueMontrealText-Book.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "PP Neue Montreal Text";
+        src: url("fonts/PPNeueMontrealText-Bold.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      :root {
+        color: #171817;
+        background: #f6f5f0;
+        font-family: "PP Neue Montreal Text", ui-sans-serif, system-ui, sans-serif;
+        font-weight: 400;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f6f5f0;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      .shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(20, 20, 18, 0.12);
+      }
+      .title {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1;
+        font-weight: 700;
+        letter-spacing: 0;
+      }
+      .subtle {
+        color: rgba(20, 20, 18, 0.54);
+        font-size: 12px;
+      }
+      .family-tabs {
+        display: flex;
+        gap: 6px;
+      }
+      .family-tabs button,
+      .ghost-button {
+        border: 1px solid rgba(20, 20, 18, 0.14);
+        background: rgba(255, 255, 255, 0.52);
+        color: rgba(20, 20, 18, 0.78);
+        border-radius: 6px;
+        height: 30px;
+        padding: 0 10px;
+        cursor: pointer;
+      }
+      .family-tabs button.active {
+        color: #111;
+        border-color: rgba(20, 20, 18, 0.32);
+        background: #fff;
+      }
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(520px, 1fr) 348px;
+        gap: 0;
+        min-height: 0;
+      }
+      .stage {
+        position: relative;
+        min-height: calc(100vh - 67px);
+        overflow: hidden;
+      }
+      #space {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .legend {
+        position: absolute;
+        left: 22px;
+        top: 22px;
+        display: grid;
+        gap: 8px;
+        width: min(320px, calc(100% - 44px));
+      }
+      .legend-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(20, 20, 18, 0.68);
+        font-size: 12px;
+      }
+      .line-key {
+        width: 34px;
+        height: 2px;
+        background: #111;
+      }
+      .line-key.fallback {
+        background: repeating-linear-gradient(
+          90deg,
+          rgba(20, 20, 18, 0.58) 0 5px,
+          transparent 5px 9px
+        );
+      }
+      .stop-strip {
+        position: absolute;
+        left: 22px;
+        right: 22px;
+        bottom: 24px;
+        display: grid;
+        grid-template-columns: repeat(11, minmax(0, 1fr));
+        border: 1px solid rgba(20, 20, 18, 0.16);
+        background: rgba(255, 255, 255, 0.46);
+      }
+      .stop-chip {
+        min-width: 0;
+        height: 74px;
+        border: 0;
+        border-right: 1px solid rgba(20, 20, 18, 0.12);
+        padding: 0;
+        cursor: pointer;
+        background: transparent;
+        text-align: left;
+      }
+      .stop-chip:last-child { border-right: 0; }
+      .swatch {
+        height: 46px;
+        width: 100%;
+      }
+      .stop-chip.active .swatch {
+        outline: 2px solid #111;
+        outline-offset: -2px;
+      }
+      .chip-label {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 6px 0;
+        color: rgba(20, 20, 18, 0.72);
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+      }
+      .inspector {
+        border-left: 1px solid rgba(20, 20, 18, 0.12);
+        background: rgba(255, 255, 255, 0.58);
+        display: grid;
+        grid-template-rows: auto auto auto 1fr;
+        min-height: 0;
+      }
+      .panel {
+        padding: 18px;
+        border-bottom: 1px solid rgba(20, 20, 18, 0.1);
+      }
+      .panel h2 {
+        margin: 0 0 12px;
+        font-size: 13px;
+        line-height: 1;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: rgba(20, 20, 18, 0.58);
+      }
+      .metric-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .metric {
+        border: 1px solid rgba(20, 20, 18, 0.12);
+        border-radius: 6px;
+        padding: 10px;
+        background: rgba(246, 245, 240, 0.48);
+      }
+      .metric-label {
+        color: rgba(20, 20, 18, 0.52);
+        font-size: 11px;
+        margin-bottom: 4px;
+      }
+      .metric-value {
+        font-size: 18px;
+        font-variant-numeric: tabular-nums;
+      }
+      .control {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .control:last-child { margin-bottom: 0; }
+      .control-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+        color: rgba(20, 20, 18, 0.66);
+      }
+      input[type="range"] {
+        width: 100%;
+        accent-color: #171817;
+      }
+      label.check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(20, 20, 18, 0.72);
+        font-size: 12px;
+      }
+      .stop-detail {
+        display: grid;
+        grid-template-columns: 54px 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+      .detail-swatch {
+        height: 54px;
+        border: 1px solid rgba(20, 20, 18, 0.16);
+      }
+      .detail-lines {
+        display: grid;
+        gap: 5px;
+        font-size: 12px;
+        color: rgba(20, 20, 18, 0.72);
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-variant-numeric: tabular-nums;
+      }
+      .curve-stack {
+        display: grid;
+        gap: 12px;
+      }
+      .curve {
+        display: grid;
+        gap: 5px;
+      }
+      .curve-title {
+        color: rgba(20, 20, 18, 0.56);
+        font-size: 11px;
+      }
+      .curve svg {
+        width: 100%;
+        height: 54px;
+        display: block;
+        border: 1px solid rgba(20, 20, 18, 0.1);
+        background: rgba(246, 245, 240, 0.5);
+      }
+      @media (max-width: 920px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+        .stage {
+          min-height: 68vh;
+        }
+        .inspector {
+          border-left: 0;
+          border-top: 1px solid rgba(20, 20, 18, 0.12);
+        }
+      }
+      @media (max-width: 680px) {
+        .topbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+        .family-tabs {
+          overflow-x: auto;
+          padding-bottom: 2px;
+        }
+        .stop-strip {
+          left: 12px;
+          right: 12px;
+          bottom: 14px;
+        }
+        .chip-label {
+          font-size: 9px;
+          padding-left: 3px;
+          padding-right: 3px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="title">
+          <h1>Ramp Geometry Lens</h1>
+          <span class="subtle">mockup: OKLCH path through P3 with sRGB fallback</span>
+        </div>
+        <div class="family-tabs" aria-label="Ramp family">
+          <button class="active" data-family="orange">Orange</button>
+          <button data-family="blue">Blue</button>
+          <button data-family="violet">Violet</button>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <section class="stage">
+          <canvas id="space"></canvas>
+          <div class="legend">
+            <div class="legend-row"><span class="line-key"></span><span>Canonical P3 path</span></div>
+            <div class="legend-row"><span class="line-key fallback"></span><span>sRGB fallback projection</span></div>
+            <div class="legend-row"><span class="subtle">vertical = lightness, radius = chroma, orbit = hue</span></div>
+          </div>
+          <div class="stop-strip" id="stopStrip" aria-label="Ramp stops"></div>
+        </section>
+
+        <aside class="inspector">
+          <section class="panel">
+            <h2>Contract</h2>
+            <div class="metric-grid">
+              <div class="metric">
+                <div class="metric-label">Target</div>
+                <div class="metric-value">P3</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Fallback</div>
+                <div class="metric-value">sRGB</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Exactness</div>
+                <div class="metric-value">seed</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Outside sRGB</div>
+                <div class="metric-value" id="outMetric">8</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Geometry Handles</h2>
+            <div class="control">
+              <div class="control-line"><span>View orbit</span><span id="viewValue">34 deg</span></div>
+              <input id="viewSlider" type="range" min="-80" max="80" value="34" />
+            </div>
+            <div class="control">
+              <div class="control-line"><span>Light shoulder</span><span id="shoulderValue">warm +0</span></div>
+              <input id="shoulderSlider" type="range" min="-100" max="100" value="0" />
+            </div>
+            <div class="control">
+              <div class="control-line"><span>Ink tail bend</span><span id="tailValue">heat +0</span></div>
+              <input id="tailSlider" type="range" min="-100" max="100" value="0" />
+            </div>
+            <label class="check">
+              <input id="fallbackToggle" type="checkbox" checked />
+              Show sRGB fallback path
+            </label>
+          </section>
+
+          <section class="panel">
+            <h2>Selected Stop</h2>
+            <div class="stop-detail">
+              <div class="detail-swatch" id="detailSwatch"></div>
+              <div class="detail-lines">
+                <div><strong id="detailLabel">500</strong></div>
+                <div class="mono" id="detailOklch">oklch(...)</div>
+                <div class="mono" id="detailHex">sRGB #...</div>
+                <div id="detailNote">canonical seed anchor</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Curve Readout</h2>
+            <div class="curve-stack">
+              <div class="curve">
+                <div class="curve-title">Lightness</div>
+                <svg id="curveL" viewBox="0 0 260 54" preserveAspectRatio="none"></svg>
+              </div>
+              <div class="curve">
+                <div class="curve-title">Chroma</div>
+                <svg id="curveC" viewBox="0 0 260 54" preserveAspectRatio="none"></svg>
+              </div>
+              <div class="curve">
+                <div class="curve-title">Hue travel</div>
+                <svg id="curveH" viewBox="0 0 260 54" preserveAspectRatio="none"></svg>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const ramps = {
+        orange: {
+          title: "Orange",
+          seedLabel: "500",
+          outsideSrgb: 8,
+          canonical: [
+            ["50",0.9826,0.0134,72.496,"oklch(98.3% 0.013 72.496)","#FFF8F0",false],
+            ["100",0.9484,0.0436,70.824,"oklch(94.8% 0.044 70.824)","#FFEACF",false],
+            ["200",0.8984,0.0815,67.423,"oklch(89.8% 0.081 67.423)","#FFD4A4",false],
+            ["300",0.84,0.123,62.312,"oklch(84.0% 0.123 62.312)","#FFB873",false],
+            ["400",0.7751,0.167,55.668,"oklch(77.5% 0.167 55.668)","#FF9539",false],
+            ["500",0.705,0.213,47.604,"oklch(70.5% 0.213 47.604)","#FF6900",false],
+            ["600",0.626,0.1891,46.17,"oklch(62.6% 0.189 46.170)","#DF5700",false],
+            ["700",0.5557,0.1844,38.423,"oklch(55.6% 0.184 38.423)","#C73C00",false],
+            ["800",0.4697,0.1513,38.049,"oklch(47.0% 0.151 38.049)","#9D3003",true],
+            ["900",0.3968,0.1229,38.029,"oklch(39.7% 0.123 38.029)","#7B2708",true],
+            ["950",0.2719,0.08,38.068,"oklch(27.2% 0.080 38.068)","#461505",true]
+          ],
+          fallback: [
+            ["50",0.9826,0.0131,72.496,"oklch(98.3% 0.013 72.496)","#FFF8F0"],
+            ["100",0.9484,0.0384,70.824,"oklch(94.8% 0.038 70.824)","#FFEAD3"],
+            ["200",0.8984,0.0734,67.423,"oklch(89.8% 0.073 67.423)","#FFD5AA"],
+            ["300",0.84,0.1119,62.312,"oklch(84.0% 0.112 62.312)","#FFBA7C"],
+            ["400",0.7751,0.1536,55.668,"oklch(77.5% 0.154 55.668)","#FF9949"],
+            ["500",0.705,0.1932,47.604,"oklch(70.5% 0.193 47.604)","#FC7100"],
+            ["600",0.626,0.1755,46.17,"oklch(62.6% 0.175 46.170)","#D95D00"],
+            ["700",0.5557,0.1802,38.423,"oklch(55.6% 0.180 38.423)","#C53F00"],
+            ["800",0.4697,0.1513,38.049,"oklch(47.0% 0.151 38.049)","#9D3003"],
+            ["900",0.3968,0.1229,38.029,"oklch(39.7% 0.123 38.029)","#7B2708"],
+            ["950",0.2719,0.08,38.068,"oklch(27.2% 0.080 38.068)","#461505"]
+          ]
+        },
+        blue: {
+          title: "Blue",
+          seedLabel: "500",
+          outsideSrgb: 4,
+          canonical: [
+            ["50",0.9699,0.0132,254.844,"oklch(97.0% 0.013 254.844)","#EFF6FE",true],
+            ["100",0.9414,0.0282,254.896,"oklch(94.1% 0.028 254.896)","#DFEDFF",true],
+            ["200",0.8863,0.0564,254.956,"oklch(88.6% 0.056 254.956)","#C1DCFF",false],
+            ["300",0.8131,0.0979,252.136,"oklch(81.3% 0.098 252.136)","#93C6FF",false],
+            ["400",0.7247,0.1566,254.449,"oklch(72.5% 0.157 254.449)","#5BA8FF",false],
+            ["500",0.623,0.214,259.815,"oklch(62.3% 0.214 259.815)","#2B7FFF",false],
+            ["600",0.5603,0.2405,261.615,"oklch(56.0% 0.240 261.615)","#0E64FE",true],
+            ["700",0.4932,0.244,265.248,"oklch(49.3% 0.244 265.248)","#1C48E8",true],
+            ["800",0.4256,0.202,267.67,"oklch(42.6% 0.202 267.670)","#223ABA",true],
+            ["900",0.3699,0.1523,267.751,"oklch(37.0% 0.152 267.751)","#1E338E",true],
+            ["950",0.2811,0.0922,267.725,"oklch(28.1% 0.092 267.725)","#162456",true]
+          ],
+          fallback: [
+            ["50",0.9699,0.0132,254.844,"oklch(97.0% 0.013 254.844)","#EFF6FE"],
+            ["100",0.9414,0.0282,254.896,"oklch(94.1% 0.028 254.896)","#DFEDFF"],
+            ["200",0.8863,0.0563,254.956,"oklch(88.6% 0.056 254.956)","#C1DCFF"],
+            ["300",0.8131,0.0965,252.136,"oklch(81.3% 0.096 252.136)","#94C6FF"],
+            ["400",0.7247,0.1456,254.449,"oklch(72.5% 0.146 254.449)","#62A9FF"],
+            ["500",0.623,0.2038,259.815,"oklch(62.3% 0.204 259.815)","#3280FF"],
+            ["600",0.5603,0.2405,261.615,"oklch(56.0% 0.240 261.615)","#0E64FE"],
+            ["700",0.4932,0.244,265.248,"oklch(49.3% 0.244 265.248)","#1C48E8"],
+            ["800",0.4256,0.202,267.67,"oklch(42.6% 0.202 267.670)","#223ABA"],
+            ["900",0.3699,0.1523,267.751,"oklch(37.0% 0.152 267.751)","#1E338E"],
+            ["950",0.2811,0.0922,267.725,"oklch(28.1% 0.092 267.725)","#162456"]
+          ]
+        },
+        violet: {
+          title: "Violet",
+          seedLabel: "500",
+          outsideSrgb: 5,
+          canonical: [
+            ["50",0.9692,0.0152,293.684,"oklch(96.9% 0.015 293.684)","#F5F3FE",true],
+            ["100",0.938,0.0328,293.656,"oklch(93.8% 0.033 293.656)","#EBE7FF",false],
+            ["200",0.8826,0.0642,293.647,"oklch(88.3% 0.064 293.647)","#DAD1FF",false],
+            ["300",0.7996,0.1164,293.304,"oklch(80.0% 0.116 293.304)","#C1AFFF",false],
+            ["400",0.6924,0.1898,292.854,"oklch(69.2% 0.190 292.854)","#A380FF",false],
+            ["500",0.606,0.25,292.717,"oklch(60.6% 0.250 292.717)","#8E51FF",false],
+            ["600",0.5407,0.2774,292.684,"oklch(54.1% 0.277 292.684)","#7E26FC",true],
+            ["700",0.4814,0.2591,292.528,"oklch(48.1% 0.259 292.528)","#6C12DE",true],
+            ["800",0.4221,0.2193,292.332,"oklch(42.2% 0.219 292.332)","#5916B7",true],
+            ["900",0.3688,0.1767,292.198,"oklch(36.9% 0.177 292.198)","#471B92",true],
+            ["950",0.2796,0.1337,292.185,"oklch(28.0% 0.134 292.185)","#2E0F63",true]
+          ],
+          fallback: [
+            ["50",0.9692,0.0152,293.684,"oklch(96.9% 0.015 293.684)","#F5F3FE"],
+            ["100",0.938,0.0326,293.656,"oklch(93.8% 0.033 293.656)","#EBE7FF"],
+            ["200",0.8826,0.0633,293.647,"oklch(88.3% 0.063 293.647)","#DAD1FF"],
+            ["300",0.7996,0.1115,293.304,"oklch(80.0% 0.111 293.304)","#C0B0FF"],
+            ["400",0.6924,0.1782,292.854,"oklch(69.2% 0.178 292.854)","#A282FF"],
+            ["500",0.606,0.2362,292.717,"oklch(60.6% 0.236 292.717)","#8D56FF"],
+            ["600",0.5407,0.2774,292.684,"oklch(54.1% 0.277 292.684)","#7E26FC"],
+            ["700",0.4814,0.2591,292.528,"oklch(48.1% 0.259 292.528)","#6C12DE"],
+            ["800",0.4221,0.2193,292.332,"oklch(42.2% 0.219 292.332)","#5916B7"],
+            ["900",0.3688,0.1767,292.198,"oklch(36.9% 0.177 292.198)","#471B92"],
+            ["950",0.2796,0.1337,292.185,"oklch(28.0% 0.134 292.185)","#2E0F63"]
+          ]
+        }
+      };
+
+      const canvas = document.getElementById("space");
+      const ctx = canvas.getContext("2d");
+      const stopStrip = document.getElementById("stopStrip");
+      const tabs = [...document.querySelectorAll("[data-family]")];
+      const viewSlider = document.getElementById("viewSlider");
+      const shoulderSlider = document.getElementById("shoulderSlider");
+      const tailSlider = document.getElementById("tailSlider");
+      const fallbackToggle = document.getElementById("fallbackToggle");
+      let family = "orange";
+      let selectedIndex = 5;
+
+      function stopObject(row) {
+        return { label: row[0], l: row[1], c: row[2], h: row[3], css: row[4], hex: row[5], inSrgb: row[6] };
+      }
+
+      function adjustedStops(base) {
+        const shoulder = Number(shoulderSlider.value) / 100;
+        const tail = Number(tailSlider.value) / 100;
+        return base.map(stopObject).map((s, i) => {
+          const next = { ...s };
+          if (i < 5) {
+            const t = 1 - i / 5;
+            next.h += shoulder * t * 14;
+            next.c = Math.max(0, next.c * (1 + shoulder * t * 0.18));
+          }
+          if (i > 5) {
+            const t = (i - 5) / 5;
+            next.h -= tail * t * 12;
+            next.c = Math.max(0, next.c * (1 + tail * t * 0.16));
+          }
+          next.css = `oklch(${(next.l * 100).toFixed(1)}% ${next.c.toFixed(3)} ${next.h.toFixed(3)})`;
+          return next;
+        });
+      }
+
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        draw();
+      }
+
+      function project(stop, scale = 1) {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        const yaw = Number(viewSlider.value) * Math.PI / 180;
+        const angle = stop.h * Math.PI / 180;
+        const radius = stop.c * Math.min(w, h) * 1.36;
+        const x0 = Math.cos(angle) * radius;
+        const z0 = Math.sin(angle) * radius;
+        const y0 = (0.55 - stop.l) * h * 0.86;
+        const x = x0 * Math.cos(yaw) - z0 * Math.sin(yaw);
+        const z = x0 * Math.sin(yaw) + z0 * Math.cos(yaw);
+        return {
+          x: w * 0.5 + x * scale + z * 0.18,
+          y: h * 0.46 + y0 * scale + z * 0.12,
+          z
+        };
+      }
+
+      function drawGamutShell() {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = "#f6f5f0";
+        ctx.fillRect(0, 0, w, h);
+        ctx.lineWidth = 1;
+        for (let li = 0; li <= 6; li++) {
+          const l = 0.15 + li * 0.13;
+          ctx.beginPath();
+          for (let hi = 0; hi <= 96; hi++) {
+            const hue = hi / 96 * 360;
+            const c = 0.07 + 0.16 * Math.sin(Math.PI * l) * (0.9 + 0.16 * Math.sin((hue - 38) * Math.PI / 180));
+            const point = project({ l, c, h: hue }, 0.78);
+            if (hi === 0) ctx.moveTo(point.x, point.y);
+            else ctx.lineTo(point.x, point.y);
+          }
+          ctx.strokeStyle = `rgba(20,20,18,${0.08 + li * 0.01})`;
+          ctx.stroke();
+        }
+        for (let hi = 0; hi < 12; hi++) {
+          ctx.beginPath();
+          for (let li = 0; li <= 60; li++) {
+            const l = 0.12 + li / 60 * 0.78;
+            const hue = hi * 30;
+            const c = 0.07 + 0.16 * Math.sin(Math.PI * l);
+            const point = project({ l, c, h: hue }, 0.78);
+            if (li === 0) ctx.moveTo(point.x, point.y);
+            else ctx.lineTo(point.x, point.y);
+          }
+          ctx.strokeStyle = "rgba(20,20,18,0.07)";
+          ctx.stroke();
+        }
+      }
+
+      function drawPath(stops, options) {
+        ctx.save();
+        ctx.lineWidth = options.width;
+        ctx.strokeStyle = options.stroke;
+        ctx.setLineDash(options.dash || []);
+        ctx.beginPath();
+        stops.forEach((s, i) => {
+          const p = project(s);
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawStops(stops) {
+        stops.forEach((s, i) => {
+          const p = project(s);
+          const radius = i === selectedIndex ? 9 : i === 5 ? 7 : 5;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, radius + 3, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(246,245,240,0.82)";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = s.css;
+          ctx.fill();
+          ctx.lineWidth = i === selectedIndex ? 2 : 1;
+          ctx.strokeStyle = i === selectedIndex ? "#111" : "rgba(20,20,18,0.34)";
+          ctx.stroke();
+          if (i === 5) {
+            ctx.fillStyle = "rgba(20,20,18,0.72)";
+            ctx.font = "11px 'PP Neue Montreal Text', sans-serif";
+            ctx.fillText("seed", p.x + 12, p.y - 9);
+          }
+        });
+      }
+
+      function drawCurves(stops) {
+        drawCurve("curveL", stops.map(s => s.l), "#171817");
+        drawCurve("curveC", stops.map(s => s.c), "#171817");
+        const hues = stops.map(s => s.h);
+        const min = Math.min(...hues);
+        drawCurve("curveH", hues.map(h => (h - min) / 80), "#171817");
+      }
+
+      function drawCurve(id, values, stroke) {
+        const svg = document.getElementById(id);
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = Math.max(0.001, max - min);
+        const points = values.map((v, i) => {
+          const x = 10 + i * 24;
+          const y = 44 - ((v - min) / range) * 34;
+          return `${x},${y}`;
+        }).join(" ");
+        svg.innerHTML = `
+          <polyline points="${points}" fill="none" stroke="${stroke}" stroke-width="2" />
+          ${values.map((v, i) => {
+            const x = 10 + i * 24;
+            const y = 44 - ((v - min) / range) * 34;
+            return `<circle cx="${x}" cy="${y}" r="${i === selectedIndex ? 3.8 : 2.4}" fill="${stroke}" />`;
+          }).join("")}
+        `;
+      }
+
+      function renderStops(stops) {
+        stopStrip.innerHTML = "";
+        stops.forEach((s, i) => {
+          const button = document.createElement("button");
+          button.className = `stop-chip ${i === selectedIndex ? "active" : ""}`;
+          button.innerHTML = `
+            <div class="swatch" style="background:${s.css}"></div>
+            <div class="chip-label"><span>${s.label}</span><span>${s.inSrgb ? "" : "P3"}</span></div>
+          `;
+          button.addEventListener("click", () => {
+            selectedIndex = i;
+            draw();
+          });
+          stopStrip.appendChild(button);
+        });
+      }
+
+      function updateInspector(stops, fallbackStops) {
+        const ramp = ramps[family];
+        const selected = stops[selectedIndex];
+        const fallback = fallbackStops[selectedIndex];
+        document.getElementById("outMetric").textContent = String(ramp.outsideSrgb);
+        document.getElementById("detailSwatch").style.background = selected.css;
+        document.getElementById("detailLabel").textContent = selected.label;
+        document.getElementById("detailOklch").textContent = selected.css;
+        document.getElementById("detailHex").textContent = `sRGB ${fallback.hex}`;
+        document.getElementById("detailNote").textContent =
+          selectedIndex === 5 ? "canonical seed anchor" :
+          selected.inSrgb ? "inside sRGB and P3" : "P3 canonical, fallback mapped";
+        document.getElementById("viewValue").textContent = `${viewSlider.value} deg`;
+        document.getElementById("shoulderValue").textContent = `warm ${Number(shoulderSlider.value) >= 0 ? "+" : ""}${shoulderSlider.value}`;
+        document.getElementById("tailValue").textContent = `heat ${Number(tailSlider.value) >= 0 ? "+" : ""}${tailSlider.value}`;
+      }
+
+      function draw() {
+        const ramp = ramps[family];
+        const stops = adjustedStops(ramp.canonical);
+        const fallbackStops = ramp.fallback.map(stopObject);
+        drawGamutShell();
+        if (fallbackToggle.checked) {
+          drawPath(fallbackStops, { stroke: "rgba(20,20,18,0.42)", width: 2, dash: [7, 7] });
+        }
+        drawPath(stops, { stroke: "rgba(20,20,18,0.86)", width: 3 });
+        drawStops(stops);
+        drawCurves(stops);
+        renderStops(stops);
+        updateInspector(stops, fallbackStops);
+      }
+
+      tabs.forEach(button => {
+        button.addEventListener("click", () => {
+          family = button.dataset.family;
+          selectedIndex = 5;
+          tabs.forEach(tab => tab.classList.toggle("active", tab === button));
+          draw();
+        });
+      });
+      [viewSlider, shoulderSlider, tailSlider, fallbackToggle].forEach(input => {
+        input.addEventListener("input", draw);
+      });
+      window.addEventListener("resize", resize);
+      resize();
+    </script>
+  </body>
+</html>
