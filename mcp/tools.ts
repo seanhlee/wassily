@@ -12,7 +12,6 @@ import {
   purifyColor,
   parseColor,
   toHex,
-  clampToGamut,
   isInGamut,
   solveRamp,
   nameForHue,
@@ -21,6 +20,9 @@ import {
   harmonizeMultiple,
   WHITE,
   BLACK,
+  colorForSrgbExport,
+  exportRamps,
+  hexForSrgbExport,
 } from "../src/engine/index.js";
 import { RAMP_STOP_PRESETS } from "../src/constants.js";
 import type {
@@ -70,14 +72,6 @@ export function stopCountDeltaForTarget(current: number, target: StopPreset): nu
 
 function formatOklch(c: OklchColor): string {
   return `oklch(${c.l.toFixed(3)} ${c.c.toFixed(3)} ${c.h.toFixed(1)})`;
-}
-
-function colorForSrgbExport(color: OklchColor): OklchColor {
-  return clampToGamut(color);
-}
-
-function hexForSrgbExport(color: OklchColor): string {
-  return toHex(colorForSrgbExport(color));
 }
 
 function json(data: unknown): { content: { type: "text"; text: string }[] } {
@@ -137,145 +131,6 @@ function extractRamps(state: CanvasState): Ramp[] {
 
 function extractSwatches(state: CanvasState): Swatch[] {
   return Object.values(state.objects).filter((o): o is Swatch => o.type === "swatch");
-}
-
-// ---- Export helpers ----
-
-interface ColorProperty {
-  rampName: string;
-  stopLabel: string;
-  lightOklch: string;
-  darkOklch: string;
-  lightHex: string;
-  darkHex: string;
-}
-
-function generateProperties(ramps: Ramp[]): ColorProperty[] {
-  const props: ColorProperty[] = [];
-  for (const ramp of ramps) {
-    for (const stop of ramp.stops) {
-      const fallbackStop = ramp.fallbackStops?.[stop.index];
-      props.push({
-        rampName: ramp.name.toLowerCase().replace(/\s+/g, "-"),
-        stopLabel: stop.label,
-        lightOklch: formatOklch(stop.color),
-        darkOklch: formatOklch(stop.darkColor),
-        lightHex: toHex(fallbackStop?.color ?? colorForSrgbExport(stop.color)),
-        darkHex: toHex(fallbackStop?.darkColor ?? colorForSrgbExport(stop.darkColor)),
-      });
-    }
-  }
-  return props;
-}
-
-function formatTailwind(
-  props: ColorProperty[],
-  aliases?: Record<string, string>,
-): string {
-  const lines = ["@theme {"];
-  for (const p of props) {
-    lines.push(`  --color-${p.rampName}-${p.stopLabel}: ${p.lightOklch};`);
-  }
-  if (aliases) {
-    lines.push("");
-    lines.push("  /* Semantic aliases */");
-    for (const [alias, value] of Object.entries(aliases)) {
-      lines.push(`  --color-${alias}: var(--color-${value});`);
-    }
-  }
-  lines.push("}");
-  return lines.join("\n");
-}
-
-function formatCss(
-  props: ColorProperty[],
-  aliases?: Record<string, string>,
-): string {
-  const lines = [":root {"];
-  for (const p of props) {
-    lines.push(`  --${p.rampName}-${p.stopLabel}: ${p.lightOklch};`);
-  }
-  if (aliases) {
-    lines.push("");
-    for (const [alias, value] of Object.entries(aliases)) {
-      lines.push(`  --${alias}: var(--${value});`);
-    }
-  }
-  lines.push("}");
-  lines.push("");
-  lines.push("@media (prefers-color-scheme: dark) {");
-  lines.push("  :root {");
-  for (const p of props) {
-    lines.push(`    --${p.rampName}-${p.stopLabel}: ${p.darkOklch};`);
-  }
-  lines.push("  }");
-  lines.push("}");
-  return lines.join("\n");
-}
-
-function formatTokens(props: ColorProperty[]): object {
-  const tokens: Record<string, Record<string, unknown>> = {};
-  for (const p of props) {
-    if (!tokens[p.rampName]) tokens[p.rampName] = {};
-    tokens[p.rampName][p.stopLabel] = {
-      $value: p.lightHex,
-      $type: "color",
-      $extensions: {
-        "com.wassily": {
-          oklch: p.lightOklch,
-          darkValue: p.darkHex,
-          darkOklch: p.darkOklch,
-        },
-      },
-    };
-  }
-  return tokens;
-}
-
-function formatFigma(ramps: Ramp[]): object {
-  // Figma Variables REST API format (Enterprise only)
-  const collections = ramps.map((ramp) => {
-    const name = ramp.name;
-    return {
-      name,
-      modes: [
-        { name: "Light", modeId: "light" },
-        { name: "Dark", modeId: "dark" },
-      ],
-      variables: ramp.stops.map((stop) => {
-        const fallbackStop = ramp.fallbackStops?.[stop.index];
-        const lightRgb = hexToRgbFloat(
-          toHex(fallbackStop?.color ?? colorForSrgbExport(stop.color)),
-        );
-        const darkRgb = hexToRgbFloat(
-          toHex(fallbackStop?.darkColor ?? colorForSrgbExport(stop.darkColor)),
-        );
-        return {
-          name: `${name}/${stop.label}`,
-          type: "COLOR",
-          valuesByMode: {
-            light: { r: lightRgb.r, g: lightRgb.g, b: lightRgb.b, a: 1 },
-            dark: { r: darkRgb.r, g: darkRgb.g, b: darkRgb.b, a: 1 },
-          },
-        };
-      }),
-    };
-  });
-
-  return {
-    _format: "figma-variables",
-    _note: "Figma Variables REST API requires Enterprise plan. Use Tokens Studio plugin with 'tokens' format for free Figma import.",
-    collections,
-  };
-}
-
-function hexToRgbFloat(hex: string): { r: number; g: number; b: number } {
-  const h = hex.replace("#", "");
-  return {
-    r: parseInt(h.slice(0, 2), 16) / 255,
-    g: parseInt(h.slice(2, 4), 16) / 255,
-    b: parseInt(h.slice(4, 6), 16) / 255,
-  };
 }
 
 // ---- Bridge helpers ----
@@ -846,23 +701,7 @@ export function registerTools(server: McpServer): void {
       const ramps = extractRamps(state);
       if (ramps.length === 0) return error("No ramps found in canvas state. Promote swatches to ramps first (R key).");
 
-      const props = generateProperties(ramps);
-
-      let output: string | object;
-      switch (format) {
-        case "tailwind":
-          output = formatTailwind(props, semantic_aliases);
-          break;
-        case "css":
-          output = formatCss(props, semantic_aliases);
-          break;
-        case "tokens":
-          output = formatTokens(props);
-          break;
-        case "figma":
-          output = formatFigma(ramps);
-          break;
-      }
+      const output = exportRamps(ramps, format, semantic_aliases);
 
       const text = typeof output === "string" ? output : JSON.stringify(output, null, 2);
       return { content: [{ type: "text" as const, text }] };

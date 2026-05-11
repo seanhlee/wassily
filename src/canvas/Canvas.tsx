@@ -22,6 +22,7 @@ import { HelpOverlay } from "../components/HelpOverlay";
 import { HarmonizeOverlay } from "../components/HarmonizeLabel";
 import { BoardBar } from "../components/BoardBar";
 import { ArenaImportPrompt } from "../components/ArenaImportPrompt";
+import { RampInspector } from "../components/RampInspector";
 import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship, ReferenceImage, Note } from "../types";
 import { getObjectBounds, findStripPlacement, extractHues, objectsInRect } from "./canvasHelpers";
 import { samplePixelAt } from "../hooks/useEyedropper";
@@ -113,6 +114,7 @@ export function Canvas() {
   const [showHelp, setShowHelp] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [suppressedNoteTintId, setSuppressedNoteTintId] = useState<string | null>(null);
+  const [inspectorRampId, setInspectorRampId] = useState<string | null>(null);
   const mouseClientPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // ---- Eyedropper state ----
@@ -150,6 +152,34 @@ export function Canvas() {
     eyedropperTargetId.current = id;
     setEyedropperTargetIdState(id);
   }, []);
+
+  const handleSelect = useCallback(
+    (id: string, additive = false) => {
+      select(id, additive);
+      if (!inspectorRampId) return;
+
+      const currentInspectorTarget = state.objects[inspectorRampId];
+      if (currentInspectorTarget?.type !== "ramp") return;
+      if (additive) {
+        setInspectorRampId(null);
+        return;
+      }
+
+      const obj = state.objects[id];
+      setInspectorRampId(obj?.type === "ramp" ? id : null);
+    },
+    [inspectorRampId, select, state.objects],
+  );
+
+  const handleDeselectAll = useCallback(() => {
+    deselectAll();
+    setInspectorRampId(null);
+  }, [deselectAll]);
+
+  const handleDeleteSelected = useCallback(() => {
+    deleteSelected();
+    setInspectorRampId(null);
+  }, [deleteSelected]);
 
   // ---- Harmony cycling state ----
   const lastHarmonyRef = useRef<{
@@ -216,13 +246,13 @@ export function Canvas() {
       if (target.closest(".swatch-node, .ramp-node, .ref-image-node, .note-node")) return;
 
       if (state.selectedIds.length > 0) {
-        deselectAll();
+        handleDeselectAll();
       }
     },
     [
       state.selectedIds,
       state.objects,
-      deselectAll,
+      handleDeselectAll,
       eyedropperCanvasCache,
       iKeyHeld,
       snapshot,
@@ -320,6 +350,7 @@ export function Canvas() {
               h: Math.abs(p2.y - p1.y),
             };
             const hitIds = objectsInRect(state.objects, canvasRect);
+            setInspectorRampId(null);
             dispatch({ type: "SELECT_IDS", ids: hitIds, additive: shiftKey });
           }
           marqueeCompletedRef.current = true;
@@ -700,6 +731,7 @@ export function Canvas() {
         case "a":
           if (e.metaKey || e.ctrlKey) {
             e.preventDefault();
+            setInspectorRampId(null);
             dispatch({ type: "SELECT_ALL" });
           }
           break;
@@ -717,7 +749,7 @@ export function Canvas() {
 
         case "Delete":
         case "Backspace":
-          if (state.selectedIds.length > 0) deleteSelected();
+          if (state.selectedIds.length > 0) handleDeleteSelected();
           break;
 
         case "ArrowUp":
@@ -811,13 +843,12 @@ export function Canvas() {
     toggleLightMode,
     promoteToRamp,
     changeStopCount,
-    deleteSelected,
+    handleDeleteSelected,
     setCamera,
     harmonizeSelected,
     toggleLockSelected,
     createConnection,
     toggleConnections,
-    select,
     undo,
     redo,
     updateSwatchColor,
@@ -882,9 +913,9 @@ export function Canvas() {
       if (img.extraction) clearImageExtraction(imageId);
       createExtraction(imageId, samples);
       // Image stays selected so markers stay visible.
-      select(imageId);
+      handleSelect(imageId);
     },
-    [state.objects, createExtraction, clearImageExtraction, select, snapshot],
+    [state.objects, createExtraction, clearImageExtraction, handleSelect, snapshot],
   );
 
 
@@ -905,6 +936,15 @@ export function Canvas() {
   // ---- Render ----
   const canvasBg = state.lightMode ? "#fff" : "#000";
   const objects = Object.values(state.objects);
+  const selectedObject =
+    state.selectedIds.length === 1 ? state.objects[state.selectedIds[0]] : null;
+  const selectedRamp =
+    selectedObject?.type === "ramp" ? (selectedObject as Ramp) : null;
+  const inspectorObject = inspectorRampId ? state.objects[inspectorRampId] : null;
+  const inspectorRamp = inspectorRampId
+    ? selectedRamp ??
+      (inspectorObject?.type === "ramp" ? (inspectorObject as Ramp) : null)
+    : null;
 
   return (
     <>
@@ -912,6 +952,10 @@ export function Canvas() {
     {arenaImport.props && (
       <ArenaImportPrompt {...arenaImport.props} lightMode={state.lightMode} />
     )}
+    <RampInspector
+      ramp={inspectorRamp}
+      lightMode={state.lightMode}
+    />
     <CanvasContextMenu
       objects={state.objects}
       selectedIds={state.selectedIds}
@@ -919,14 +963,15 @@ export function Canvas() {
       camera={state.camera}
       containerRef={containerRef}
       onCreateSwatch={createSwatch}
-      onSelect={select}
-      onDeleteSelected={deleteSelected}
+      onSelect={handleSelect}
+      onDeleteSelected={handleDeleteSelected}
       onPromoteToRamp={promoteToRamp}
       onHarmonize={handleHarmonize}
       onToggleLock={toggleLockSelected}
       onImportArenaChannel={arenaImport.open}
       onCreateNote={handleCreateNote}
       onExtractColors={handleExtractColors}
+      onExportRamp={setInspectorRampId}
       onRemoveRampStop={(id, stopIndex) => {
         snapshot();
         dispatch({ type: "REMOVE_RAMP_STOP", id, stopIndex });
@@ -999,7 +1044,7 @@ export function Canvas() {
                   toObj={toObj as Swatch | Ramp}
                   lightMode={state.lightMode}
                   selected={state.selectedIds.includes(conn.id)}
-                  onSelect={select}
+                  onSelect={handleSelect}
                 />
               );
             })}
@@ -1015,7 +1060,7 @@ export function Canvas() {
                 zoom={state.camera.zoom}
                 lightMode={state.lightMode}
                 eKeyHeld={eKeyHeld}
-                onSelect={select}
+                onSelect={handleSelect}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
                 onAdjustColor={adjustSwatchColor}
@@ -1036,7 +1081,7 @@ export function Canvas() {
                 zoom={state.camera.zoom}
                 lightMode={state.lightMode}
                 peekPureMode={peekPureMode}
-                onSelect={select}
+                onSelect={handleSelect}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
                 onSnapshot={snapshot}
@@ -1053,7 +1098,7 @@ export function Canvas() {
                 zoom={state.camera.zoom}
                 lightMode={state.lightMode}
                 eyedropperActive={eyedropperActive}
-                onSelect={select}
+                onSelect={handleSelect}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
                 onSnapshot={snapshot}
@@ -1080,7 +1125,7 @@ export function Canvas() {
                 editing={editingNoteId === obj.id}
                 zoom={state.camera.zoom}
                 lightMode={state.lightMode}
-                onSelect={select}
+                onSelect={handleSelect}
                 onMove={(id, x, y) => moveObject(id, { x, y })}
                 onMoveSelected={moveSelected}
                 onSnapshot={snapshot}

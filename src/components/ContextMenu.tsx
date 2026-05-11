@@ -125,6 +125,7 @@ interface CanvasContextMenuProps {
   onCreateNote?: (position: Point) => void;
   onExtractColors?: (imageId: string) => void;
   onRemoveRampStop?: (rampId: string, stopIndex: number) => void;
+  onExportRamp?: (rampId: string) => void;
   children: React.ReactNode;
 }
 
@@ -146,6 +147,7 @@ export function CanvasContextMenu({
   onCreateNote,
   onExtractColors,
   onRemoveRampStop,
+  onExportRamp,
   children,
 }: CanvasContextMenuProps) {
   const [ctx, setCtx] = useState<MenuContext>(null);
@@ -358,6 +360,17 @@ export function CanvasContextMenu({
 
             {ctx?.type === "ramp" && (
               <>
+                {onExportRamp && (
+                  <>
+                    <ContextMenu.Item
+                      style={(state) => getItemStyle(lightMode, state)}
+                      onClick={() => onExportRamp(ctx.objectId)}
+                    >
+                      Export
+                    </ContextMenu.Item>
+                    <ContextMenu.Separator style={getSeparatorStyle(lightMode)} />
+                  </>
+                )}
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
                   onClick={() => {
@@ -390,6 +403,17 @@ export function CanvasContextMenu({
 
             {ctx?.type === "ramp-stop" && (
               <>
+                {onExportRamp && (
+                  <>
+                    <ContextMenu.Item
+                      style={(state) => getItemStyle(lightMode, state)}
+                      onClick={() => onExportRamp(ctx.objectId)}
+                    >
+                      Export
+                    </ContextMenu.Item>
+                    <ContextMenu.Separator style={getSeparatorStyle(lightMode)} />
+                  </>
+                )}
                 <ContextMenu.Item
                   style={(state) => getItemStyle(lightMode, state)}
                   onClick={() => {
