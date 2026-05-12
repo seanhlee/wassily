@@ -8,23 +8,23 @@ const style = document.createElement("style");
 const fontBaseUrl = `${import.meta.env.BASE_URL}fonts/`;
 style.textContent = `
   @font-face {
-    font-family: "PP Neue Montreal Text";
-    src: url("${fontBaseUrl}PPNeueMontrealText-Light.woff2") format("woff2");
-    font-weight: 300;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: "PP Neue Montreal Text";
-    src: url("${fontBaseUrl}PPNeueMontrealText-Book.woff2") format("woff2");
+    font-family: "PP Neue Montreal";
+    src: url("${fontBaseUrl}PPNeueMontreal-Regular.woff2") format("woff2");
     font-weight: 400;
     font-style: normal;
     font-display: swap;
   }
   @font-face {
-    font-family: "PP Neue Montreal Text";
-    src: url("${fontBaseUrl}PPNeueMontrealText-Bold.woff2") format("woff2");
-    font-weight: 700;
+    font-family: "PP Neue Montreal";
+    src: url("${fontBaseUrl}PPNeueMontreal-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "PP Neue Montreal";
+    src: url("${fontBaseUrl}PPNeueMontreal-Semibold.woff2") format("woff2");
+    font-weight: 600;
     font-style: normal;
     font-display: swap;
   }

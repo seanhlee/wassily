@@ -7,10 +7,10 @@ import {
   clampToGamut,
   parseColor,
 } from "../engine/gamut";
-import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
+import { SWATCH_SIZE, FONT, FONT_SIZE, FONT_WEIGHT_UI } from "../constants";
 import { useDrag } from "../hooks/useDrag";
 import { SelectionBrackets, LockIcon } from "./SelectionBrackets";
-import { ColorField, HueStrip, LchControl, FIELD_SIZE, FIELD_LEFT } from "./ColorEditor";
+import { ColorField, HueStrip, LchControl, FIELD_SIZE, FIELD_LEFT, EDITOR_TOOL_WIDTH } from "./ColorEditor";
 import type { LchChannel } from "./ColorEditor";
 
 // Re-export components that Canvas.tsx imports from this file
@@ -207,6 +207,17 @@ export function SwatchNode({
   );
 
   const outlineColor = lightMode ? "#000" : "#fff";
+  const editorTextColor = lightMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)";
+  const editorPanelBg = lightMode ? "rgba(255,255,255,0.92)" : "rgba(0,0,0,0.86)";
+  const editorTokenLabelColor = lightMode ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)";
+  const hexValueWidth = "7ch";
+  const editorPanelPaddingX = 12;
+  const editorPanelPaddingTop = 12;
+  const editorPanelPaddingBottom = 13;
+  const editorHeaderHeight = 13;
+  const editorHeaderGap = 9;
+  const editorReadoutGap = 8;
+  const editorReadoutHeight = 13;
 
   return (
     <div
@@ -261,6 +272,97 @@ export function SwatchNode({
       )}
       {editing && (
         <>
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: FIELD_LEFT - editorPanelPaddingX,
+              top: -(editorPanelPaddingTop + editorHeaderHeight + editorHeaderGap),
+              width: EDITOR_TOOL_WIDTH + editorPanelPaddingX * 2,
+              height: editorHeaderHeight + editorHeaderGap + FIELD_SIZE + editorReadoutGap + editorReadoutHeight + editorPanelPaddingTop + editorPanelPaddingBottom,
+              background: editorPanelBg,
+              backdropFilter: "blur(18px) saturate(1.18)",
+              WebkitBackdropFilter: "blur(18px) saturate(1.18)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              position: "absolute",
+              top: -(editorHeaderHeight + editorHeaderGap),
+              left: FIELD_LEFT,
+              width: EDITOR_TOOL_WIDTH,
+              height: editorHeaderHeight,
+              fontFamily: FONT,
+              fontSize: FONT_SIZE,
+              fontWeight: FONT_WEIGHT_UI,
+              color: editorTextColor,
+              whiteSpace: "nowrap",
+              userSelect: "none",
+              pointerEvents: "auto",
+              lineHeight: 1.1,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            <span
+              style={{
+                display: "inline-grid",
+                gridTemplateColumns: `3ch ${hexValueWidth}`,
+                columnGap: "0.65ch",
+                alignItems: "baseline",
+              }}
+            >
+              <span style={{ color: editorTokenLabelColor }}>HEX</span>
+              <div
+                onClick={!hexEditing ? handleHexClick : undefined}
+                style={{
+                  cursor: hexEditing ? "auto" : "text",
+                  position: "relative",
+                  width: hexValueWidth,
+                }}
+              >
+                <span style={{ visibility: hexEditing ? "hidden" : "visible" }}>{hex}</span>
+                {hexEditing && (
+                  <input
+                    ref={hexInputRef}
+                    type="text"
+                    value={hexEditValue}
+                    onChange={(e) => setHexEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") commitHex(hexEditValue);
+                      else if (e.key === "Escape") setHexEditing(false);
+                    }}
+                    onBlur={() => commitHex(hexEditValue)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      fontFamily: "inherit",
+                      fontSize: "inherit",
+                      fontWeight: "inherit",
+                      lineHeight: "inherit",
+                      fontVariantNumeric: "tabular-nums",
+                      fontFeatureSettings: '"tnum"',
+                      color: "inherit",
+                      background: "transparent",
+                      border: "none",
+                      outline: "none",
+                      padding: 0,
+                      margin: 0,
+                      width: "100%",
+                      height: "1em",
+                      display: "block",
+                      appearance: "none",
+                      WebkitAppearance: "none",
+                    }}
+                  />
+                )}
+              </div>
+            </span>
+          </div>
           <ColorField
             color={swatch.color}
             onColorChange={handleFieldColorChange}
@@ -275,96 +377,31 @@ export function SwatchNode({
             lightMode={lightMode}
           />
           <div
+            onMouseDown={(e) => e.stopPropagation()}
             style={{
               position: "absolute",
-              top: 56,
-              left: 0,
-              fontFamily: FONT,
-              fontSize: FONT_SIZE,
-              color: lightMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
-              whiteSpace: "nowrap",
-              userSelect: "none",
-              pointerEvents: "auto",
-            }}
-          >
-            <div
-              style={{
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                opacity: 0.7,
-                marginBottom: 2,
-              }}
-            >
-              HEX
-            </div>
-            <div
-              onClick={!hexEditing ? handleHexClick : undefined}
-              onMouseDown={(e) => e.stopPropagation()}
-              style={{ cursor: hexEditing ? "auto" : "text", position: "relative" }}
-            >
-              <span style={{ visibility: hexEditing ? "hidden" : "visible" }}>{hex}</span>
-              {hexEditing && (
-                <input
-                  ref={hexInputRef}
-                  type="text"
-                  value={hexEditValue}
-                  onChange={(e) => setHexEditValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Enter") commitHex(hexEditValue);
-                    else if (e.key === "Escape") setHexEditing(false);
-                  }}
-                  onBlur={() => commitHex(hexEditValue)}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    fontFamily: "inherit",
-                    fontSize: "inherit",
-                    color: "inherit",
-                    background: "transparent",
-                    border: "none",
-                    outline: "none",
-                    padding: 0,
-                    margin: 0,
-                    width: "100%",
-                  }}
-                />
-              )}
-            </div>
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              top: FIELD_SIZE + 8,
+              top: FIELD_SIZE + editorReadoutGap,
               left: FIELD_LEFT,
               fontFamily: FONT,
               fontSize: FONT_SIZE,
-              color: lightMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
+              fontWeight: FONT_WEIGHT_UI,
+              color: editorTextColor,
               whiteSpace: "nowrap",
               userSelect: "none",
               pointerEvents: "auto",
               display: "flex",
-              gap: 24,
+              alignItems: "baseline",
+              gap: 18,
+              lineHeight: 1.1,
+              fontVariantNumeric: "tabular-nums",
             }}
           >
             {([
-              { label: "HUE", channel: "h" as LchChannel, value: swatch.color.h },
-              { label: "CHROMA", channel: "c" as LchChannel, value: swatch.color.c },
-              { label: "LIGHTNESS", channel: "l" as LchChannel, value: swatch.color.l },
-            ]).map(({ label, channel, value }) => (
-              <div key={channel}>
-                <div
-                  style={{
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    opacity: 0.7,
-                    marginBottom: 2,
-                  }}
-                >
-                  {label}
-                </div>
+              { channel: "l" as LchChannel, value: swatch.color.l },
+              { channel: "c" as LchChannel, value: swatch.color.c },
+              { channel: "h" as LchChannel, value: swatch.color.h },
+            ]).map(({ channel, value }) => (
+              <span key={channel}>
                 <LchControl
                   channel={channel}
                   value={value}
@@ -376,7 +413,7 @@ export function SwatchNode({
                   onScrubEnd={handleScrubEnd}
                   onCommit={onSnapshot}
                 />
-              </div>
+              </span>
             ))}
           </div>
         </>

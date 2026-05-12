@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Ramp, RampStop } from "../types";
 import { clampToGamut, toCssColor, toHex } from "../engine/gamut";
 import { solveRamp } from "../engine/ramp";
-import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
+import { SWATCH_SIZE, FONT, FONT_SIZE, FONT_WEIGHT_UI } from "../constants";
 import { useDrag } from "../hooks/useDrag";
 import { SelectionBrackets, LockIcon } from "./SelectionBrackets";
 
@@ -45,6 +45,7 @@ function RampStopCell({
           width: SWATCH_SIZE,
           fontFamily: FONT,
           fontSize: FONT_SIZE,
+          fontWeight: FONT_WEIGHT_UI,
           color: textColor,
           textAlign: "center",
           marginTop: 4,
@@ -54,7 +55,7 @@ function RampStopCell({
           transition: "opacity 0.15s ease",
         }}
       >
-        <div style={{ textTransform: "uppercase", letterSpacing: "-0.55px" }}>
+        <div style={{ textTransform: "uppercase", letterSpacing: 0 }}>
           {stop.label}
         </div>
         <div>{hex}</div>
@@ -151,9 +152,10 @@ export function RampNode({
           marginBottom: 4,
           fontFamily: FONT,
           fontSize: FONT_SIZE,
+          fontWeight: FONT_WEIGHT_UI,
           color: lightMode ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)",
           textTransform: "uppercase",
-          letterSpacing: "-0.55px",
+          letterSpacing: 0,
           userSelect: "none",
           pointerEvents: "none",
           opacity: hovered ? 1 : 0,

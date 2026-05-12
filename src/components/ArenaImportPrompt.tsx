@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { FONT, FONT_SIZE } from "../constants";
+import { FONT, FONT_SIZE, FONT_WEIGHT_UI } from "../constants";
 import type { ArenaPreviewResult } from "../integrations/arena";
 
 type ArenaImportLoading = "preview" | "more" | "import" | null;
@@ -38,6 +38,7 @@ export function ArenaImportPrompt({
   onSelectNone,
   onDismiss,
 }: ArenaImportPromptProps) {
+  const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const width = preview ? 392 : 280;
   const panelHeight = preview ? 540 : 108;
@@ -53,6 +54,7 @@ export function ArenaImportPrompt({
   const textColor = lightMode ? "#000" : "#fff";
   const mutedColor = lightMode ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.6)";
   const borderColor = lightMode ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.18)";
+  const panelBg = lightMode ? "rgba(255,255,255,0.76)" : "rgba(0,0,0,0.72)";
   const selected = new Set(selectedIds);
   const selectedCount = preview
     ? preview.images.filter((image) => selected.has(image.id)).length
@@ -73,8 +75,21 @@ export function ArenaImportPrompt({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [busy, onDismiss]);
 
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (busy) return;
+      const target = event.target;
+      if (target instanceof Node && formRef.current?.contains(target)) return;
+      onDismiss();
+    };
+
+    window.addEventListener("pointerdown", onPointerDown, true);
+    return () => window.removeEventListener("pointerdown", onPointerDown, true);
+  }, [busy, onDismiss]);
+
   return createPortal(
     <form
+      ref={formRef}
       onSubmit={(event) => {
         event.preventDefault();
         if (!busy) onSubmit();
@@ -86,12 +101,13 @@ export function ArenaImportPrompt({
         top,
         width,
         zIndex: 3000,
-        background: lightMode ? "#fff" : "#000",
-        border: `1px solid ${borderColor}`,
+        background: panelBg,
+        backdropFilter: "blur(18px) saturate(1.18)",
+        WebkitBackdropFilter: "blur(18px) saturate(1.18)",
         padding: "7px 8px 6px",
         fontFamily: FONT,
         fontSize: FONT_SIZE,
-        fontWeight: 400,
+        fontWeight: FONT_WEIGHT_UI,
         textTransform: "uppercase",
         letterSpacing: "0.5px",
         color: textColor,
@@ -108,14 +124,13 @@ export function ArenaImportPrompt({
         style={{
           width: "100%",
           border: "none",
-          borderBottom: `1px solid ${borderColor}`,
           outline: "none",
           background: "transparent",
           color: textColor,
           padding: "0 0 5px",
           fontFamily: FONT,
           fontSize: FONT_SIZE,
-          fontWeight: 400,
+          fontWeight: FONT_WEIGHT_UI,
           textTransform: "uppercase",
           letterSpacing: "0.5px",
         }}
@@ -197,13 +212,13 @@ export function ArenaImportPrompt({
                   width: "100%",
                   height: 86,
                   minHeight: 86,
-                  border: `1px solid ${borderColor}`,
+                  border: "none",
                   background: "transparent",
                   color: mutedColor,
                   cursor: busy ? "default" : "pointer",
                   fontFamily: FONT,
                   fontSize: FONT_SIZE,
-                  fontWeight: 400,
+                  fontWeight: FONT_WEIGHT_UI,
                   textTransform: "uppercase",
                   letterSpacing: "0.5px",
                 }}
@@ -278,7 +293,7 @@ function buttonStyle(color: string): React.CSSProperties {
     padding: 0,
     fontFamily: FONT,
     fontSize: FONT_SIZE,
-    fontWeight: 400,
+    fontWeight: FONT_WEIGHT_UI,
     textTransform: "uppercase",
     letterSpacing: "0.5px",
   };

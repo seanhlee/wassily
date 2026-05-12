@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
+import { SWATCH_SIZE, FONT, FONT_SIZE, FONT_WEIGHT_UI } from "../constants";
 import {
   subscribeToHarmonizeFeedback,
   type HarmonizeFeedback,
@@ -72,6 +72,7 @@ export function HarmonizeOverlay() {
         ...positionStyle,
         fontFamily: FONT,
         fontSize: FONT_SIZE,
+        fontWeight: FONT_WEIGHT_UI,
         textTransform: "uppercase",
         letterSpacing: "0.5px",
         color: "oklch(0.55 0 0)",

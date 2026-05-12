@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Menu } from "@base-ui/react/menu";
 import type { BoardManager } from "../state/useBoardManager";
-import { FONT, FONT_SIZE } from "../constants";
+import { FONT, FONT_SIZE, FONT_WEIGHT_UI, FONT_WEIGHT_TEXT } from "../constants";
 
 export function BoardBar({
   boardManager,
@@ -35,13 +35,12 @@ export function BoardBar({
   }, [renameValue, boardManager]);
 
   const textColor = lightMode ? "#666" : "#888";
-  const popupBg = lightMode ? "#f8f8f8" : "#1a1a1a";
-  const borderColor = lightMode ? "#e0e0e0" : "#333";
+  const popupBg = lightMode ? "rgba(255,255,255,0.76)" : "rgba(0,0,0,0.72)";
 
   const baseFont: React.CSSProperties = {
     fontFamily: FONT,
     fontSize: FONT_SIZE,
-    fontWeight: 400,
+    fontWeight: FONT_WEIGHT_UI,
     textTransform: "uppercase",
     letterSpacing: "0.5px",
   };
@@ -80,7 +79,6 @@ export function BoardBar({
             color: textColor,
             background: "transparent",
             border: "none",
-            borderBottom: `1px solid ${borderColor}`,
             outline: "none",
             padding: "1px 0",
             width: 120,
@@ -113,7 +111,8 @@ export function BoardBar({
               <Menu.Popup
                 style={{
                   background: popupBg,
-                  border: `1px solid ${borderColor}`,
+                  backdropFilter: "blur(18px) saturate(1.18)",
+                  WebkitBackdropFilter: "blur(18px) saturate(1.18)",
                   padding: "3px 0",
                   minWidth: 140,
                   outline: "none",
@@ -124,7 +123,7 @@ export function BoardBar({
                     key={b.id}
                     style={(state) => ({
                       ...getItemStyle(state),
-                      fontWeight: b.id === boardManager.activeBoardId ? 700 : 400,
+                      fontWeight: b.id === boardManager.activeBoardId ? FONT_WEIGHT_UI : FONT_WEIGHT_TEXT,
                     })}
                     onClick={() => boardManager.switchBoard(b.id)}
                   >
@@ -142,13 +141,6 @@ export function BoardBar({
                     )}
                   </Menu.Item>
                 ))}
-                <Menu.Separator
-                  style={{
-                    height: 1,
-                    backgroundColor: lightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)",
-                    margin: "2px 0",
-                  }}
-                />
                 <Menu.Item
                   style={(state) => getItemStyle(state)}
                   onClick={() => boardManager.createBoard("Untitled", true)}

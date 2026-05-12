@@ -15,7 +15,10 @@ export const FIELD_SIZE = 216;
 export const FIELD_LEFT = SWATCH_SIZE + 16;              // swatch + gap
 const FIELD_TOP = 0;                            // top-aligned with swatch
 const HUE_STRIP_W = 16;
-const HUE_STRIP_LEFT = FIELD_LEFT + FIELD_SIZE + 8;
+const HUE_STRIP_GAP = 8;
+const HUE_TRIANGLE_W = 6;
+const HUE_STRIP_LEFT = FIELD_LEFT + FIELD_SIZE + HUE_STRIP_GAP;
+export const EDITOR_TOOL_WIDTH = FIELD_SIZE + HUE_STRIP_GAP + HUE_STRIP_W + HUE_TRIANGLE_W;
 
 // Shared SVG indicator style
 const INDICATOR_SVG: React.CSSProperties = {
@@ -56,7 +59,6 @@ function FieldIndicator({ x, y }: { x: number; y: number }) {
 }
 
 function HueTriangle({ y, stripWidth, color }: { y: number; stripWidth: number; color: string }) {
-  const tw = 6;
   const th = 8;
   return (
     <svg
@@ -70,7 +72,7 @@ function HueTriangle({ y, stripWidth, color }: { y: number; stripWidth: number; 
       }}
     >
       <polygon
-        points={`${stripWidth + tw},${y - th / 2} ${stripWidth + tw},${y + th / 2} ${stripWidth},${y}`}
+        points={`${stripWidth + HUE_TRIANGLE_W},${y - th / 2} ${stripWidth + HUE_TRIANGLE_W},${y + th / 2} ${stripWidth},${y}`}
         fill={color}
         stroke="none"
       />
@@ -206,8 +208,6 @@ export function HueStrip({
     return result;
   }, []);
 
-  const triW = 6;
-
   return (
     <div
       ref={stripRef}
@@ -216,7 +216,7 @@ export function HueStrip({
         position: "absolute",
         left: HUE_STRIP_LEFT,
         top: FIELD_TOP,
-        width: HUE_STRIP_W + triW,
+        width: HUE_STRIP_W + HUE_TRIANGLE_W,
         height: FIELD_SIZE,
         cursor: "ns-resize",
       }}
@@ -239,6 +239,12 @@ const CHANNEL_SENSITIVITY: Record<LchChannel, { normal: number; fine: number }> 
   l: { normal: 0.002, fine: 0.0004 },
   c: { normal: 0.001, fine: 0.0002 },
   h: { normal: 0.5, fine: 0.1 },
+};
+
+const CHANNEL_VALUE_WIDTH: Record<LchChannel, string> = {
+  l: "4ch",
+  c: "5ch",
+  h: "3ch",
 };
 
 function formatValue(channel: LchChannel, value: number): string {
@@ -356,9 +362,18 @@ export function LchControl({
   );
 
   const formatted = formatValue(channel, value);
+  const valueWidth = CHANNEL_VALUE_WIDTH[channel];
 
   return (
-    <span style={{ display: "inline-flex", gap: "0.2ch", alignItems: "baseline" }}>
+    <span
+      style={{
+        display: "inline-grid",
+        gridTemplateColumns: `1ch ${valueWidth}`,
+        columnGap: "0.65ch",
+        alignItems: "baseline",
+        fontVariantNumeric: "tabular-nums",
+      }}
+    >
       <span
         onMouseDown={handleLabelMouseDown}
         style={{
@@ -376,6 +391,8 @@ export function LchControl({
           position: "relative",
           cursor: editing ? "auto" : "text",
           userSelect: "none",
+          width: valueWidth,
+          overflow: "visible",
         }}
       >
         <span style={{ visibility: editing ? "hidden" : "visible" }}>
@@ -396,6 +413,10 @@ export function LchControl({
               top: 0,
               fontFamily: "inherit",
               fontSize: "inherit",
+              fontWeight: "inherit",
+              lineHeight: "inherit",
+              fontVariantNumeric: "tabular-nums",
+              fontFeatureSettings: '"tnum"',
               color: "inherit",
               background: "transparent",
               border: "none",
@@ -403,6 +424,10 @@ export function LchControl({
               padding: 0,
               margin: 0,
               width: "100%",
+              height: "1em",
+              display: "block",
+              appearance: "none",
+              WebkitAppearance: "none",
             }}
           />
         )}

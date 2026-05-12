@@ -1,4 +1,4 @@
-import { FONT, FONT_SIZE } from "../constants";
+import { FONT, FONT_SIZE, FONT_WEIGHT_UI } from "../constants";
 
 interface Shortcut {
   key: string;
@@ -106,6 +106,7 @@ export function HelpOverlay({ lightMode, onDismiss }: HelpOverlayProps) {
           color: text,
           fontSize: FONT_SIZE,
           fontFamily: FONT,
+          fontWeight: FONT_WEIGHT_UI,
           textTransform: "uppercase",
           letterSpacing: "0.5px",
           marginBottom: section.description ? 4 : 6,
@@ -119,8 +120,9 @@ export function HelpOverlay({ lightMode, onDismiss }: HelpOverlayProps) {
             color: desc,
             fontSize: FONT_SIZE,
             fontFamily: FONT,
+            fontWeight: FONT_WEIGHT_UI,
             textTransform: "uppercase",
-            letterSpacing: "-0.2px",
+            letterSpacing: 0,
             marginBottom: 6,
             lineHeight: "1.5",
           }}
@@ -138,6 +140,7 @@ export function HelpOverlay({ lightMode, onDismiss }: HelpOverlayProps) {
               gap: 16,
               fontSize: FONT_SIZE,
               fontFamily: FONT,
+              fontWeight: FONT_WEIGHT_UI,
               textTransform: "uppercase",
               letterSpacing: "0.5px",
               lineHeight: "1.6",
@@ -189,6 +192,7 @@ export function HelpOverlay({ lightMode, onDismiss }: HelpOverlayProps) {
           color: hint,
           fontSize: FONT_SIZE,
           fontFamily: FONT,
+          fontWeight: FONT_WEIGHT_UI,
           textTransform: "uppercase",
           letterSpacing: "0.5px",
         }}

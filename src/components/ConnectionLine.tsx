@@ -9,7 +9,7 @@
 
 import { useState, memo } from "react";
 import type { Swatch, Ramp, Connection, OklchColor } from "../types";
-import { SWATCH_SIZE, FONT, FONT_SIZE } from "../constants";
+import { SWATCH_SIZE, FONT, FONT_SIZE, FONT_WEIGHT_UI } from "../constants";
 import { contrastRatio } from "../engine/contrast";
 import { angularDistance } from "../engine/harmonize";
 import { differenceEuclidean } from "culori";
@@ -149,6 +149,7 @@ export const ConnectionLine = memo(
                 padding: "4px 6px",
                 fontFamily: FONT,
                 fontSize: FONT_SIZE,
+                fontWeight: FONT_WEIGHT_UI,
                 color: labelColor,
                 textTransform: "uppercase",
                 letterSpacing: "0.3px",

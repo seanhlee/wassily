@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import type { Ramp } from "../types";
-import { FONT, FONT_SIZE } from "../constants";
+import { FONT, FONT_SIZE, FONT_WEIGHT_UI } from "../constants";
 import {
   formatRampOklchList,
   formatRampSrgbHexList,
@@ -224,15 +224,12 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
 
   const ink = lightMode ? "#000" : "#fff";
   const muted = lightMode ? "rgba(0,0,0,0.52)" : "rgba(255,255,255,0.58)";
-  const faint = lightMode ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.14)";
   const panelBg = lightMode ? "rgba(255,255,255,0.78)" : "rgba(0,0,0,0.72)";
-  const hoverBg = lightMode ? "rgba(0,0,0,0.055)" : "rgba(255,255,255,0.08)";
-  const activeBg = lightMode ? "rgba(0,0,0,0.09)" : "rgba(255,255,255,0.12)";
 
   const baseText: CSSProperties = {
     fontFamily: FONT,
     fontSize: FONT_SIZE,
-    fontWeight: 400,
+    fontWeight: FONT_WEIGHT_UI,
     textTransform: "uppercase",
     letterSpacing: 0,
     color: ink,
@@ -240,12 +237,16 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
 
   const buttonBase: CSSProperties = {
     ...baseText,
-    border: `1px solid ${faint}`,
+    border: "none",
     background: "transparent",
     height: 24,
     padding: 0,
     color: muted,
     cursor: "pointer",
+    appearance: "none",
+    WebkitAppearance: "none",
+    borderRadius: 0,
+    lineHeight: 1,
   };
 
   return (
@@ -262,7 +263,6 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
         overflow: "auto",
         zIndex: 1200,
         background: panelBg,
-        border: `1px solid ${faint}`,
         backdropFilter: "blur(18px) saturate(1.18)",
         WebkitBackdropFilter: "blur(18px) saturate(1.18)",
       }}
@@ -275,7 +275,6 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
           columnGap: 8,
           alignItems: "center",
           padding: "8px 10px",
-          borderBottom: `1px solid ${faint}`,
           cursor: dragState ? "grabbing" : "move",
           touchAction: "none",
           userSelect: "none",
@@ -302,7 +301,6 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
             ...buttonBase,
             height: 22,
             color: showDetails ? ink : muted,
-            background: showDetails ? activeBg : "transparent",
           }}
         >
           INFO
@@ -314,7 +312,8 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            borderBottom: `1px solid ${faint}`,
+            gap: 8,
+            padding: "0 10px 8px",
           }}
         >
           {metadataRows(ramp).map(([label, value]) => (
@@ -322,9 +321,7 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
               key={label}
               style={{
                 minWidth: 0,
-                padding: "7px 10px",
-                borderRight: `1px solid ${faint}`,
-                borderBottom: `1px solid ${faint}`,
+                padding: 0,
               }}
             >
               <div style={{ ...baseText, color: muted, marginBottom: 3 }}>
@@ -349,7 +346,6 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
       <div
         style={{
           padding: 8,
-          borderBottom: `1px solid ${faint}`,
         }}
       >
         <div
@@ -371,16 +367,11 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
               style={{
                 ...buttonBase,
                 color: copiedLabel === command.label ? ink : muted,
-                background:
-                  copiedLabel === command.label ? activeBg : "transparent",
               }}
               onMouseEnter={(event) => {
-                event.currentTarget.style.background = hoverBg;
                 event.currentTarget.style.color = ink;
               }}
               onMouseLeave={(event) => {
-                event.currentTarget.style.background =
-                  copiedLabel === command.label ? activeBg : "transparent";
                 event.currentTarget.style.color =
                   copiedLabel === command.label ? ink : muted;
               }}
@@ -407,7 +398,6 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
             style={{
               ...buttonBase,
               color: variant === value ? ink : muted,
-              background: variant === value ? activeBg : "transparent",
             }}
           >
             {value}
@@ -448,7 +438,6 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
               columnGap: 8,
               alignItems: "center",
               minHeight: 24,
-              borderTop: `1px solid ${faint}`,
               ...baseText,
             }}
           >
@@ -459,7 +448,6 @@ export function RampInspector({ ramp, lightMode }: RampInspectorProps) {
                 width: 14,
                 height: 14,
                 background: toCssColor(row.canonicalColor),
-                border: `1px solid ${faint}`,
               }}
             />
             <div
