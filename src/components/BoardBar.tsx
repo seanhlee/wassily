@@ -5,7 +5,6 @@ import { FONT, FONT_SIZE, FONT_WEIGHT_UI, FONT_WEIGHT_TEXT } from "../constants"
 
 const BOARD_ACTION_COLUMN_WIDTH = "8ch";
 const BOARD_EDITOR_MIN_WIDTH = 276;
-const UNTITLED_BOARD_NAME = "Untitled";
 
 export function BoardBar({
   boardManager,
@@ -314,12 +313,7 @@ export function BoardBar({
                 ))}
                 <Menu.Item
                   style={(state) => getItemStyle(state)}
-                  onClick={() =>
-                    boardManager.createBoard(
-                      getNextUntitledBoardName(boardManager.boards),
-                      true,
-                    )
-                  }
+                  onClick={() => boardManager.createBoard(undefined, true)}
                 >
                   New board
                 </Menu.Item>
@@ -339,52 +333,4 @@ export function BoardBar({
       )}
     </div>
   );
-}
-
-function getNextUntitledBoardName(boards: BoardManager["boards"]): string {
-  const existingNames = new Set(
-    boards.map((board) => board.name.trim().toLocaleLowerCase()),
-  );
-
-  let index = 1;
-  while (existingNames.has(formatUntitledBoardName(index).toLocaleLowerCase())) {
-    index += 1;
-  }
-
-  return formatUntitledBoardName(index);
-}
-
-function formatUntitledBoardName(index: number): string {
-  return index === 1
-    ? UNTITLED_BOARD_NAME
-    : `${UNTITLED_BOARD_NAME} ${toRomanNumeral(index)}`;
-}
-
-function toRomanNumeral(value: number): string {
-  const numerals: Array<[number, string]> = [
-    [1000, "M"],
-    [900, "CM"],
-    [500, "D"],
-    [400, "CD"],
-    [100, "C"],
-    [90, "XC"],
-    [50, "L"],
-    [40, "XL"],
-    [10, "X"],
-    [9, "IX"],
-    [5, "V"],
-    [4, "IV"],
-    [1, "I"],
-  ];
-  let remaining = Math.max(1, Math.floor(value));
-  let result = "";
-
-  for (const [amount, numeral] of numerals) {
-    while (remaining >= amount) {
-      result += numeral;
-      remaining -= amount;
-    }
-  }
-
-  return result;
 }

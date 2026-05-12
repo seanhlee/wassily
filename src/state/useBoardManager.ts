@@ -19,6 +19,7 @@ import {
   saveActiveBoardId,
   deleteBoardStorage,
 } from "./boardStore";
+import { resolveBoardName } from "./boardNames";
 
 // ---- Types ----
 
@@ -31,7 +32,7 @@ export interface BoardManager {
   boards: BoardMeta[];
   activeBoardId: string;
   activeBoard: BoardMeta;
-  createBoard(name: string, andSwitch?: boolean): string;
+  createBoard(name?: string | null, andSwitch?: boolean): string;
   switchBoard(id: string): void;
   deleteBoard(id: string): void;
   renameBoard(id: string, name: string): void;
@@ -52,14 +53,20 @@ export function useBoardManager(
   // ---- createBoard ----
 
   const createBoard = useCallback(
-    (name: string, andSwitch?: boolean): string => {
+    (name?: string | null, andSwitch?: boolean): string => {
       const id = crypto.randomUUID();
       const now = Date.now();
-      const meta: BoardMeta = { id, name, createdAt: now, updatedAt: now };
 
       saveBoardState(id, initialState);
 
       setBoardState((prev) => {
+        const boardName = resolveBoardName(prev.boards, name);
+        const meta: BoardMeta = {
+          id,
+          name: boardName,
+          createdAt: now,
+          updatedAt: now,
+        };
         const next = [...prev.boards, meta];
         saveBoards(next);
 

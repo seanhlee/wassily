@@ -12,7 +12,6 @@ import { registerTools } from "./tools.js";
 const server = new McpServer({
   name: "wassily",
   version: "1.0.0",
-  capabilities: { tools: {} },
 });
 
 registerTools(server);

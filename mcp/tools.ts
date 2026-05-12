@@ -794,9 +794,17 @@ export function registerTools(server: McpServer): void {
   server.tool(
     "create_board",
     "Create a new empty board in the Wassily workspace.",
-    { name: z.string().describe("Name for the new board") },
+    {
+      name: z
+        .string()
+        .optional()
+        .describe("Optional name for the new board. Defaults to the next available Untitled name."),
+    },
     async ({ name }) => {
-      const result = await boardOp({ op: "create", name });
+      const result = await boardOp({
+        op: "create",
+        ...(name === undefined ? {} : { name }),
+      });
       if (!result.success) return error(result.error as string);
       return json(result);
     },

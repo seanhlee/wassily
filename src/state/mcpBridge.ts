@@ -9,6 +9,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { Action, CanvasState } from "../types";
 import type { BoardManager } from "./useBoardManager";
+import { resolveBoardName } from "./boardNames";
 
 // ---- Helpers ----
 
@@ -105,8 +106,12 @@ export function useMcpBridge(
 
           switch (message.op) {
             case "create": {
-              const id = bm.createBoard(message.name, Boolean(message.andSwitch));
-              result = { id, name: message.name };
+              const name = resolveBoardName(
+                bm.boards,
+                typeof message.name === "string" ? message.name : undefined,
+              );
+              const id = bm.createBoard(name, Boolean(message.andSwitch));
+              result = { id, name };
               break;
             }
             case "switch": {
