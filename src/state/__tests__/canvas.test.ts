@@ -981,6 +981,10 @@ describe("marker cleanup cascades", () => {
     });
     const dup = result.objects["img_1_copy"] as ReferenceImage;
     expect(dup.extraction).toBeUndefined();
+    expect(dup.imageHandle).toMatchObject({
+      kind: "local",
+      blobId: "img_1_copy",
+    });
     // Original is untouched.
     const orig = result.objects["img_1"] as ReferenceImage;
     expect(orig.extraction!.markers).toHaveLength(2);

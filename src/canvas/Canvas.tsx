@@ -27,8 +27,9 @@ import type { Swatch, Ramp, Connection, Point, OklchColor, HarmonicRelationship,
 import { getObjectBounds, findStripPlacement, extractHues, objectsInRect } from "./canvasHelpers";
 import { samplePixelAt } from "../hooks/useEyedropper";
 import { usePasteAndDrop } from "../hooks/usePasteAndDrop";
-import { extractColors, dataUrlToImageData } from "../engine/extract";
+import { extractColors, imageUrlToImageData } from "../engine/extract";
 import { useArenaImport } from "../state/useArenaImport";
+import { getReferenceImageRenderUrl } from "../images/referenceImage";
 
 /** Prime an offscreen canvas for pixel sampling from a reference image */
 function primeImageCanvas(
@@ -36,9 +37,11 @@ function primeImageCanvas(
   cache: Map<string, CanvasRenderingContext2D>,
 ) {
   if (cache.has(image.id)) return;
-  if (!image.dataUrl) return;
+  const renderUrl = getReferenceImageRenderUrl(image);
+  if (!renderUrl) return;
   const img = new Image();
-  img.src = image.dataUrl;
+  img.crossOrigin = "anonymous";
+  img.src = renderUrl;
   const draw = () => {
     const canvas = document.createElement("canvas");
     canvas.width = image.size.width;
@@ -899,7 +902,9 @@ export function Canvas() {
       const obj = state.objects[imageId];
       if (!obj || obj.type !== "reference-image") return;
       const img = obj as ReferenceImage;
-      const imageData = await dataUrlToImageData(img.dataUrl);
+      const renderUrl = getReferenceImageRenderUrl(img);
+      if (!renderUrl) return;
+      const imageData = await imageUrlToImageData(renderUrl);
       const result = extractColors(imageData);
       const samples = result.samples.map((s, i) => ({
         color: s.color,

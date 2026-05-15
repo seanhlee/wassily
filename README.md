@@ -20,6 +20,7 @@ Wassily is a color exploration studio built around OKLCH. It combines moodboardi
 - Vite
 - `culori` for color science
 - localStorage + IndexedDB persistence
+- planned Clerk + Convex + Cloudflare/R2 collaboration backend
 - optional MCP tooling for development-time canvas access
 
 ## Commands
@@ -68,3 +69,6 @@ solve, while sRGB is an explicit fallback for hex and compatibility exports.
 Some files in this repo are intentionally development-oriented, especially around the MCP bridge and research generators. `npm run deadcode` is useful for pruning obvious leftovers, but several low-frequency entrypoints are intentional even if static analysis cannot trace them from the main browser app.
 
 For deeper product context, start with `CLAUDE.md` and the documents in `docs/`.
+
+Cloud collaboration planning lives in `docs/collaboration-backend-v1-spec.md`.
+The provider account handoff is in `docs/cloud-account-setup.md`.

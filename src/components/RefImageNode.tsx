@@ -12,6 +12,7 @@ import { useDrag } from "../hooks/useDrag";
 import { SelectionBrackets } from "./SelectionBrackets";
 import { ExtractionMarkerDot } from "./ExtractionMarkerDot";
 import { sampleImagePixelAt } from "../hooks/useEyedropper";
+import { getReferenceImageRenderUrl } from "../images/referenceImage";
 
 export interface LoupeState {
   imageId: string;
@@ -227,6 +228,7 @@ export function RefImageNode({
   );
 
   const outlineColor = lightMode ? "#000" : "#fff";
+  const renderUrl = getReferenceImageRenderUrl(image);
 
   // Markers render when the image is selected, or when any linked swatch is
   // selected or hovered.
@@ -263,10 +265,11 @@ export function RefImageNode({
           color={outlineColor}
         />
       )}
-      {image.dataUrl && <img
-        src={image.dataUrl}
+      {renderUrl && <img
+        src={renderUrl}
         alt=""
         draggable={false}
+        crossOrigin="anonymous"
         style={{
           width: "100%",
           height: "100%",
