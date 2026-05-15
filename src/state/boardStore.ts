@@ -11,6 +11,7 @@
  */
 
 import type { BoardMeta, CanvasState } from "../types";
+import { stripReferenceImageRuntimeUrls } from "../images/referenceImage";
 
 // ---- Constants ----
 
@@ -105,7 +106,7 @@ export function saveBoardState(id: string, state: CanvasState): void {
     const serializedObjects: Record<string, unknown> = {};
     for (const [objId, obj] of Object.entries(state.objects)) {
       if (obj.type === "reference-image") {
-        serializedObjects[objId] = { ...obj, dataUrl: "" };
+        serializedObjects[objId] = stripReferenceImageRuntimeUrls(obj);
       } else {
         serializedObjects[objId] = obj;
       }

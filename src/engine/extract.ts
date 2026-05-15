@@ -56,11 +56,12 @@ export function extractColors(imageData: ImageData): ExtractionResult {
 }
 
 /**
- * Convert a data URL to ImageData for on-demand color extraction.
+ * Convert a render URL to ImageData for on-demand color extraction.
  */
-export function dataUrlToImageData(dataUrl: string): Promise<ImageData> {
+export function imageUrlToImageData(imageUrl: string): Promise<ImageData> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     img.onload = () => {
       const maxDim = 200;
       const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
@@ -76,9 +77,11 @@ export function dataUrlToImageData(dataUrl: string): Promise<ImageData> {
       resolve(ctx.getImageData(0, 0, w, h));
     };
     img.onerror = () => reject(new Error("Failed to load image"));
-    img.src = dataUrl;
+    img.src = imageUrl;
   });
 }
+
+export const dataUrlToImageData = imageUrlToImageData;
 
 /**
  * Create a data URL from a File for display on canvas.

@@ -92,6 +92,38 @@ export async function loadAllImageBlobs(): Promise<
   }
 }
 
+/** Load selected image blobs by canvas object/blob ID. */
+export async function loadImageBlobs(
+  ids: Iterable<string>,
+): Promise<Array<{ id: string; blob: Blob }>> {
+  const uniqueIds = [...new Set(ids)].filter(Boolean);
+  if (uniqueIds.length === 0) return [];
+
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      const results: Array<{ id: string; blob: Blob }> = [];
+      let remaining = uniqueIds.length;
+
+      for (const id of uniqueIds) {
+        const req = store.get(id);
+        req.onsuccess = () => {
+          if (req.result instanceof Blob) {
+            results.push({ id, blob: req.result });
+          }
+          remaining -= 1;
+          if (remaining === 0) resolve(results);
+        };
+        req.onerror = () => reject(req.error);
+      }
+    });
+  } catch {
+    return [];
+  }
+}
+
 /** Delete all blobs whose IDs are NOT in the active set. */
 export async function cleanOrphanedBlobs(
   activeIds: Set<string>,

@@ -23,7 +23,7 @@ import type { OklchColor, ReferenceImage, ReferenceImageSource } from "../types"
 import { RAMP_STOP_PRESETS } from "../constants";
 import {
   storeImageBlob,
-  loadAllImageBlobs,
+  loadImageBlobs,
   cleanOrphanedBlobs,
 } from "./imageStore";
 import {
@@ -31,6 +31,11 @@ import {
   saveBoardState,
   collectAllImageIds,
 } from "./boardStore";
+import {
+  getReferenceImageRenderUrl,
+  localImageHandle,
+  withReferenceImageRenderUrl,
+} from "../images/referenceImage";
 
 // ---- Initial State ----
 
@@ -53,6 +58,24 @@ function genId(): string {
 
 function markerId(): string {
   return `mkr_${nextId++}`;
+}
+
+function referenceImageBlobId(image: ReferenceImage): string {
+  return image.imageHandle?.kind === "local" ? image.imageHandle.blobId : image.id;
+}
+
+function localImageBlobIds(objects: CanvasState["objects"]): string[] {
+  return Object.values(objects)
+    .filter((object): object is ReferenceImage => object.type === "reference-image")
+    .filter((image) => image.imageHandle?.kind !== "remote")
+    .map(referenceImageBlobId)
+    .sort();
+}
+
+function revokeObjectUrls(urls: Iterable<string>): void {
+  for (const url of urls) {
+    if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+  }
 }
 
 function solveRampForCanvas(config: RampConfig): Pick<
@@ -271,6 +294,8 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         id,
         type: "reference-image",
         dataUrl: action.dataUrl,
+        renderUrl: action.dataUrl,
+        imageHandle: localImageHandle(id, action.dataUrl),
         position: action.position,
         size: action.size,
         source: action.source,
@@ -317,6 +342,8 @@ function reducer(state: CanvasState, action: Action): CanvasState {
           id,
           type: "reference-image",
           dataUrl: image.dataUrl,
+          renderUrl: image.dataUrl,
+          imageHandle: localImageHandle(id, image.dataUrl),
           position: image.position,
           size: image.size,
           source: image.source,
@@ -327,11 +354,11 @@ function reducer(state: CanvasState, action: Action): CanvasState {
 
     case "RESTORE_IMAGE_URLS": {
       const objects = { ...state.objects };
-      for (const [id, url] of Object.entries(action.urls)) {
-        const obj = objects[id];
-        if (obj && obj.type === "reference-image") {
-          objects[id] = { ...(obj as ReferenceImage), dataUrl: url };
-        }
+      for (const [id, object] of Object.entries(objects)) {
+        if (object.type !== "reference-image") continue;
+        const image = object as ReferenceImage;
+        const url = action.urls[referenceImageBlobId(image)];
+        if (url) objects[id] = withReferenceImageRenderUrl(image, url);
       }
       return { ...state, objects };
     }
@@ -844,9 +871,15 @@ function reducer(state: CanvasState, action: Action): CanvasState {
         if (obj.type === "reference-image") {
           // Duplicated images do not carry markers — those still point at
           // the original swatches. Fresh image, fresh extraction on re-extract.
+          const image = withoutExtraction(obj as ReferenceImage);
+          const renderUrl = getReferenceImageRenderUrl(image);
           objects[newId] = {
-            ...withoutExtraction(obj as ReferenceImage),
+            ...image,
             id: newId,
+            imageHandle:
+              image.imageHandle?.kind === "remote"
+                ? image.imageHandle
+                : localImageHandle(newId, renderUrl),
           };
         } else {
           objects[newId] = { ...obj, id: newId } as typeof obj;
@@ -1065,6 +1098,7 @@ export function useCanvasState(activeBoardId: string) {
   const state = history.current;
   const canUndo = history.past.length > 0;
   const canRedo = history.future.length > 0;
+  const activeLocalImageBlobIds = localImageBlobIds(state.objects).join("\u0000");
 
   // Dispatch wrapper
   const dispatch = useCallback(
@@ -1073,18 +1107,49 @@ export function useCanvasState(activeBoardId: string) {
     [],
   );
 
-  // Restore reference image blobs from IndexedDB on mount
+  const restoredImageUrlsRef = useRef<Record<string, string>>({});
+
+  // Restore the active board's reference image blobs from IndexedDB.
   useEffect(() => {
+    let cancelled = false;
+    const blobIds = activeLocalImageBlobIds
+      ? activeLocalImageBlobIds.split("\u0000")
+      : [];
+
     (async () => {
-      const blobs = await loadAllImageBlobs();
+      const blobs = await loadImageBlobs(blobIds);
       if (blobs.length === 0) return;
       const urls: Record<string, string> = {};
       for (const { id, blob } of blobs) {
         urls[id] = URL.createObjectURL(blob);
       }
+
+      if (cancelled) {
+        revokeObjectUrls(Object.values(urls));
+        return;
+      }
+
+      const previousUrls = restoredImageUrlsRef.current;
+      restoredImageUrlsRef.current = urls;
       dispatch({ type: "RESTORE_IMAGE_URLS", urls });
+
+      const nextUrls = new Set(Object.values(urls));
+      revokeObjectUrls(
+        Object.values(previousUrls).filter((url) => !nextUrls.has(url)),
+      );
     })();
-  }, [dispatch]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeBoardId, activeLocalImageBlobIds, dispatch]);
+
+  useEffect(() => {
+    return () => {
+      revokeObjectUrls(Object.values(restoredImageUrlsRef.current));
+      restoredImageUrlsRef.current = {};
+    };
+  }, []);
 
   // Auto-save to localStorage on every state change (debounced)
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -1331,9 +1396,9 @@ export function useCanvasState(activeBoardId: string) {
       for (const [oldId, newId] of Object.entries(idMap)) {
         const obj = state.objects[oldId];
         if (obj?.type === "reference-image") {
-          const dataUrl = (obj as ReferenceImage).dataUrl;
-          if (dataUrl) {
-            fetch(dataUrl)
+          const renderUrl = getReferenceImageRenderUrl(obj as ReferenceImage);
+          if (renderUrl) {
+            fetch(renderUrl)
               .then((r) => r.blob())
               .then((blob) => storeImageBlob(newId, blob))
               .catch(() => {}); // degrade silently

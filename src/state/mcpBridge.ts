@@ -10,6 +10,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import type { Action, CanvasState } from "../types";
 import type { BoardManager } from "./useBoardManager";
 import { resolveBoardName } from "./boardNames";
+import { stripReferenceImageRuntimeUrls } from "../images/referenceImage";
 
 // ---- Helpers ----
 
@@ -17,7 +18,7 @@ function stripState(state: CanvasState): object {
   const objects: Record<string, unknown> = {};
   for (const [id, obj] of Object.entries(state.objects)) {
     if (obj.type === "reference-image") {
-      objects[id] = { ...obj, dataUrl: "" };
+      objects[id] = stripReferenceImageRuntimeUrls(obj);
     } else {
       objects[id] = obj;
     }

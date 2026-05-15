@@ -1,9 +1,7 @@
 import { useCallback, useEffect } from "react";
 import type { Point, OklchColor, Camera } from "../types";
-import {
-  fileToDataUrl,
-} from "../engine/extract";
 import { parseColor } from "../engine/gamut";
+import { compressReferenceImage } from "../images/compress";
 
 interface UsePasteAndDropConfig {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -41,20 +39,15 @@ export function usePasteAndDrop({
       const dropX = (e.clientX - rect.left - cam.x) / cam.zoom;
       const dropY = (e.clientY - rect.top - cam.y) / cam.zoom;
 
-      const dataUrl = await fileToDataUrl(file);
-
-      const displayWidth = 200;
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise((r) => {
-        img.onload = r;
-      });
-      const aspectRatio = img.naturalHeight / img.naturalWidth;
+      const compressed = await compressReferenceImage(file);
+      const displayWidth = Math.min(200, compressed.naturalSize.width);
+      const aspectRatio =
+        compressed.naturalSize.height / compressed.naturalSize.width;
       const displayHeight = Math.round(displayWidth * aspectRatio);
 
       addReferenceImage(
-        file,
-        dataUrl,
+        compressed.blob,
+        compressed.dataUrl,
         { x: dropX, y: dropY },
         { width: displayWidth, height: displayHeight },
       );
@@ -85,20 +78,15 @@ export function usePasteAndDrop({
             const file = item.getAsFile();
             if (!file) return;
 
-            const dataUrl = await fileToDataUrl(file);
-
-            const img = new Image();
-            img.src = dataUrl;
-            await new Promise((r) => {
-              img.onload = r;
-            });
-            const displayWidth = Math.min(300, img.naturalWidth);
-            const aspectRatio = img.naturalHeight / img.naturalWidth;
+            const compressed = await compressReferenceImage(file);
+            const displayWidth = Math.min(300, compressed.naturalSize.width);
+            const aspectRatio =
+              compressed.naturalSize.height / compressed.naturalSize.width;
             const displayHeight = Math.round(displayWidth * aspectRatio);
 
             addReferenceImage(
-              file,
-              dataUrl,
+              compressed.blob,
+              compressed.dataUrl,
               { x: cx, y: cy },
               { width: displayWidth, height: displayHeight },
             );

@@ -101,10 +101,32 @@ export interface ImageExtraction {
   updatedAt: number;
 }
 
+export interface LocalImageHandle {
+  kind: "local";
+  blobId: string;
+  renderUrl?: string;
+}
+
+export interface RemoteImageHandle {
+  kind: "remote";
+  assetId: string;
+  renderUrl?: string;
+  expiresAt?: number;
+}
+
+export type ImageHandle = LocalImageHandle | RemoteImageHandle;
+
 export interface ReferenceImage {
   id: string;
   type: "reference-image";
-  dataUrl: string; // base64
+  /**
+   * Legacy/runtime render URL. Local boards hydrate this from IndexedDB; cloud
+   * boards should prefer `imageHandle.renderUrl` from a signed asset URL.
+   */
+  dataUrl?: string;
+  renderUrl?: string;
+  assetId?: string;
+  imageHandle?: ImageHandle;
   position: Point;
   size: Size;
   extraction?: ImageExtraction;

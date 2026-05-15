@@ -1,4 +1,8 @@
 import type { ReferenceImageSource, Size } from "../types";
+import {
+  compressReferenceImage,
+  type CompressedReferenceImage,
+} from "../images/compress";
 
 const ARENA_API_ORIGIN = "https://api.are.na";
 const DEFAULT_PREVIEW_LIMIT = 100;
@@ -104,6 +108,7 @@ export interface ArenaImportImagesResult {
 
 interface ImportArenaImagesOptions {
   concurrency?: number;
+  compressor?: (blob: Blob) => Promise<CompressedReferenceImage>;
 }
 
 export function parseArenaChannelInput(input: string): string {
@@ -195,10 +200,11 @@ export async function importArenaImages(
     1,
     options.concurrency ?? DEFAULT_IMPORT_CONCURRENCY,
   );
+  const compressor = options.compressor ?? compressReferenceImage;
   const attempts = await mapWithConcurrency(
     previews,
     concurrency,
-    importArenaPreview,
+    (preview) => importArenaPreview(preview, compressor),
   );
   const images = attempts.filter(
     (image): image is ArenaImportedImage => image !== null,
@@ -308,17 +314,18 @@ function normalizeArenaPagination(
 
 async function importArenaPreview(
   preview: ArenaImagePreview,
+  compressor = compressReferenceImage,
 ): Promise<ArenaImportedImage | null> {
   try {
     const response = await fetch(preview.assetUrl, { mode: "cors" });
     if (!response.ok) return null;
     const blob = await response.blob();
-    const dataUrl = await blobToDataUrl(blob);
+    const compressed = await compressor(blob);
 
     return {
-      blob,
-      dataUrl,
-      naturalSize: preview.naturalSize,
+      blob: compressed.blob,
+      dataUrl: compressed.dataUrl,
+      naturalSize: compressed.naturalSize,
       source: {
         ...preview.source,
         importedAt: Date.now(),
@@ -327,13 +334,4 @@ async function importArenaPreview(
   } catch {
     return null;
   }
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }

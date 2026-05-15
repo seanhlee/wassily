@@ -57,6 +57,12 @@ const stateWithImage: CanvasState = {
       id: "img_1",
       type: "reference-image",
       dataUrl: "data:image/png;base64,LONGDATA",
+      renderUrl: "blob:runtime",
+      imageHandle: {
+        kind: "local",
+        blobId: "img_1",
+        renderUrl: "blob:runtime",
+      },
       position: { x: 0, y: 0 },
       size: { width: 100, height: 100 },
     },
@@ -144,6 +150,11 @@ describe("loadBoardState / saveBoardState", () => {
     saveBoardState("img-board", stateWithImage);
     const raw = JSON.parse(store.get("wassily-board-img-board")!);
     expect(raw.objects.img_1.dataUrl).toBe("");
+    expect(raw.objects.img_1.renderUrl).toBeUndefined();
+    expect(raw.objects.img_1.imageHandle).toEqual({
+      kind: "local",
+      blobId: "img_1",
+    });
   });
 
   it("resets selectedIds to [] on save", () => {
